@@ -1,0 +1,2742 @@
+{
+ "nodes": [
+  {
+   "id": "zeabur",
+   "label": "Zeabur",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "Primary PaaS: Brais's always-on apps, the Hermes engine and their databases run as Kubernetes workloads on one dedicated Frankfurt server rented through Zeabur.",
+   "details": [
+    "Account plan DEVELOPER (Dev $5/mo) plus one dedicated server (~$21-22/mo): fixed plan, no usage billing, no Project Budget, so no server-side spend cap exists (dashboard check 2026-06-20)",
+    "7 projects exist today (CLI, 2026-10-06): hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural, B_Browser. All sit on the single Frankfurt server",
+    "Decision notes say 'all 6 projects': the six migrated and exported are hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural. The 7th, B_Browser (created 2026-10-05), has no services",
+    "Every service uses template PREBUILT_V2. Git-sourced services auto-deploy on push to main; Hermes deploys by moving its GHCR image tag (scripts/deploy.sh); service restart and redeploy do not pull a new image",
+    "Service-data migration (env vars + config files move into Kubernetes Secrets on the server, irreversible) finished for all 6 projects 2026-10-02..06. Zeabur keeps no copy; the dated template exports in ~/Backups/zeabur are the only off-server copy",
+    "Zeabur's edge HTTP/3 stalled Safari after ~20-29 requests per connection (SocialAgenda, 2026-09-27); apps answer Alt-Svc: clear, and experiencianatural.com is proxied through Cloudflare",
+    "No token scopes exist; guardrail = global Claude Code hook plus deny rules blocking six destructive or spend-incurring verbs (deleting projects or services, renting servers, buying or renewing domains, topping up AI Hub)",
+    "CLI is logged in (verified 2026-10-06); live service state must be read with 'service get', not 'deployment list'"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Zeabur dashboard",
+     "url": "https://dash.zeabur.com"
+    }
+   ],
+   "sources": [
+    "zeabur project list -i=false --json",
+    "zeabur auth status (plan shown in the login banner)",
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_zeabur_guardrail.md",
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/reference_zeabur_live_status.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zeabur-frankfurt",
+   "label": "Tencent Frankfurt server",
+   "kind": "server",
+   "parent": "zeabur",
+   "summary": "Dedicated Tencent Cloud VM in Frankfurt (4 vCPU / 8 GB, ZeaburOS with k3s) that runs every Zeabur project.",
+   "details": [
+    "Name in Zeabur: 'Tencent Frankfurt 4C 8GB'; provider Tencent Cloud, Frankfurt am Main (DE); provisioning READY, VM RUNNING, online",
+    "Load on 2026-10-06: CPU ~6% of 4 vCPU, RAM ~71% of 7.7 GB, disk ~56% of ~118 GB",
+    "Runs k3s; each Zeabur project is a Kubernetes namespace; one static egress IP is shared by every service (Brevo and WAF allowlists key on it)",
+    "Replaced the Jakarta server on 2026-07-22 (GDPR data residency for Spanish customers, and to clear a Spanish Plesk geo-block); Jakarta server released with a prorated $4.40 refund",
+    "SSH is key-only since 2026-10-06 (password auth off, root login off); Zeabur no longer stores SSH credentials, so 'zeabur server ssh/ssh-info' and the dashboard terminal no longer work; access via local alias 'ssh zeabur-frankfurt'",
+    "Before hardening: ~462k failed brute-force SSH attempts in 30 days from ~2,000 IPs; the 28 successful logins were all Brais's",
+    "Single point of truth for all project secrets (Kubernetes Secrets) after the service-data migration: losing the SSH key or the server means restoring from the ~/Backups/zeabur exports",
+    "Deleting a Zeabur service can half-complete and leave its PVC behind"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur server list -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-hermes-eu",
+   "label": "hermes-eu",
+   "kind": "project",
+   "parent": "zeabur",
+   "summary": "Zeabur project for the Hermes engine, its Chatwoot stack (Rails, Sidekiq, Postgres, Redis) and the WhatsApp lead bot.",
+   "details": [
+    "Created 2026-07-20; 6 services",
+    "Hermes got its own project when it was split from the biglobster website on 2026-07-22; moved Jakarta to Frankfurt by root SSH rsync of /opt/data because the ~15 GB volume exceeds Zeabur's S3 clone limit",
+    "Service-data migration done 2026-10-06 15:35 UTC (six -configs Secrets, pods untouched)",
+    "Template exports taken 2026-10-05 and 2026-10-06"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Zeabur project",
+     "url": "https://dash.zeabur.com/projects/6a5ea4ec536b84a1337c3e89"
+    }
+   ],
+   "sources": [
+    "zeabur project list -i=false --json",
+    "zeabur service list --project-id <id> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-grow-shop",
+   "label": "grow-shop",
+   "kind": "project",
+   "parent": "zeabur",
+   "summary": "Zeabur project for the grow-shop.com domain-sale landing page and its offer-email API.",
+   "details": [
+    "Created 2026-07-21 (cloned Jakarta to Frankfurt with 'project clone')",
+    "2 services; both Git-sourced from main",
+    "First project migrated to server-side service data (2026-10-02)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Zeabur project",
+     "url": "https://dash.zeabur.com/projects/6a5f3a36bf12353d8c0ac905"
+    }
+   ],
+   "sources": [
+    "zeabur project list -i=false --json",
+    "zeabur service list --project-id <id> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-social-agenda",
+   "label": "social-agenda",
+   "kind": "project",
+   "parent": "zeabur",
+   "summary": "Zeabur project for SocialAgenda: web, scheduler and Postgres.",
+   "details": [
+    "Created 2026-07-21 (cloned Jakarta to Frankfurt; Postgres verified 392 rows exact)",
+    "3 services: web (RUN_SCHEDULER=0), scheduler (RUN_SCHEDULER=1), postgresql",
+    "Production moved off Render to Zeabur earlier (README)",
+    "Service-data migration done 2026-10-06"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Zeabur project",
+     "url": "https://dash.zeabur.com/projects/6a5f3b21536b84a1337c796a"
+    }
+   ],
+   "sources": [
+    "zeabur project list -i=false --json",
+    "zeabur service list --project-id <id> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-biglobster",
+   "label": "biglobster",
+   "kind": "project",
+   "parent": "zeabur",
+   "summary": "Zeabur project for the BigLobster website/legacy backend and the bl-site-package reference instance.",
+   "details": [
+    "Created 2026-07-22 (cloned from Jakarta; Hermes was split out into hermes-eu)",
+    "2 visible services: biglobster-osee and bl-site-package",
+    "A stale Pending Hermes pod remains in this project's Kubernetes namespace, invisible to Zeabur",
+    "Service-data migration done 2026-10-06 (Zeabur counts 2 services)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Zeabur project",
+     "url": "https://dash.zeabur.com/projects/6a608a65536b84a1337cf2e4"
+    }
+   ],
+   "sources": [
+    "zeabur project list -i=false --json",
+    "zeabur service list --project-id <id> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-flywell",
+   "label": "flywell",
+   "kind": "project",
+   "parent": "zeabur",
+   "summary": "Zeabur project for FlyWell: public web app, internal flight-search service and Postgres.",
+   "details": [
+    "Created 2026-08-08",
+    "3 services: flywell-web (public), flywell-fli (internal only, deliberately no public domain), postgresql",
+    "A push to main deploys to Zeabur immediately, so DB migrations must run before merging",
+    "Service-data migration done 2026-10-06"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Zeabur project",
+     "url": "https://dash.zeabur.com/projects/6a77a9a6e4a69d66638d27f8"
+    }
+   ],
+   "sources": [
+    "zeabur project list -i=false --json",
+    "zeabur service list --project-id <id> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-experiencianatural",
+   "label": "experiencianatural",
+   "kind": "project",
+   "parent": "zeabur",
+   "summary": "Zeabur project for the experiencianatural.com home page.",
+   "details": [
+    "Created 2026-09-27; born migrated (server-side service data from the start)",
+    "1 service: 'home' (static site, Git-sourced)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Zeabur project",
+     "url": "https://dash.zeabur.com/projects/6ab8b849f8498af9e9832479"
+    }
+   ],
+   "sources": [
+    "zeabur project list -i=false --json",
+    "zeabur service list --project-id <id> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-b-browser",
+   "label": "B_Browser",
+   "kind": "project",
+   "parent": "zeabur",
+   "summary": "Empty Zeabur project 'B_Browser' with no services; probably the idle Chrome/CDP project whose leftover volumes the host backup tars.",
+   "details": [
+    "Created 2026-10-05 16:12 UTC; 'service list' returns no services",
+    "Not in the 2026-10-05/06 template exports and not part of the 'all 6 projects' migration notes",
+    "backup-volumes.sh tars three volumes of an 'untitled' Chrome/CDP proxy project with no running workload; matching them to B_Browser is an inference",
+    "Display name has capitals and an underscore; id normalised to zb-b-browser"
+   ],
+   "status": "unknown",
+   "links": [
+    {
+     "label": "Zeabur project",
+     "url": "https://dash.zeabur.com/projects/6ac3cc6cdcaa8137910c69a0"
+    }
+   ],
+   "sources": [
+    "zeabur project list -i=false --json",
+    "zeabur service list --project-id <id> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "zb-hermes-eu-hermes",
+   "label": "hermes (Zeabur service)",
+   "kind": "service",
+   "parent": "zb-hermes-eu",
+   "summary": "Container running the Hermes engine (gateway, dashboard, webhooks, cron) from a GHCR image; the agent's internals are mapped under the Hermes node.",
+   "details": [
+    "Source: prebuilt image ghcr.io/br41s/hermes-sandbox pinned by a sha-<commit> tag (sha-ae01cb439 in today's export); deploy = move the tag with scripts/deploy.sh, everything else is a no-op",
+    "Ports: 8080 HTTP, 8644 webhook, 9119 dashboard; volume /opt/data (profiles, sessions, state.db ~2.2 GB)",
+    "Generated public domains: blhermes.zeabur.app (panel, GitHub-OAuth login) and hermes-webhook.zeabur.app (webhook port)",
+    "Status RUNNING (service get 2026-10-06); restarts every 1-2 h are benign Zeabur rollouts, not crashes",
+    "~45 environment variable NAMES (OpenRouter, GitHub, Langfuse, Telegram, Tiingo, X, HuggingFace, Exa, Typesafe keys and Hermes settings); values were never read",
+    "Env changes need an image-tag bounce, not a restart; the gateway CLI restart is unsupported on Zeabur's k8s pods"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Panel",
+     "url": "https://blhermes.zeabur.app"
+    }
+   ],
+   "sources": [
+    "zeabur service list --project-id <id> -i=false --json",
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-hermes-eu-hermes-data",
+   "label": "Hermes data volume (/opt/data)",
+   "kind": "database",
+   "parent": "zb-hermes-eu",
+   "summary": "Persistent volume mounted at /opt/data holding every Hermes profile, session store, state.db, cron definitions and the backup script.",
+   "details": [
+    "Volume id 'data' mounted at /opt/data on the hermes service (export)",
+    "Roughly 15 GB; too large for Zeabur's S3-based clone, so it was copied by SSH rsync",
+    "state.db is ~2.2 GB; an unclean shutdown triggers PRAGMA quick_check at boot",
+    "Nightly zip to Google Drive (HermesBackups); not covered by backup-volumes.sh, which handles the other projects' volumes"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "zb-hermes-eu-postgresql",
+   "label": "postgresql (Chatwoot DB)",
+   "kind": "database",
+   "parent": "zb-hermes-eu",
+   "summary": "pgvector Postgres 17 that backs the Chatwoot instance.",
+   "details": [
+    "Image pgvector/pgvector:pg17; port 5432 TCP; volume /var/lib/postgresql/data; port forwarding enabled",
+    "Status RUNNING (service get)",
+    "Dumped with pg_dumpall by the host-side backup script (one-off run 2026-10-06)",
+    "Which Rails/Sidekiq env var points at it was not checked; the Chatwoot link is inferred from the stack"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-hermes-eu-rails",
+   "label": "rails (Chatwoot web)",
+   "kind": "service",
+   "parent": "zb-hermes-eu",
+   "summary": "Chatwoot v4.16.2 community edition web app used as the shared inbox/WhatsApp front for the lead bot.",
+   "details": [
+    "Image chatwoot/chatwoot:v4.16.2-ce; port 3000; storage volume /app/storage; custom /docker/entrypoint.sh config file",
+    "Public generated domain bl-chatwoot.zeabur.app (HTTP 200 on 2026-10-06)",
+    "Status RUNNING; account signup and enterprise features are controlled by env names ENABLE_ACCOUNT_SIGNUP and DISABLE_ENTERPRISE"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Chatwoot",
+     "url": "https://bl-chatwoot.zeabur.app"
+    }
+   ],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-hermes-eu-sidekiq",
+   "label": "sidekiq (Chatwoot worker)",
+   "kind": "service",
+   "parent": "zb-hermes-eu",
+   "summary": "Chatwoot background job worker running the same image as rails.",
+   "details": [
+    "Image chatwoot/chatwoot:v4.16.2-ce with a sidekiq command; no ports; shares the /app/storage volume id",
+    "Status RUNNING (service get)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-hermes-eu-redis",
+   "label": "redis (Chatwoot cache/queue)",
+   "kind": "database",
+   "parent": "zb-hermes-eu",
+   "summary": "Redis Stack server used by Chatwoot for cache and Sidekiq queues.",
+   "details": [
+    "Image redis/redis-stack-server:latest; port 6379 TCP; volume /data; port forwarding enabled",
+    "Status RUNNING; dumped with a forced SAVE by the host-side backup script"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-hermes-eu-whatsapp-lead-bot",
+   "label": "whatsapp-lead-bot",
+   "kind": "service",
+   "parent": "zb-hermes-eu",
+   "summary": "Chatwoot agent bot that answers website/WhatsApp visitors with an LLM.",
+   "details": [
+    "Image built by Zeabur from an uploaded source (registry-oci.zeabur.cloud), not from a Git repo; port 8080; created 2026-08-14",
+    "Public generated domain bl-whatsapp-bot.zeabur.app (404 at root, webhook-style)",
+    "Env names show its wiring: CHATWOOT_BASE_URL, CHATWOOT_AGENT_BOT_TOKEN, OPENROUTER_API_KEY, VISITOR_AGENT_MODEL, WEBHOOK_SHARED_SECRET",
+    "Status RUNNING (service get)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/hermes-sandbox/WHATSAPP-BOT-PLAN.md (file name only)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-grow-shop-api",
+   "label": "grow-shop-api",
+   "kind": "service",
+   "parent": "zb-grow-shop",
+   "summary": "Node API that sends offer emails for the grow-shop.com domain sale, with Turnstile verification.",
+   "details": [
+    "Git-sourced from br41s/grow-shop-api main (Zeabur's last deployment record still names the old owner handle braisntext); plan type nodejs, port 8080; latest deploy 2026-07-23",
+    "Generated domain grow-shop-api.zeabur.app (404 at root, API only)",
+    "Env names: RESEND_API_KEY, TO_EMAIL, TURNSTILE_SECRET_KEY (email sent through Resend)",
+    "Status RUNNING; push to main auto-deploys"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-grow-shop-landing",
+   "label": "grow-shop-landing",
+   "kind": "service",
+   "parent": "zb-grow-shop",
+   "summary": "Static landing page whose purpose is to sell the grow-shop.com domain.",
+   "details": [
+    "Git-sourced from br41s/grow-shop-landing main; plan type static, port 8080; latest deploy 2026-07-23",
+    "Custom domain grow-shop.com, status PROVISIONED, HTTP 200 on 2026-10-06",
+    "Status RUNNING"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-social-agenda-web",
+   "label": "web (SocialAgenda)",
+   "kind": "service",
+   "parent": "zb-social-agenda",
+   "summary": "Flask web process of SocialAgenda (RUN_SCHEDULER=0).",
+   "details": [
+    "Git-sourced from br41s/SocialAgenda main, Dockerfile build; latest deploy 2026-10-03 (e88741f); port 8080",
+    "Domains: socialagenda.biglobster.top (custom, since 2026-10-03, DNS straight at Zeabur with no Cloudflare proxy) and socialagenda.zeabur.app (generated); the former agenda.experiencianatural.com was detached 2026-10-03",
+    "Env names: DATABASE_URL, BASE_URL, BREVO_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, TAVILY_API_KEY, TURNSTILE_*, SUPERUSER_*",
+    "Status RUNNING; HTTP 200 on 2026-10-06"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-social-agenda-scheduler",
+   "label": "scheduler (SocialAgenda)",
+   "kind": "service",
+   "parent": "zb-social-agenda",
+   "summary": "Dedicated SocialAgenda process (RUN_SCHEDULER=1) that sends reminders and alerts so the web workers never double-send.",
+   "details": [
+    "Same repo and Dockerfile as web; no public domain; port 8080",
+    "Env names include DATABASE_URL, BREVO_API_KEY, GROQ_API_KEY",
+    "Status RUNNING"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/SocialAgenda/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-social-agenda-postgresql",
+   "label": "postgresql (SocialAgenda)",
+   "kind": "database",
+   "parent": "zb-social-agenda",
+   "summary": "Postgres 18 holding SocialAgenda's production data.",
+   "details": [
+    "Image postgres:18; 10 GiB volume at /var/lib/postgresql/18/docker; port forwarding enabled; custom postgresql.conf",
+    "Status RUNNING; dumped with pg_dumpall by the host-side backup script",
+    "Verified 392 rows exact after the Frankfurt clone (2026-07-22)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-biglobster-osee",
+   "label": "biglobster-osee",
+   "kind": "service",
+   "parent": "zb-biglobster",
+   "summary": "BigLobster website (Eleventy static build served by Node) plus the legacy 'sentinel' backend and its contact/agent endpoints.",
+   "details": [
+    "Git-sourced from br41s/biglobster main, Dockerfile build with a Caddyfile config; latest deploy 2026-10-06; port 8080",
+    "Domains: biglobster.top and www.biglobster.top (custom, www 301s to the apex), biglobster.zeabur.app (generated); HTTP 200 on 2026-10-06",
+    "Volume /app/data (10 GiB) holds sentinel.db",
+    "~55 env var NAMES (Brevo, Telegram, WhatsApp, OpenRouter, DeepSeek, E2B, Exa, Firecrawl, Hermes callback, Turnstile); values never read",
+    "The COO role moved to Hermes; this service only keeps the web shell and legacy agents",
+    "Status RUNNING"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "biglobster.top",
+     "url": "https://biglobster.top"
+    }
+   ],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-biglobster-osee-data",
+   "label": "osee data volume (/app/data)",
+   "kind": "database",
+   "parent": "zb-biglobster",
+   "summary": "10 GiB volume with the BigLobster sentinel.db SQLite file.",
+   "details": [
+    "Mounted at /app/data on biglobster-osee (export)",
+    "sentinel.db copied byte-exact to Frankfurt and static since 2026-06-04",
+    "Backed up with the SQLite online-backup API by the host-side script (one-off run 2026-10-06)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "zb-biglobster-bl-site-package",
+   "label": "bl-site-package (Zeabur reference instance)",
+   "kind": "service",
+   "parent": "zb-biglobster",
+   "summary": "The reference/staging deployment of bl-site-package ('blcliente'); every release is validated here before a customer host.",
+   "details": [
+    "Git-sourced from br41s/bl-site-package main, Dockerfile build; latest deploy 2026-10-05; port 8080",
+    "Generated domain blcliente.zeabur.app; HTTP 200 on 2026-10-06",
+    "Fleet manifest: id blcliente, role reference, host zeabur, driver zeabur, Hermes profile bl-site-package",
+    "Export shows no persistent volume (SQLite lives in the container filesystem)",
+    "Status RUNNING"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "blcliente",
+     "url": "https://blcliente.zeabur.app"
+    }
+   ],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-biglobster-hermes-orphan",
+   "label": "Stale Hermes pod (biglobster namespace)",
+   "kind": "service",
+   "parent": "zb-biglobster",
+   "summary": "Leftover Pending Hermes pod from the pre-split BigLobster project, claiming a volume that does not exist in its namespace.",
+   "details": [
+    "Image tag braisntext/hermes-sandbox:latest (old owner handle); invisible to Zeabur and not counted among its services",
+    "Noted 2026-10-06 as an open cleanup item; left untouched",
+    "Cannot be removed with the Zeabur CLI because it does not see it; needs kubectl on the host"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "zb-flywell-postgresql",
+   "label": "postgresql (FlyWell)",
+   "kind": "database",
+   "parent": "zb-flywell",
+   "summary": "Postgres 18 for FlyWell (Drizzle schema).",
+   "details": [
+    "Image postgres:18; port forwarding enabled; custom postgresql.conf; status RUNNING",
+    "Dumped with pg_dumpall by the host-side backup script"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/FlyWell/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-flywell-web",
+   "label": "flywell-web",
+   "kind": "service",
+   "parent": "zb-flywell",
+   "summary": "Public FlyWell web app (dashboard, login, cron webhooks).",
+   "details": [
+    "Git-sourced from br41s/FlyWell main, Dockerfile; latest deploy 2026-10-05; HTTP health check on /login",
+    "Custom domain flywell.biglobster.top (307 to /login on 2026-10-06)",
+    "Env names: DATABASE_URL, FLI_BASE_URL, SERPAPI_KEY, TELEGRAM_BOT_TOKEN, CRON_SHARED_SECRET (cron-job.org hits two protected webhooks)",
+    "A push to main deploys at once, so migrations run before merge",
+    "Status RUNNING"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/FlyWell/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-flywell-fli",
+   "label": "flywell-fli",
+   "kind": "service",
+   "parent": "zb-flywell",
+   "summary": "Internal-only Python flight-search service (apps/fli-service) called by flywell-web.",
+   "details": [
+    "Same repo, root directory apps/fli-service; no public domain on purpose",
+    "Status RUNNING"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/FlyWell/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-experiencianatural-home",
+   "label": "home (experiencianatural.com)",
+   "kind": "service",
+   "parent": "zb-experiencianatural",
+   "summary": "Static single-file home page (illustrated valley with a seed-catching game).",
+   "details": [
+    "Git-sourced from br41s/experiencianatural-home main, plan type static; latest deploy 2026-09-27",
+    "Domains experiencianatural.com and www.experiencianatural.com (Zeabur redirects www to the apex), proxied by Cloudflare",
+    "Status RUNNING; HTTP 200 on 2026-10-06"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "experiencianatural.com",
+     "url": "https://experiencianatural.com"
+    }
+   ],
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json",
+    "/Users/brais/VSCODE/experiencianatural-home/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "vercel",
+   "label": "Vercel",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "Serverless host for two Next.js frontends: the FinView UI and ChatMemo.",
+   "details": [
+    "Two projects confirmed from docs: FinView frontend (fin-view-topaz.vercel.app) and ChatMemo (chatmemo-one.vercel.app); both returned HTTP 200 on 2026-10-06",
+    "Team scope appears as 'braisn-projects' in a ChatMemo preview URL",
+    "Both auto-deploy from Git on push to main and create preview deployments; previews are a merge barrier because GitHub branch protection is unavailable on the Free plan",
+    "heclient's README plans its control plane on Vercel; no deployment found",
+    "Not read live: no vercel CLI installed and this session's Vercel MCP exposes no list tools, so project names and plan are from docs"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Vercel",
+     "url": "https://vercel.com/dashboard"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/vercel.json",
+    "curl probes of both URLs"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "vercel-fin-view",
+   "label": "FinView frontend",
+   "kind": "project",
+   "parent": "vercel",
+   "summary": "Next.js 16 frontend of FinView; rewrites /api/* to the Cloud Run backend.",
+   "details": [
+    "URL https://fin-view-topaz.vercel.app (HTTP 200, 2026-10-06); connected to the FinView GitHub repo, branch main",
+    "Env var names: BACKEND_URL (read at build time by next.config.ts, redeploy after change), AUTH_SECRET, AUTH_TRUST_HOST, NEXTAUTH_URL, NEXT_PUBLIC_TURNSTILE_SITE_KEY, Stripe price ids",
+    "Ingestion API keys live only on Cloud Run, never in Vercel",
+    "Vercel project slug not verified (the topaz suffix is Vercel-generated)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Frontend",
+     "url": "https://fin-view-topaz.vercel.app"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "curl probe"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "vercel-chatmemo",
+   "label": "ChatMemo",
+   "kind": "project",
+   "parent": "vercel",
+   "summary": "Next.js 15 / React 19 ChatMemo app deployed on Vercel with Supabase as its backend.",
+   "details": [
+    "URL https://chatmemo-one.vercel.app (HTTP 200, 2026-10-06); repo br41s/chatmemo",
+    "vercel.json sets VERCEL_ANALYZE_BUILD_OUTPUT=1 so each build logs function sizes",
+    "2026-09: a deploy failed the 250 MB function limit (onnx binaries); fixed by hiding transformers behind an eval-hidden dynamic import (retrieval functions 365 MB to 7 MB)",
+    "CI backstop = husky pre-push hook plus the Vercel build (the GitHub Actions workflow was deleted at that time)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "ChatMemo",
+     "url": "https://chatmemo-one.vercel.app"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/vercel.json",
+    "/Users/brais/VSCODE/memories/decisions/chatmemo.md",
+    "curl probe"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "supabase",
+   "label": "Supabase",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "Hosted Postgres, Auth and Storage for ChatMemo.",
+   "details": [
+    "Free tier is sufficient per ChatMemo README; Row Level Security scopes data per user",
+    "A Mac LaunchAgent is meant to dump the summaries table nightly with pg_dump (currently failing, see the backup node)",
+    "Not in the canonical platform list; added because ChatMemo's data lives here; not read live"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/README.md",
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "gcp",
+   "label": "Google Cloud",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "Google Cloud account with six projects; only the FinView project runs production workloads (Cloud Run, Cloud Build, Cloud Scheduler, Artifact Registry).",
+   "details": [
+    "Projects (gcloud projects list, 2026-10-06): finview-brais-2026 (FinView), hermes-sandbox-brais (Hermes Sandbox), braisntext-stitch, sdmcaptcha-1743162787155 (SDMCaptcha) and two untitled 'My First Project' projects; only finview-brais-2026 is confirmed in use",
+    "gcloud is authenticated as the account owner; default project finview-brais-2026",
+    "Billing: one account-level budget with alerts at 50/90/100% covers every project; the free-trial credit expired 2026-07-18 (EUR 224 unused), after which the same usage cost real money",
+    "Billing was disabled on finview-brais-2026 from 2026-09-29 until 2026-10-02, so no container could start; restored and FinView redeployed",
+    "Cloud NAT rejected (~$32/mo for no benefit); GCP IP ranges are rate-limited or blocked by GDELT and airplanes.live",
+    "Hermes' deploy.sh --build fallback also uses gcloud builds submit (project not stated; default is finview-brais-2026)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Cloud console",
+     "url": "https://console.cloud.google.com/home/dashboard?project=finview-brais-2026"
+    }
+   ],
+   "sources": [
+    "gcloud projects list",
+    "gcloud config list",
+    "/Users/brais/VSCODE/memories/decisions/finview.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/hermes-sandbox/cloudbuild.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-project-finview-brais-2026",
+   "label": "finview-brais-2026 (GCP project)",
+   "kind": "project",
+   "parent": "gcp",
+   "summary": "GCP project named 'FinView' (number 748911075551) that hosts the whole FinView backend pipeline.",
+   "details": [
+    "Region of record europe-west1; buckets: <project>_cloudbuild, run-sources europe-west1 and run-sources europe-west3 (stale region)",
+    "Service accounts: github-actions-deployer (Cloud Build trigger identity), default compute SA, and drive-bot (probably the Drive-backup service account that the 2026-08-18 notes say was deleted; it is still listed and enabled); Workload Identity pool 'github' exists but no workflow uses it",
+    "The Hermes Drive-backup OAuth client (hermes-backup-desktop, Desktop type) is registered here; its consent screen was in Testing mode, so refresh tokens expired ~weekly (fixes 2026-08-07 and 2026-08-17)",
+    "Cloud Build and Artifact Registry fall outside the Cloud Run budget enforcement"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "gcloud iam service-accounts list",
+    "gcloud storage buckets list",
+    "gcloud iam workload-identity-pools list",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-project-hermes-sandbox-brais",
+   "label": "hermes-sandbox-brais (GCP project)",
+   "kind": "project",
+   "parent": "gcp",
+   "summary": "GCP project named 'Hermes Sandbox'; purpose not documented.",
+   "details": [
+    "Cloud Run Admin API is not enabled on it (PERMISSION_DENIED when listing services), so it runs no Cloud Run services",
+    "No Cloud Build triggers or Artifact Registry repos found; what uses it is unknown"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "gcloud projects list",
+    "gcloud run services list --project=hermes-sandbox-brais (error)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-cloud-run-finview-api",
+   "label": "Cloud Run: finview-api",
+   "kind": "service",
+   "parent": "gcp-project-finview-brais-2026",
+   "summary": "FastAPI backend of FinView on Cloud Run europe-west1, billed per request.",
+   "details": [
+    "Created 2026-04-20; revision finview-api-56eac97 serves 100% and is Ready (gcloud, 2026-10-06); /api/health returns 200",
+    "Flags: --cpu-throttling (request billing), min 0, max 1 instance, 1 GiB, 1800 s timeout, FINVIEW_ENV=production, FINVIEW_REQUEST_SCOPED_RUNTIME=true",
+    "Required env names: FINVIEW_DATABASE_URL, FINVIEW_AUTH_SECRET, FINVIEW_SECRET_KEY, FINVIEW_FRONTEND_URL, FINVIEW_CRON_SECRET, FINVIEW_OPENROUTER_API_KEY, FINVIEW_TURNSTILE_SECRET",
+    "Cron cadence halved 2026-10-01 to fit the 180,000 vCPU-s/month free tier (measured ~268k vCPU-s)",
+    "April 2026 incident: redeploying to a new service without replaying env vars gave a SQLite fallback and 'Invalid token'; replay env vars first"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "API",
+     "url": "https://finview-api-748911075551.europe-west1.run.app"
+    }
+   ],
+   "sources": [
+    "gcloud run services list/describe (narrow format, no env)",
+    "curl probe /api/health",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/feedback_cloud_run_env_vars.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-cloud-run-finview-backend",
+   "label": "Cloud Run: finview-backend (legacy)",
+   "kind": "service",
+   "parent": "gcp-project-finview-brais-2026",
+   "summary": "Older FinView Cloud Run service from April 2026 that still exists and reports Ready.",
+   "details": [
+    "Created 2026-04-19; revision finview-backend-00002-v58 at 100%, max 3 instances; unauthenticated requests get HTTP 403",
+    "Memory notes call finview-backend historical and say only finview-api is active, but it was still deployed on 2026-10-06",
+    "Whether anything still calls it, and whether it holds env vars or secrets, was not checked"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "gcloud run services list (name, Ready, revision)",
+    "curl probe",
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_finview_stack.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-cloud-build-finview-api-deploy",
+   "label": "Cloud Build trigger finview-api-deploy",
+   "kind": "service",
+   "parent": "gcp-project-finview-brais-2026",
+   "summary": "The only backend CI/CD for FinView: builds, canary-validates and promotes a Cloud Run revision on pushes to main.",
+   "details": [
+    "Trigger finview-api-deploy, GitHub App (1st gen), region global, repo br41s/FinView (gcloud, 2026-10-06)",
+    "Fires on pushes touching backend/**, scripts/**, Dockerfile, pyproject.toml or cloudbuild.yaml",
+    "cloudbuild.yaml: build, boot test on PORT=8080, candidate revision at 0% traffic, guard script, pause scheduler jobs, promote, readiness check, resume jobs; automatic rollback on failure",
+    "Runs as service account github-actions-deployer; building in 'global' pushes images to Europe over the internet (EUR 2.13 egress in two weeks)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Builds",
+     "url": "https://console.cloud.google.com/cloud-build/builds?project=finview-brais-2026"
+    }
+   ],
+   "sources": [
+    "gcloud builds triggers list",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-cloud-scheduler",
+   "label": "Cloud Scheduler (europe-west1)",
+   "kind": "service",
+   "parent": "gcp-project-finview-brais-2026",
+   "summary": "Production periodicity for FinView: four HTTP jobs that call the Cloud Run cron endpoints.",
+   "details": [
+    "All four jobs ENABLED (gcloud, 2026-10-06)",
+    "Authenticated with an X-Cron-Key header matched against FINVIEW_CRON_SECRET; attempt-deadline 1800 s, no retries",
+    "The Cloud Build rollout pauses the jobs before moving traffic and resumes them on exit; a failed promotion leaves them paused on purpose",
+    "In-process APScheduler is a dev convenience and dies with min instances 0"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "gcloud scheduler jobs list",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-geo-intel-cycle",
+   "label": "geo-intel-cycle",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job calling /api/geo/cron: hourly geopolitical ingest (halved from every 30 min on 2026-10-01).",
+   "details": [
+    "Schedule (UTC): 0 * * * *",
+    "State ENABLED on 2026-10-06 (gcloud)",
+    "Target /api/geo/cron on finview-api with X-Cron-Key authentication"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "gcloud scheduler jobs list --location=europe-west1",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-options-agent-cycle",
+   "label": "options-agent-cycle",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job calling /api/options/agent/cron: options monitor, EU and US market hours on weekdays.",
+   "details": [
+    "Schedule (UTC): */30 7-22 * * 1-5",
+    "State ENABLED on 2026-10-06 (gcloud)",
+    "Target /api/options/agent/cron on finview-api with X-Cron-Key authentication"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "gcloud scheduler jobs list --location=europe-west1",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-geo-intel-audit",
+   "label": "geo-intel-audit",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job calling /api/geo/audit: checkpoints and rule learning every 4 h.",
+   "details": [
+    "Schedule (UTC): 0 */4 * * *",
+    "State ENABLED on 2026-10-06 (gcloud)",
+    "Target /api/geo/audit on finview-api with X-Cron-Key authentication"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "gcloud scheduler jobs list --location=europe-west1",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-zonas-clave-cycle",
+   "label": "zonas-clave-cycle",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job calling /api/zonas-clave/cron: daily key-zones scoring after the NY close, also refreshes ECB/FRED/CNMV.",
+   "details": [
+    "Schedule (UTC): 15 22 * * 1-5",
+    "State ENABLED on 2026-10-06 (gcloud)",
+    "Target /api/zonas-clave/cron on finview-api with X-Cron-Key authentication"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "gcloud scheduler jobs list --location=europe-west1",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-artifact-registry",
+   "label": "Artifact Registry (cloud-run-source-deploy)",
+   "kind": "service",
+   "parent": "gcp-project-finview-brais-2026",
+   "summary": "Docker image store for FinView backend builds.",
+   "details": [
+    "Two repositories named cloud-run-source-deploy (gcloud shows no location); one image per commit",
+    "No cleanup policy as of the deployment doc (123 revisions then); storage is billed even when the service is idle; recommended: keep the last 10"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "gcloud artifacts repositories list",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "neon",
+   "label": "Neon",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "Serverless Postgres host; one production database, FinView's.",
+   "details": [
+    "Region eu-central-1 (AWS Frankfurt); production branch main; docs say Free plan with 7-day point-in-time recovery",
+    "Console https://console.neon.tech; no neon CLI installed, so nothing was read live",
+    "Connections need sslmode=require and channel_binding=require"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Neon console",
+     "url": "https://console.neon.tech"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "neon-finview",
+   "label": "FinView production DB (neondb)",
+   "kind": "database",
+   "parent": "neon",
+   "summary": "FinView's production Postgres database.",
+   "details": [
+    "Database neondb on branch main; schema created by SQLAlchemy create_all at startup, no Alembic (destructive changes need a manual script)",
+    "Revision startup runs the SQL init, so a Ready Cloud Run revision implies Neon is reachable",
+    "Backups: Neon PITR 7 days; point-in-time pg_dump files finview-YYYYMMDD-HHMMSS.dump sit untracked in the FinView repo (two dated 2026-04-18 present locally)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "ls /Users/brais/VSCODE/FinView"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "cloudflare",
+   "label": "Cloudflare",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "DNS and proxy for experiencianatural.com, plus the Turnstile captcha used across Brais's apps.",
+   "details": [
+    "experiencianatural.com uses Cloudflare nameservers and its apex/www resolve to Cloudflare edge addresses, i.e. proxied (dig, 2026-10-06); SSL mode Full (not strict) per the 2026-09-27 decision",
+    "Reason for the proxy: Zeabur's HTTP/3 edge stalled Safari; via Cloudflare 4/4 runs were clean",
+    "Decision 2026-09-27: BigLobster apps live as subdomains of experiencianatural.com and are marketed from biglobster.top; email forwarding on experiencianatural.com 'untouched' (provider not stated)",
+    "agenda.experiencianatural.com was detached 2026-10-03 and no longer resolves",
+    "Turnstile widgets protect logins/forms in FinView, SocialAgenda, BigLobster, grow-shop-api and bl-site-package",
+    "The DNS of customer domain shoroban.com is also on Cloudflare, most likely the customer's own account (inferred)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Cloudflare dashboard",
+     "url": "https://dash.cloudflare.com"
+    }
+   ],
+   "sources": [
+    "dig NS/A experiencianatural.com",
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "/Users/brais/VSCODE/experiencianatural-home/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "namecheap",
+   "label": "Namecheap DNS",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "DNS provider (and presumably registrar) for biglobster.top and grow-shop.com.",
+   "details": [
+    "Both domains use registrar-servers.com nameservers (dig NS, 2026-10-06), which is Namecheap's DNS",
+    "Records point straight at the Zeabur Frankfurt server with no proxy; www.biglobster.top is a CNAME to biglobster.zeabur.app",
+    "biglobster.top was rejected for SocialAgenda's first public address on 2026-09-27: the .top TLD hurts email-link deliverability (since reversed on 2026-10-03)",
+    "Not in the canonical platform list; added because two domains depend on it. Registrar status is not verified, only the DNS"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "dig NS biglobster.top / grow-shop.com",
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "github",
+   "label": "GitHub",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "Source host for every project; also triggers Zeabur, Vercel and Cloud Build deploys and builds Hermes' container image.",
+   "details": [
+    "Account br41s (gh CLI logged in) with 29 repos, mostly private; Zeabur's older deployment records and some docs still use the previous handle braisntext (a rename, inferred)",
+    "Org Shambhala-Bangkok owns one public repo, shambhalaBangkok",
+    "GitHub Actions DOES run: CI workflows succeeded on FinView and biglobster on 2026-10-06 and hermes-sandbox workflows ran; this contradicts the memory note project_github_no_actions.md (2026-09-10) and a comment in hermes-sandbox/cloudbuild.yaml",
+    "Branch protection is unavailable on the Free plan, so a red check is a signal, not a barrier",
+    "Integrations: Zeabur GitHub app, Vercel, Cloud Build GitHub App (1st gen), GitHub OAuth for the Hermes panel, GitHub webhooks to Hermes' auditor"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "GitHub",
+     "url": "https://github.com/br41s"
+    }
+   ],
+   "sources": [
+    "gh repo list br41s --limit 100",
+    "gh repo list Shambhala-Bangkok",
+    "gh run list -R br41s/FinView, biglobster, hermes-sandbox",
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_github_no_actions.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "github-ghcr",
+   "label": "GitHub Container Registry",
+   "kind": "service",
+   "parent": "github",
+   "summary": "Registry that holds the Hermes engine image pulled by Zeabur.",
+   "details": [
+    "Image ghcr.io/br41s/hermes-sandbox with tags latest and sha-<9-char commit>; built by .github/workflows/ghcr-publish.yml on every push to main",
+    "The package needs the repo added with role Write in 'Manage Actions access'; repo-level workflow permissions are not enough",
+    "deploy.sh --build falls back to Cloud Build and pushes with a personal token"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md",
+    "/Users/brais/VSCODE/hermes-sandbox/cloudbuild.yaml"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "plesk",
+   "label": "Plesk (customer hosting)",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "Shoroban's own Plesk/Passenger hosting (Debian, Node 22), where the first paying customer's bl-site-package runs; not Brais's server.",
+   "details": [
+    "Operated through the Plesk panel with no SSH: Git pull, Restart App and Node settings replace the runbook's shell steps",
+    "Hosting provider is not named in the docs; it is Spanish, and it geo-blocked the old Jakarta egress IP, one reason for the Frankfurt move",
+    "Customer environments differ from each other, so each is verified separately; staging prueba.shoroban.com was retired 2026-09-10"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/RELEASE.md",
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "plesk-shoroban",
+   "label": "shoroban-prod (bl-site-package)",
+   "kind": "service",
+   "parent": "plesk",
+   "summary": "Production bl-site-package instance for customer Shoroban, ~14,500 catalogue pages.",
+   "details": [
+    "Fleet manifest: id shoroban-prod, role production, host plesk-passenger, driver manual, Hermes profile shoroban; production since 2026-08-19",
+    "Deploy is manual: pull in the panel, restart Passenger; 'Plesk shows the commit' does not prove the new code is running",
+    "bl-site-package 1.15.0 merged 2026-10-03 but not deployed here (Brais chose 'merge, no Plesk')",
+    "A curl from this Mac timed out on 2026-10-06, consistent with the Spanish geo-block (unverified); status therefore from docs"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
+    "/Users/brais/VSCODE/bl-site-package/RELEASE.md",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
+    "curl probe (timeout)"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-cron-job-org",
+   "label": "cron-job.org",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "External scheduler that triggers FlyWell's two protected webhooks.",
+   "details": [
+    "FlyWell has no internal clock; cron-job.org calls the protected webhooks on a schedule (CRON_SHARED_SECRET on flywell-web)",
+    "Added by the hosting mapper; the FlyWell mapper may also create it"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-biglobster-top",
+   "label": "biglobster.top",
+   "kind": "domain",
+   "parent": "namecheap",
+   "summary": "Main brand domain: marketing site and the legal reference for every app.",
+   "details": [
+    "Zeabur custom domain on biglobster-osee, PROVISIONED; www 301s to the apex; HTTP 200",
+    "Legal owner: Biglobster LLC (New Mexico); every project links here (decision 2026-10-02)",
+    "Hosts the subdomains socialagenda. and flywell."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "biglobster.top",
+     "url": "https://biglobster.top"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-socialagenda-biglobster-top",
+   "label": "socialagenda.biglobster.top",
+   "kind": "domain",
+   "parent": "namecheap",
+   "summary": "Public address of SocialAgenda since 2026-10-03.",
+   "details": [
+    "Zeabur custom domain on SocialAgenda web; DNS at Namecheap straight to Zeabur, no Cloudflare proxy; Turnstile hostname added",
+    "Replaced agenda.experiencianatural.com"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "socialagenda.biglobster.top",
+     "url": "https://socialagenda.biglobster.top"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "/Users/brais/VSCODE/SocialAgenda/tasks/todo.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-flywell-biglobster-top",
+   "label": "flywell.biglobster.top",
+   "kind": "domain",
+   "parent": "namecheap",
+   "summary": "Public address of FlyWell.",
+   "details": [
+    "Zeabur custom domain on flywell-web; HTTP 307 to /login"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "flywell.biglobster.top",
+     "url": "https://flywell.biglobster.top"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-grow-shop-com",
+   "label": "grow-shop.com",
+   "kind": "domain",
+   "parent": "namecheap",
+   "summary": "Domain that is itself for sale; its landing page is on Zeabur.",
+   "details": [
+    "Zeabur custom domain on grow-shop-landing; HTTP 200"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "grow-shop.com",
+     "url": "https://grow-shop.com"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-experiencianatural-com",
+   "label": "experiencianatural.com",
+   "kind": "domain",
+   "parent": "cloudflare",
+   "summary": "Home of the experiencianatural page; the planned parent for BigLobster app subdomains.",
+   "details": [
+    "Cloudflare DNS, proxied (orange cloud); Zeabur custom domain on 'home'; www redirects to the apex",
+    "Email forwarding is set up at the domain and was left untouched"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "experiencianatural.com",
+     "url": "https://experiencianatural.com"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-agenda-experiencianatural-com",
+   "label": "agenda.experiencianatural.com",
+   "kind": "domain",
+   "parent": "cloudflare",
+   "summary": "Former SocialAgenda address behind Cloudflare, detached 2026-10-03.",
+   "details": [
+    "Introduced 2026-09-27 to avoid Zeabur's HTTP/3 Safari stalls; no redirect was kept (never indexed)",
+    "dig returns no record today"
+   ],
+   "status": "retired",
+   "links": [],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-shoroban-com",
+   "label": "shoroban.com",
+   "kind": "domain",
+   "parent": "cloudflare",
+   "summary": "Customer Shoroban's production domain served from Plesk.",
+   "details": [
+    "Nameservers are Cloudflare's, probably in the customer's account (inferred)",
+    "Production domain since 2026-08-19; connection from this Mac timed out on 2026-10-06"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "shoroban.com",
+     "url": "https://shoroban.com"
+    }
+   ],
+   "sources": [
+    "dig NS shoroban.com",
+    "/Users/brais/VSCODE/bl-site-package/RELEASE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-blhermes-zeabur-app",
+   "label": "blhermes.zeabur.app",
+   "kind": "domain",
+   "parent": "zeabur",
+   "summary": "Zeabur-generated address: Hermes panel (GitHub/Nous OAuth login); HTTP 302 to the login page.",
+   "details": [
+    "Generated domain, PROVISIONED; port dashboard 9119"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "blhermes.zeabur.app",
+     "url": "https://blhermes.zeabur.app"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-hermes-webhook-zeabur-app",
+   "label": "hermes-webhook.zeabur.app",
+   "kind": "domain",
+   "parent": "zeabur",
+   "summary": "Zeabur-generated address: Hermes webhook port; HTTP 404 at the root.",
+   "details": [
+    "Generated domain, PROVISIONED; port webhook 8644"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "hermes-webhook.zeabur.app",
+     "url": "https://hermes-webhook.zeabur.app"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-bl-chatwoot-zeabur-app",
+   "label": "bl-chatwoot.zeabur.app",
+   "kind": "domain",
+   "parent": "zeabur",
+   "summary": "Zeabur-generated address: Chatwoot web; HTTP 200.",
+   "details": [
+    "Generated domain, PROVISIONED; port web 3000"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "bl-chatwoot.zeabur.app",
+     "url": "https://bl-chatwoot.zeabur.app"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-bl-whatsapp-bot-zeabur-app",
+   "label": "bl-whatsapp-bot.zeabur.app",
+   "kind": "domain",
+   "parent": "zeabur",
+   "summary": "Zeabur-generated address: WhatsApp lead bot endpoint; HTTP 404 at the root.",
+   "details": [
+    "Generated domain, PROVISIONED; port web 8080"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "bl-whatsapp-bot.zeabur.app",
+     "url": "https://bl-whatsapp-bot.zeabur.app"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-blcliente-zeabur-app",
+   "label": "blcliente.zeabur.app",
+   "kind": "domain",
+   "parent": "zeabur",
+   "summary": "Zeabur-generated address: bl-site-package reference instance; HTTP 200.",
+   "details": [
+    "Generated domain, PROVISIONED; port web 8080"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "blcliente.zeabur.app",
+     "url": "https://blcliente.zeabur.app"
+    }
+   ],
+   "sources": [
+    "dig NS/A/CNAME (2026-10-06)",
+    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-fin-view-topaz-vercel-app",
+   "label": "fin-view-topaz.vercel.app",
+   "kind": "domain",
+   "parent": "vercel",
+   "summary": "Public URL of FinView; there is no custom domain.",
+   "details": [
+    "HTTP 200 on 2026-10-06"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "fin-view-topaz.vercel.app",
+     "url": "https://fin-view-topaz.vercel.app"
+    }
+   ],
+   "sources": [
+    "curl probe",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "domain-chatmemo-one-vercel-app",
+   "label": "chatmemo-one.vercel.app",
+   "kind": "domain",
+   "parent": "vercel",
+   "summary": "Public URL of ChatMemo.",
+   "details": [
+    "HTTP 200 on 2026-10-06"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "chatmemo-one.vercel.app",
+     "url": "https://chatmemo-one.vercel.app"
+    }
+   ],
+   "sources": [
+    "curl probe",
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-hook-zeabur-guard",
+   "label": "Zeabur destructive-verb guardrail",
+   "kind": "hook",
+   "parent": "cc-hooks",
+   "summary": "Global Claude Code hook and deny rules that block the six Zeabur CLI verbs that delete infrastructure or spend money.",
+   "details": [
+    "Hook script ~/.claude/hooks/block-zeabur-destructive.sh exists; settings.json mentions zeabur 26 times (deny rules plus the PreToolUse hook)",
+    "Blocked: deleting a project or a service, renting a server, purchasing or renewing a domain, adding AI Hub balance; the regex scans the whole command so bash -c, pinned npx versions and bare zeabur are caught",
+    "Fires even for allow-listed 'zeabur project *' and 'zeabur service *'; do not disable it: it is the primary spend and delete control on a personal account",
+    "A redundant copy is said to live in biglobster/.claude/settings.json (not checked)",
+    "It also fires on any shell command whose text merely contains those verbs, e.g. a script that documents them"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_zeabur_guardrail.md",
+    "ls ~/.claude/hooks",
+    "grep -c zeabur ~/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "backup-zeabur-exports",
+   "label": "Zeabur template exports (~/Backups/zeabur)",
+   "kind": "config",
+   "parent": "layer-hosting",
+   "summary": "Dated Zeabur project template exports, with variable values, kept on the Mac and in Drive: the only off-server copy of env vars and config files.",
+   "details": [
+    "Directories 2026-10-05 and 2026-10-06, each with six YAMLs: hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural (B_Browser is not exported)",
+    "The 2026-10-05 set was also copied to Google Drive (My Drive/Backups/zeabur/2026-10-05) with identical checksums; unencrypted by Brais's choice",
+    "zeabur_export_stream.py streams exports into a gpg pipe; only the .sha256 of that encrypted archive remains on disk",
+    "Refresh after any variable change: Zeabur keeps no copy after the service-data migration"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "ls -la ~/Backups/zeabur",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "backup-volumes-host",
+   "label": "Host-side volume dump (backup-volumes.sh)",
+   "kind": "cron-job",
+   "parent": "zeabur-frankfurt",
+   "summary": "Root script on the Frankfurt host that dumps every other project's data volume and uploads it to Google Drive.",
+   "details": [
+    "Dumps: pg_dumpall for the Chatwoot, SocialAgenda and FlyWell Postgres, Redis SAVE, BigLobster sentinel SQLite via the backup API, tars of the idle Chrome/CDP volumes",
+    "Stages root-only in /var/backups/volumes/<stamp>, uploads with the host's own rclone to hermesdrive:/VolumeBackups/<stamp> and fails unless rclone check passes",
+    "First run 2026-10-06 (192 MB, all dumps verified); PR hermes-sandbox#415 merged 2026-10-06",
+    "A nightly 02:00 UTC /etc/cron.d entry is committed on branch ops/schedule-volume-backups but not on main in the local clone; install on the host not verified",
+    "No retention yet and nothing pages on failure; the Drive folder is unencrypted by choice and readable with the container's OAuth token"
+   ],
+   "status": "planned",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/backup-volumes.sh",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/backup-volumes-cron.sh",
+    "git log in hermes-sandbox",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "backup-drive-hermesbackups",
+   "label": "Drive: HermesBackups",
+   "kind": "external",
+   "parent": "ext-google-drive",
+   "summary": "Google Drive folder holding the nightly Hermes full-backup zip (about 3 GB).",
+   "details": [
+    "Job 3f6f866ce1af (no agent) runs backup-full.sh, zips /opt/data with 'hermes backup', keeps the newest zips and mirrors the newest with rclone",
+    "Drive OAuth refresh token expired twice (2026-08-07, 2026-08-17) because the consent screen was in Testing mode; a service account was ruled out (needs paid Workspace)",
+    "Until the 2026-10-06 fix, 7 of 10 nights (Sep 28 to Oct 6) had no backup because the script deleted a zip that was complete"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "backup-drive-volumebackups",
+   "label": "Drive: VolumeBackups",
+   "kind": "external",
+   "parent": "ext-google-drive",
+   "summary": "Google Drive folder receiving the host-side volume dumps, one stamp per run.",
+   "details": [
+    "Receives hermesdrive:/VolumeBackups/<stamp> from backup-volumes.sh",
+    "Unencrypted by decision 2026-10-06 (rclone crypt rejected so a restore never depends on a key that can be lost)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "mac-backup-chatmemo",
+   "label": "ChatMemo nightly backup (LaunchAgent)",
+   "kind": "cron-job",
+   "parent": "layer-hosting",
+   "summary": "Mac LaunchAgent that should dump ChatMemo's summaries table from Supabase every night at 03:00; it is failing.",
+   "details": [
+    "Label com.chatmemo.backup runs /Users/brais/scripts/backup-chatmemo.sh; that path does not exist, and backup.err repeats 'No such file' (latest 2026-10-06 03:00); backup.log is empty since 2026-05-29",
+    "The script in the repo (chatmemo/scripts/backup-chatmemo.sh) carries a placeholder password and writes to ~/backups/chatmemo",
+    "No other Supabase backup is mentioned in the docs"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "~/Library/LaunchAgents/com.chatmemo.backup.plist",
+    "~/Backups/chatmemo/backup.err",
+    "/Users/brais/VSCODE/chatmemo/scripts/backup-chatmemo.sh"
+   ],
+   "confidence": "verified"
+  }
+ ],
+ "edges": [
+  {
+   "source": "zb-hermes-eu",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "runs on",
+   "sources": [
+    "zeabur project list -i=false --json (Region field)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-grow-shop",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "runs on",
+   "sources": [
+    "zeabur project list -i=false --json (Region field)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-social-agenda",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "runs on",
+   "sources": [
+    "zeabur project list -i=false --json (Region field)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-biglobster",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "runs on",
+   "sources": [
+    "zeabur project list -i=false --json (Region field)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-flywell",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "runs on",
+   "sources": [
+    "zeabur project list -i=false --json (Region field)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-experiencianatural",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "runs on",
+   "sources": [
+    "zeabur project list -i=false --json (Region field)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-b-browser",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "runs on",
+   "sources": [
+    "zeabur project list -i=false --json (Region field)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "gcp-scheduler-geo-intel-cycle",
+   "target": "gcp-cloud-run-finview-api",
+   "kind": "calls",
+   "label": "POST /api/geo/cron",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-scheduler-options-agent-cycle",
+   "target": "gcp-cloud-run-finview-api",
+   "kind": "calls",
+   "label": "POST /api/options/agent/cron",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-scheduler-geo-intel-audit",
+   "target": "gcp-cloud-run-finview-api",
+   "kind": "calls",
+   "label": "POST /api/geo/audit",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-scheduler-zonas-clave-cycle",
+   "target": "gcp-cloud-run-finview-api",
+   "kind": "calls",
+   "label": "POST /api/zonas-clave/cron",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github",
+   "target": "zb-grow-shop-api",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "zb-grow-shop-landing",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "zb-social-agenda-web",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "zb-social-agenda-scheduler",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "zb-biglobster-osee",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "zb-biglobster-bl-site-package",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "zb-flywell-web",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "zb-flywell-fli",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "zb-experiencianatural-home",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json",
+    "zeabur deployment list --service-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "vercel-fin-view",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github",
+   "target": "vercel-chatmemo",
+   "kind": "deploys",
+   "label": "push to main auto-deploys",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github",
+   "target": "gcp-cloud-build-finview-api-deploy",
+   "kind": "deploys",
+   "label": "push to main triggers the build",
+   "sources": [
+    "gcloud builds triggers list"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github-ghcr",
+   "target": "zb-hermes-eu-hermes",
+   "kind": "deploys",
+   "label": "image pulled by pinned sha tag",
+   "sources": [
+    "zeabur project export (image field)",
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "domain-hermes-webhook-zeabur-app",
+   "kind": "calls",
+   "label": "auditor PR webhooks",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "inferred",
+   "note": "Which generated domain receives the GitHub webhooks was not confirmed; this one maps to the webhook port 8644"
+  },
+  {
+   "source": "hermes",
+   "target": "zb-hermes-eu",
+   "kind": "deployed-on",
+   "label": "Hermes runs in project hermes-eu",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md",
+    "zeabur service list --project-id <id> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "claude-code",
+   "target": "zeabur",
+   "kind": "manages",
+   "label": "zeabur CLI: list/get/export; destructive verbs hook-blocked",
+   "sources": [
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_zeabur_guardrail.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-hook-zeabur-guard",
+   "target": "zeabur",
+   "kind": "controls",
+   "label": "blocks 6 destructive/spend verbs",
+   "sources": [
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_zeabur_guardrail.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-heclient",
+   "target": "zeabur",
+   "kind": "manages",
+   "label": "README: provisions customer Zeabur services via API",
+   "sources": [
+    "/Users/brais/VSCODE/heclient/README.md"
+   ],
+   "confidence": "from-docs",
+   "note": "MVP plan; deployment status not verified"
+  },
+  {
+   "source": "zb-social-agenda-web",
+   "target": "proj-socialagenda",
+   "kind": "serves",
+   "label": "serves web UI and API",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-social-agenda-scheduler",
+   "target": "proj-socialagenda",
+   "kind": "serves",
+   "label": "sends reminders and alerts",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-flywell-web",
+   "target": "proj-flywell",
+   "kind": "serves",
+   "label": "serves the app",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-flywell-fli",
+   "target": "proj-flywell",
+   "kind": "serves",
+   "label": "flight search backend",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-biglobster-osee",
+   "target": "proj-biglobster",
+   "kind": "serves",
+   "label": "serves site and legacy backend",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-biglobster-bl-site-package",
+   "target": "proj-bl-site-package",
+   "kind": "serves",
+   "label": "staging/reference instance",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "plesk-shoroban",
+   "target": "proj-bl-site-package",
+   "kind": "serves",
+   "label": "customer production instance",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "zb-grow-shop-api",
+   "target": "proj-grow-shop",
+   "kind": "serves",
+   "label": "offer-email API",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-grow-shop-landing",
+   "target": "proj-grow-shop",
+   "kind": "serves",
+   "label": "landing page",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-experiencianatural-home",
+   "target": "proj-experiencianatural-home",
+   "kind": "serves",
+   "label": "serves the home page",
+   "sources": [
+    "zeabur service get --id <id> --env-id <env> -i=false --json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview",
+   "target": "vercel-fin-view",
+   "kind": "deployed-on",
+   "label": "frontend",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-finview",
+   "target": "gcp-cloud-run-finview-api",
+   "kind": "deployed-on",
+   "label": "backend",
+   "sources": [
+    "gcloud run services list",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview",
+   "target": "neon-finview",
+   "kind": "stores-in",
+   "label": "production Postgres",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-chatmemo",
+   "target": "vercel-chatmemo",
+   "kind": "deployed-on",
+   "label": "app",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-chatmemo",
+   "target": "supabase",
+   "kind": "stores-in",
+   "label": "Postgres, Auth, Storage",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "vercel-fin-view",
+   "target": "gcp-cloud-run-finview-api",
+   "kind": "calls",
+   "label": "rewrites /api/* to BACKEND_URL",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-cloud-run-finview-api",
+   "target": "neon-finview",
+   "kind": "stores-in",
+   "label": "FINVIEW_DATABASE_URL",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-cloud-build-finview-api-deploy",
+   "target": "gcp-cloud-run-finview-api",
+   "kind": "deploys",
+   "label": "candidate at 0%, guard, promote, rollback",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-cloud-build-finview-api-deploy",
+   "target": "gcp-artifact-registry",
+   "kind": "writes",
+   "label": "pushes the image",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-cloud-build-finview-api-deploy",
+   "target": "gcp-cloud-scheduler",
+   "kind": "controls",
+   "label": "pauses jobs before traffic move, resumes after",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-cloud-run-finview-api",
+   "target": "gcp-artifact-registry",
+   "kind": "reads",
+   "label": "runs images from here",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-cloud-run-finview-api",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "FINVIEW_OPENROUTER_API_KEY",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-cloud-run-finview-api",
+   "target": "ext-turnstile",
+   "kind": "depends-on",
+   "label": "login captcha (FINVIEW_TURNSTILE_SECRET)",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "zb-social-agenda-web",
+   "target": "zb-social-agenda-postgresql",
+   "kind": "stores-in",
+   "label": "DATABASE_URL",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified",
+   "note": "env var name present; target host assumed to be the sibling Postgres"
+  },
+  {
+   "source": "zb-social-agenda-scheduler",
+   "target": "zb-social-agenda-postgresql",
+   "kind": "stores-in",
+   "label": "DATABASE_URL",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-flywell-web",
+   "target": "zb-flywell-postgresql",
+   "kind": "stores-in",
+   "label": "DATABASE_URL",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-flywell-web",
+   "target": "zb-flywell-fli",
+   "kind": "calls",
+   "label": "FLI_BASE_URL",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/FlyWell/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "ext-cron-job-org",
+   "target": "zb-flywell-web",
+   "kind": "calls",
+   "label": "scheduled webhooks (CRON_SHARED_SECRET)",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "zb-hermes-eu-rails",
+   "target": "zb-hermes-eu-postgresql",
+   "kind": "stores-in",
+   "label": "Chatwoot database",
+   "sources": [
+    "Chatwoot stack layout"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "zb-hermes-eu-rails",
+   "target": "zb-hermes-eu-redis",
+   "kind": "depends-on",
+   "label": "cache and queues",
+   "sources": [
+    "Chatwoot stack layout"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "zb-hermes-eu-sidekiq",
+   "target": "zb-hermes-eu-redis",
+   "kind": "depends-on",
+   "label": "job queue",
+   "sources": [
+    "Chatwoot stack layout"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "zb-hermes-eu-sidekiq",
+   "target": "zb-hermes-eu-postgresql",
+   "kind": "stores-in",
+   "label": "jobs read/write Chatwoot DB",
+   "sources": [
+    "Chatwoot stack layout"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "zb-hermes-eu-whatsapp-lead-bot",
+   "target": "zb-hermes-eu-rails",
+   "kind": "calls",
+   "label": "CHATWOOT_BASE_URL agent bot",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "inferred",
+   "note": "only the env var name was seen"
+  },
+  {
+   "source": "zb-hermes-eu-whatsapp-lead-bot",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "OPENROUTER_API_KEY, VISITOR_AGENT_MODEL",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-hermes-eu-hermes",
+   "target": "zb-hermes-eu-hermes-data",
+   "kind": "stores-in",
+   "label": "volume /opt/data",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-hermes-eu-hermes",
+   "target": "ext-telegram",
+   "kind": "notifies",
+   "label": "TELEGRAM_BOT_TOKEN gateway",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-biglobster-osee",
+   "target": "zb-biglobster-osee-data",
+   "kind": "stores-in",
+   "label": "volume /app/data (sentinel.db)",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-biglobster-osee",
+   "target": "hermes",
+   "kind": "calls",
+   "label": "HERMES_PANEL_URL / HERMES_CALLBACK_SECRET",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "zb-biglobster-osee",
+   "target": "ext-brevo",
+   "kind": "notifies",
+   "label": "BREVO_API_KEY / SMTP",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-biglobster-osee",
+   "target": "ext-turnstile",
+   "kind": "depends-on",
+   "label": "contact form captcha",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-biglobster-osee",
+   "target": "ext-telegram",
+   "kind": "notifies",
+   "label": "TELEGRAM_BOT_TOKEN",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-social-agenda-web",
+   "target": "ext-brevo",
+   "kind": "notifies",
+   "label": "BREVO_API_KEY magic-link email",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-social-agenda-web",
+   "target": "ext-turnstile",
+   "kind": "depends-on",
+   "label": "login captcha",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-social-agenda-web",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "OPENROUTER_API_KEY",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-grow-shop-api",
+   "target": "ext-turnstile",
+   "kind": "depends-on",
+   "label": "offer form captcha",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "zb-flywell-web",
+   "target": "ext-telegram",
+   "kind": "notifies",
+   "label": "TELEGRAM_BOT_TOKEN",
+   "sources": [
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cloudflare",
+   "target": "ext-turnstile",
+   "kind": "serves",
+   "label": "Turnstile widgets and verification",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes",
+   "target": "plesk-shoroban",
+   "kind": "calls",
+   "label": "Shoroban profile publishes content via panel API",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes",
+   "target": "zb-biglobster-bl-site-package",
+   "kind": "calls",
+   "label": "bl-site-package profile, BL_SITE_AUTOMATION_KEY",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-biglobster-top",
+   "target": "zb-biglobster-osee",
+   "kind": "routes-to",
+   "label": "A record to Zeabur; Zeabur custom domain",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-socialagenda-biglobster-top",
+   "target": "zb-social-agenda-web",
+   "kind": "routes-to",
+   "label": "DNS straight to Zeabur",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-flywell-biglobster-top",
+   "target": "zb-flywell-web",
+   "kind": "routes-to",
+   "label": "DNS straight to Zeabur",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-grow-shop-com",
+   "target": "zb-grow-shop-landing",
+   "kind": "routes-to",
+   "label": "DNS straight to Zeabur",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-experiencianatural-com",
+   "target": "zb-experiencianatural-home",
+   "kind": "routes-to",
+   "label": "via Cloudflare proxy",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-blhermes-zeabur-app",
+   "target": "zb-hermes-eu-hermes",
+   "kind": "routes-to",
+   "label": "dashboard port 9119",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-hermes-webhook-zeabur-app",
+   "target": "zb-hermes-eu-hermes",
+   "kind": "routes-to",
+   "label": "webhook port 8644",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-bl-chatwoot-zeabur-app",
+   "target": "zb-hermes-eu-rails",
+   "kind": "routes-to",
+   "label": "web port 3000",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-bl-whatsapp-bot-zeabur-app",
+   "target": "zb-hermes-eu-whatsapp-lead-bot",
+   "kind": "routes-to",
+   "label": "web port 8080",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-blcliente-zeabur-app",
+   "target": "zb-biglobster-bl-site-package",
+   "kind": "routes-to",
+   "label": "web port 8080",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "domain-shoroban-com",
+   "target": "plesk-shoroban",
+   "kind": "routes-to",
+   "label": "customer DNS to Plesk host",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-fin-view-topaz-vercel-app",
+   "target": "vercel-fin-view",
+   "kind": "routes-to",
+   "label": "Vercel-assigned URL",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-chatmemo-one-vercel-app",
+   "target": "vercel-chatmemo",
+   "kind": "routes-to",
+   "label": "Vercel-assigned URL",
+   "sources": [
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "dig"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "zeabur",
+   "target": "backup-zeabur-exports",
+   "kind": "backs-up-to",
+   "label": "project export with values, manual",
+   "sources": [
+    "ls ~/Backups/zeabur",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "backup-zeabur-exports",
+   "target": "ext-google-drive",
+   "kind": "backs-up-to",
+   "label": "2026-10-05 snapshot copied",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes",
+   "target": "backup-drive-hermesbackups",
+   "kind": "backs-up-to",
+   "label": "nightly zip of /opt/data",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "zb-social-agenda-postgresql",
+   "kind": "reads",
+   "label": "dump of the project volume",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "zb-flywell-postgresql",
+   "kind": "reads",
+   "label": "dump of the project volume",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "zb-hermes-eu-postgresql",
+   "kind": "reads",
+   "label": "dump of the project volume",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "zb-hermes-eu-redis",
+   "kind": "reads",
+   "label": "dump of the project volume",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "zb-biglobster-osee-data",
+   "kind": "reads",
+   "label": "dump of the project volume",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "backup-drive-volumebackups",
+   "kind": "backs-up-to",
+   "label": "rclone upload, verified with rclone check",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "mac-backup-chatmemo",
+   "target": "supabase",
+   "kind": "reads",
+   "label": "pg_dump of the summaries table",
+   "sources": [
+    "~/Library/LaunchAgents/com.chatmemo.backup.plist"
+   ],
+   "confidence": "verified",
+   "note": "fails: script path missing"
+  },
+  {
+   "source": "gcp-project-finview-brais-2026",
+   "target": "backup-drive-hermesbackups",
+   "kind": "configures",
+   "label": "hosts the Drive OAuth client used by rclone",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs",
+   "note": "client id carries this project's number; consent screen in Testing mode as of 2026-08-17"
+  }
+ ]
+}

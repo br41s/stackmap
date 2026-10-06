@@ -1,0 +1,2489 @@
+{
+ "nodes": [
+  {
+   "id": "biglobster-llc",
+   "label": "Biglobster LLC",
+   "kind": "config",
+   "parent": "layer-products",
+   "summary": "Legal owner (New Mexico LLC) of every app and site in the workspace; biglobster.top legal pages are the reference identity that apps link to.",
+   "details": [
+    "Decision 2026-10-02: all apps and sites belong to Biglobster LLC; each project links to biglobster.top for legal identification (art. 3.2 GDPR, no EU representative designated, Thailand transfer declared, New Mexico governing law, version log).",
+    "Exception (2026-10-02): customer deploys of bl-site-package put the customer as legal owner under Spanish law; Biglobster is not named on their legal pages.",
+    "Company data lives in biglobster/site/_data/site.json (legalName, address, registration); not copied here.",
+    "Apps that state this owner in code: FinView (frontend/src/lib/legal.ts), SocialAgenda (social_agenda/legal.py), FlyWell (apps/web/src/lib/legal.ts)."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "biglobster.top",
+     "url": "https://biglobster.top"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/biglobster/site/_data/site.json",
+    "/Users/brais/VSCODE/FinView/frontend/src/lib/legal.ts",
+    "/Users/brais/VSCODE/SocialAgenda/social_agenda/legal.py",
+    "/Users/brais/VSCODE/FlyWell/apps/web/src/lib/legal.ts"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-finview",
+   "label": "FinView",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Personal investment dashboard: multi-broker import, Spanish IRPF fiscal engine (FIFO), options monitor with LLM analysis, and geopolitical 'Ideas' signals.",
+   "details": [
+    "Brokers imported: Trade Republic, DEGIRO, Interactive Brokers, ING, BBVA, eToro (PDF/CSV/XLSX parsers).",
+    "Stack: FastAPI (Python 3.12) + SQLAlchemy backend, Next.js 16 / React 19 / TypeScript frontend (NextAuth, shadcn/ui, Recharts).",
+    "Prod: Vercel frontend + Cloud Run europe-west1 backend + Neon Postgres; backend CI/CD is a Cloud Build trigger (candidate-first deploy with rollback).",
+    "Open registration with stored terms consent; data-not-advice rule enforced in prompts and UI (2026-10-02). Owner on legal pages: Biglobster LLC.",
+    "Tests (2026-10-05): ~1420 backend pytest, 148 frontend vitest.",
+    "Absorbed OptionsAI (options agent, fiscal engine, importers) and WorldHawk (geo-intel signal layer, ported to Python 2026-06 onward).",
+    "Latest work (2026-10-05/06): options alert dedup moved to DB, generative answers persisted, reasoning off on LLM calls."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/FinView"
+    },
+    {
+     "label": "Frontend",
+     "url": "https://fin-view-topaz.vercel.app"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/CLAUDE.md",
+    "/Users/brais/VSCODE/FinView/README.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/memories/decisions/finview.md",
+    "/Users/brais/VSCODE/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-finview-frontend",
+   "label": "FinView frontend",
+   "kind": "service",
+   "parent": "proj-finview",
+   "summary": "Next.js 16 app (dashboard, portfolio, options, Zonas Clave, Ideas/geo-intel, alt-investments, blog, legal, pricing, login/register).",
+   "details": [
+    "Browser calls /api/*; Next rewrites forward to BACKEND_URL (Cloud Run). NextAuth routes stay in Next.",
+    "~100 MDX blog posts under src/app/blog (build fails if index, files and illustrations drift).",
+    "Landing page has a 'dividend garden' canvas animation that becomes a game (2026-10-02).",
+    "Merge gate: Vercel preview check must be green before merging any PR touching frontend/**.",
+    "Vercel holds only BACKEND_URL, AUTH_SECRET, public Turnstile site key and public Stripe price ids; ingestion keys live only in Cloud Run."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Live",
+     "url": "https://fin-view-topaz.vercel.app"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/frontend/package.json",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/frontend/next.config.ts",
+    "/Users/brais/VSCODE/FinView/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-finview-api",
+   "label": "FinView API",
+   "kind": "service",
+   "parent": "proj-finview",
+   "summary": "FastAPI backend on Cloud Run: imports, transactions, fiscal boxes, portfolio, options, geo, zonas-clave, billing, auth and user data export/delete.",
+   "details": [
+    "Cloud Run europe-west1, service finview-api; min=0 max=1 instances, CPU throttled; request-scoped runtime (no background workers in prod).",
+    "Schema via create_all + additive-column registry (no Alembic). Neon Postgres in prod, SQLite locally.",
+    "Image built and pushed by Cloud Build (trigger finview-api-deploy); smoke test, 0% private revision, promotion, readiness recheck, rollback.",
+    "Cron endpoints authenticated with X-Cron-Key; Turnstile verification on login/register.",
+    "Notifications: ntfy.sh, SMTP email, Telegram bot (all optional, env-driven)."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/FinView"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/CLAUDE.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/backend/config.py",
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-finview-importers",
+   "label": "FinView importers + FIFO engine",
+   "kind": "tool",
+   "parent": "proj-finview",
+   "summary": "Per-broker parsers (pdfplumber/openpyxl/csv) plus the cross-broker FIFO engine that produces the IRPF casillas.",
+   "details": [
+    "fifo_engine.py is the most sensitive file; any historical mutation must call recalculate_fifo_from_year.",
+    "Portfolio snapshots authoritative only when ImportRecord.portfolio_snapshot_complete=true; totals fail closed on any unknown cost or price.",
+    "Importers are isolated per broker; 148 tests skip without the real broker files."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/CLAUDE.md",
+    "/Users/brais/VSCODE/FinView/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-finview-options-monitor",
+   "label": "Options monitor agent",
+   "kind": "agent",
+   "parent": "proj-finview",
+   "summary": "Agent cycle Observe -> Greeks -> Analyze -> Store -> Notify -> LLM report over watchlist options chains (Yahoo, MEFF, Eurex).",
+   "details": [
+    "Detects IV, put/call, skew, unusual volume and premium spikes (stateless: contract vs its own previous close since 2026-10-06).",
+    "Alert dedup stored in DB table options_alert_notifications; one push per alert episode (PR #328-#330).",
+    "LLM calls (cycle report, per-ticker report, chat) run with reasoning off (2026-10-05).",
+    "Backtest service records signals and evaluates them at checkpoints."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude/rules/options.md",
+    "/Users/brais/VSCODE/memories/decisions/finview.md",
+    "/Users/brais/VSCODE/memories/decisions.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-finview-geo-intel",
+   "label": "Geo-Intel ('Ideas')",
+   "kind": "service",
+   "parent": "proj-finview",
+   "summary": "Turns geopolitical and natural events into market signals via a 84-rule catalogue, with an LLM analyst and a learning loop; ported from WorldHawk.",
+   "details": [
+    "9 ingest sources: seismic (USGS), EONET+GDACS events, NASA FIRMS fires, maritime AIS, meteo (Windy), flights (adsb.lol), GDELT 15-min exports, OFAC actions, Federal Register.",
+    "Country layer (2026-10-04): 33 country funds + local companies; allowed_symbols gate on both LLM paths.",
+    "Learning loop (2026-09-25): confidence_mod derived from rule accuracy; 4-hourly audit re-rates active signals.",
+    "Generative thesis for salient unmatched events: <=3 per request, answers persisted in geo_generative_answers (2026-10-05).",
+    "Ideas are shared by all accounts: one system owner runs the cycle, every reader sees its rows."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude/rules/geo.md",
+    "/Users/brais/VSCODE/FinView/tasks/worldhawk-integration.md",
+    "/Users/brais/VSCODE/memories/decisions/finview.md",
+    "/Users/brais/VSCODE/FinView/backend/config.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-finview-zonas-clave",
+   "label": "Zonas Clave",
+   "kind": "service",
+   "parent": "proj-finview",
+   "summary": "Support/resistance engine (pure technical analysis) whose proximity candidates are scored by an LLM and fire technical signals.",
+   "details": [
+    "Trigger layer of the signal architecture: Zonas Clave fires, Options Monitor executes with PUT/CALL, Ideas carries the thesis.",
+    "Alert gate calibrated from outcomes: lowest floor with >=30 measured and >=55% hits, else 70 (2026-09-25).",
+    "Daily cycle also refreshes ECB, FRED and CNMV reference data."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude/rules/zonas.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-geo-intel-cycle",
+   "label": "geo-intel-cycle (hourly)",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job POSTing /api/geo/cron (0 * * * * UTC).",
+   "details": [
+    "Hourly since 2026-10-01 (was */30, earlier */10); GDELT reads the last 2 hours so a missed cycle loses nothing.",
+    "Authenticated with X-Cron-Key header (FINVIEW_CRON_SECRET); attempt-deadline 1800s, no retries; endpoint runs synchronously.",
+    "The Cloud Build rollout pauses and then resumes all four jobs; the build fails if any does not return to ENABLED."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-geo-intel-audit",
+   "label": "geo-intel-audit (4-hourly)",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job POSTing /api/geo/audit (0 */4 * * * UTC).",
+   "details": [
+    "Checkpoints, live re-rating and rule learning; created 2026-09-25.",
+    "Authenticated with X-Cron-Key header (FINVIEW_CRON_SECRET); attempt-deadline 1800s, no retries; endpoint runs synchronously.",
+    "The Cloud Build rollout pauses and then resumes all four jobs; the build fails if any does not return to ENABLED."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-options-agent-cycle",
+   "label": "options-agent-cycle (30 min)",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job POSTing /api/options/agent/cron (*/30 7-22 * * 1-5 UTC).",
+   "details": [
+    "Market hours only (EU+US); every 30 min since 2026-10-01 (was */15) to fit Cloud Run free tier.",
+    "Authenticated with X-Cron-Key header (FINVIEW_CRON_SECRET); attempt-deadline 1800s, no retries; endpoint runs synchronously.",
+    "The Cloud Build rollout pauses and then resumes all four jobs; the build fails if any does not return to ENABLED."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-zonas-clave-cycle",
+   "label": "zonas-clave-cycle (daily)",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job POSTing /api/zonas-clave/cron (15 22 * * 1-5 UTC).",
+   "details": [
+    "Daily after the NY close; also refreshes ECB/FRED/CNMV once.",
+    "Authenticated with X-Cron-Key header (FINVIEW_CRON_SECRET); attempt-deadline 1800s, no retries; endpoint runs synchronously.",
+    "The Cloud Build rollout pauses and then resumes all four jobs; the build fails if any does not return to ENABLED."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-optionsai",
+   "label": "OptionsAI",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Predecessor options/fiscal app; its functionality was migrated into FinView and no local folder remains.",
+   "details": [
+    "gh repo view br41s/OptionsAI: exists, not archived, last push 2026-03-24, no description.",
+    "FinView tasks/alt-investments-migration.md: most OptionsAI functionality already lives in FinView; ECB exchange-rate service ported; only synthetic_options deferred.",
+    "Listed in the global CLAUDE.md project table but absent from the workspace folder tree."
+   ],
+   "status": "retired",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/OptionsAI"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/tasks/alt-investments-migration.md",
+    "/Users/brais/VSCODE/FinView/tasks/todo.md",
+    "gh repo view br41s/OptionsAI"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "proj-worldhawk",
+   "label": "WorldHawk",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Standalone Cesium geopolitical-intelligence app; decision 2026-06-17 integrated its signal layer into FinView and retired the standalone app.",
+   "details": [
+    "gh repo view br41s/WorldHawk: exists, not archived, last push 2026-04-28.",
+    "tasks/worldhawk-integration.md: pipeline ported to Python as FinView geo-intel; plan item 'freeze WorldHawk repo' (P7) is still unchecked there.",
+    "Supersedes the earlier plan to move WorldHawk to Zeabur."
+   ],
+   "status": "retired",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/WorldHawk"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/tasks/worldhawk-integration.md",
+    "/Users/brais/VSCODE/FinView/tasks/geo-rules-spec.md",
+    "gh repo view br41s/WorldHawk"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "proj-socialagenda",
+   "label": "SocialAgenda",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "AI-powered social event calendar: discovers events from the web, per-event chat, email reminders, ICS export, social features.",
+   "details": [
+    "Flask 3 (Python 3.11), SQLAlchemy + Alembic, Postgres in prod (SQLite locally and in tests); CI workflow runs the suite on SQLite and Postgres.",
+    "Served at socialagenda.biglobster.top (DNS at Namecheap pointing straight at Zeabur, no Cloudflare proxy as of 2026-10-03); app answers Alt-Svc: clear because Zeabur HTTP/3 stalled Safari.",
+    "agenda.experiencianatural.com (Cloudflare-proxied, 2026-09-27) was detached 2026-10-03 with no redirect.",
+    "UI language English, 'Pastel & Stickers' design system, public landing with an animal catch game (2026-10-02), 18+ consent on every sign-up path.",
+    "Legal pages (/about, /legal/*) owned by Biglobster LLC; fonts and FullCalendar self-hosted."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/SocialAgenda"
+    },
+    {
+     "label": "Live",
+     "url": "https://socialagenda.biglobster.top"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "/Users/brais/VSCODE/SocialAgenda/README.md",
+    "/Users/brais/VSCODE/SocialAgenda/requirements.txt",
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
+    "/Users/brais/VSCODE/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-socialagenda-web",
+   "label": "SocialAgenda web service",
+   "kind": "service",
+   "parent": "proj-socialagenda",
+   "summary": "Zeabur 'web' service: gunicorn Flask app (RUN_SCHEDULER=0) serving UI, JSON API, magic-link auth, calendar feeds and search wizard.",
+   "details": [
+    "Same Docker image as the scheduler; differs by env (WEB_CONCURRENCY=2, RUN_SCHEDULER=0). Image includes Chromium for Playwright.",
+    "Magic-link login via Brevo, optional Turnstile captcha, rate limiting; superuser password only seeds (2026-09-24).",
+    "Emailed links built from BASE_URL, never the request host; client IP from CF-Connecting-IP only when the hop is Cloudflare."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/Dockerfile",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-socialagenda-scheduler",
+   "label": "SocialAgenda scheduler service",
+   "kind": "service",
+   "parent": "proj-socialagenda",
+   "summary": "Zeabur 'scheduler' service: same image with RUN_SCHEDULER=1, runs the reminder and security background daemons.",
+   "details": [
+    "Single dedicated process so alerts are not duplicated across gunicorn workers.",
+    "Daemons must not be blocked by synchronous I/O."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/Dockerfile",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "/Users/brais/VSCODE/SocialAgenda/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-socialagenda-discovery-agent",
+   "label": "Event discovery agent",
+   "kind": "agent",
+   "parent": "proj-socialagenda",
+   "summary": "Search -> LLM extraction -> scoring pipeline over web search, followed organizers and custom RSS feeds; also per-user auto feed discovery.",
+   "details": [
+    "Sources run in parallel threads: Tavily web search (ddgs fallback), Meetup/Eventbrite/Facebook/Instagram links, RSS/HTML feeds; Playwright scraping for hard pages.",
+    "LLM via OpenRouter: default nvidia/nemotron-3.5-lightning:free, fallback openai/gpt-oss-120b; every call through llm.complete() with timeouts.",
+    "All outbound fetches of uncontrolled URLs go through safe_http.safe_get() (SSRF guard).",
+    "All event text stored in English; datetimes stored as UTC ISO text."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "/Users/brais/VSCODE/SocialAgenda/README.md",
+    "/Users/brais/VSCODE/SocialAgenda/social_agenda/feed_agent.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-socialagenda-reminders",
+   "label": "Reminder alert loop",
+   "kind": "cron-job",
+   "parent": "proj-socialagenda",
+   "summary": "calendar_agent background loop that sends due event reminder emails; each alert is claimed atomically so it cannot send twice.",
+   "details": [
+    "Configurable minutes-before offsets per user; runs only in the scheduler service."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/social_agenda/calendar_agent.py",
+    "/Users/brais/VSCODE/SocialAgenda/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-socialagenda-security-scan",
+   "label": "Security scan and cleanup",
+   "kind": "cron-job",
+   "parent": "proj-socialagenda",
+   "summary": "security_agent daily scanner/cleanup daemon (advisory-locked); also deletes unconfirmed landing searches after 7 days.",
+   "details": [
+    "Retention promised on the privacy page is enforced here."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/social_agenda/security_agent.py",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-flywell",
+   "label": "FlyWell",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Business-class flight-deal monitor: discovers fares, scores them deterministically against route history, alerts the operator on Telegram; public free beta shows one deal.",
+   "details": [
+    "Next.js web + Python fli service + Postgres on a single Zeabur project (flywell) on the Frankfurt dedicated server; live at flywell.biglobster.top.",
+    "Discovery by self-hosted fli (Google Flights, no key, self-throttled); confirmation by SerpApi (250 free searches/month).",
+    "Scoring is deterministic (no LLM): price anomaly, historical percentile, savings, stops, duration, cabin, confidence; alert price ceiling per profile (2026-09-30).",
+    "Free accounts see one deal and no operator data (2026-10-04); public face with airport landing game, /about and /legal/* owned by Biglobster LLC (2026-10-02).",
+    "Monorepo: apps/web, apps/fli-service, packages/{db,shared,normalization,flight-providers,deal-engine,jobs,notifications,config}; ~1009 tests; CI is CircleCI.",
+    "Prod sign-up 503 fixed 2026-10-05 (migration 0005 applied)."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/FlyWell"
+    },
+    {
+     "label": "Live",
+     "url": "https://flywell.biglobster.top"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md",
+    "/Users/brais/VSCODE/FlyWell/docs/operations.md",
+    "/Users/brais/VSCODE/memories/decisions/flywell.md",
+    "/Users/brais/VSCODE/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-flywell-web",
+   "label": "flywell-web",
+   "kind": "service",
+   "parent": "proj-flywell",
+   "summary": "Next.js dashboard + API route handlers + cron webhooks + public pages (sign-in with airport game, /about, /legal/*).",
+   "details": [
+    "Single long-lived Node process on Zeabur; route policy in src/server/route-policy.ts; Drizzle ORM over Postgres.",
+    "Free-beta sign-ups (FREE_BETA_SIGNUPS); operator signs in at /login?operator.",
+    "Health check configured in the Zeabur dashboard to avoid deploy gaps (2026-10-03)."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Live",
+     "url": "https://flywell.biglobster.top"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md",
+    "/Users/brais/VSCODE/FlyWell/.env.example"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-flywell-fli",
+   "label": "flywell-fli",
+   "kind": "service",
+   "parent": "proj-flywell",
+   "summary": "Internal-only Python/FastAPI wrapper around the 'fli' (PyPI 'flights') library; discovery data provider with a headless-Chromium transport.",
+   "details": [
+    "No public domain by design; called only by flywell-web over the Zeabur internal network.",
+    "Sorts CHEAPEST, FLI_TOP_N=3 in prod; throttled (8 searches/h, 400 page loads/day, 45 s pause) to stay under Google's abuse detection.",
+    "FLI_TRANSPORT=auto uses headless Chromium after Google started gating its RPC behind a browser-signed header (2026-10-01).",
+    "Python (not fli-js) because curl_cffi impersonates a real browser TLS fingerprint."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md",
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "/Users/brais/VSCODE/memories/decisions/flywell.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-flywell-deal-engine",
+   "label": "Deal engine + jobs",
+   "kind": "tool",
+   "parent": "proj-flywell",
+   "summary": "Pure scoring/statistics/confidence/lifecycle logic (packages/deal-engine) and discovery/confirmation/recheck orchestration (packages/jobs).",
+   "details": [
+    "Scoring weights and thresholds are data in packages/config; confidence bands widen as observations accrue.",
+    "Search targets rotate dates after each answered search (3-day step, slot windows, 3 stay lengths; 2026-10-01).",
+    "Quota guards protect SerpApi budget; alert queue with retry."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "/Users/brais/VSCODE/memories/decisions/flywell.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-flywell-discovery-cron",
+   "label": "FlyWell discovery cron",
+   "kind": "cron-job",
+   "parent": "proj-flywell",
+   "summary": "cron-job.org job POSTing /api/cron/discovery on a 3-hour cadence (UTC).",
+   "details": [
+    "Cadence 45 1,4,7,10,13,16,19,22 UTC since 2026-10-01 (was twice daily); must stay on UTC or it collides with recheck.",
+    "Protected by CRON_SHARED_SECRET; an in-flight run dies with the old container on redeploy."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/operations.md",
+    "/Users/brais/VSCODE/memories/decisions/flywell.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-flywell-recheck-cron",
+   "label": "FlyWell recheck cron",
+   "kind": "cron-job",
+   "parent": "proj-flywell",
+   "summary": "cron-job.org job POSTing /api/cron/recheck (documented twice daily at 11:15 and 23:15 UTC).",
+   "details": [
+    "Offset from discovery on purpose; schedule per docs/operations.md may have changed with the 2026-10-01 discovery cadence (not re-verified)."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/operations.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "proj-chatmemo",
+   "label": "ChatMemo",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Self-hosted AI chat workspace (fork of Chatbot UI) with a persistent cross-provider memory built from imported conversations, including Claude Code sessions.",
+   "details": [
+    "Next.js 15 + React 19 + TypeScript + Supabase (Postgres/Auth/Storage) + Tailwind + shadcn/ui; deployed on Vercel.",
+    "Memory sources (summaries.source): claude (Claude.ai), claude_code, copilot, chatgpt, perplexity, other; Claude Code became its own source 2026-10-01.",
+    "Memory block injected into every provider chat route; three layers (baseline blob, relevance search, trigger-gated full transcripts) sized by a context budget.",
+    "Chat providers: OpenAI, Anthropic, Google, Mistral, Groq, Perplexity, Azure, OpenRouter, Ollama, custom endpoints.",
+    "Gate is local (husky pre-push: type-check + jest) plus Vercel build; the only workflow in the repo is upstream-watch."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/chatmemo"
+    },
+    {
+     "label": "Live",
+     "url": "https://chatmemo-one.vercel.app"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/README.md",
+    "/Users/brais/VSCODE/chatmemo/vercel.json",
+    "/Users/brais/VSCODE/memories/decisions/chatmemo.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-chatmemo-web",
+   "label": "ChatMemo web app",
+   "kind": "service",
+   "parent": "proj-chatmemo",
+   "summary": "Next.js App Router app: chat UI, one API route per provider, memory/timeline/import/export routes.",
+   "details": [
+    "Memory-first chat UI (2026-09-30): report names matched entries, source chips, timeline.",
+    "Service worker caches no responses; CSP img-src limits answer images to own origins and the Supabase project.",
+    "Summaries via OpenRouter openai/gpt-oss-120b with provider data_collection deny."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Live",
+     "url": "https://chatmemo-one.vercel.app"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-chatmemo-memory",
+   "label": "Memory system",
+   "kind": "service",
+   "parent": "proj-chatmemo",
+   "summary": "summaries table + injector, relevance search, full-conversation retrieval, lessons document and context budget.",
+   "details": [
+    "DB trigger derives kind/source/title/occurred_at from content so every writer is classified.",
+    "Memory is untrusted text: block tags are neutralised and the instructions say sections are data, never instructions.",
+    "Backups: scripts/backup-chatmemo.sh pg_dumps summaries locally (30-day retention)."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/chatmemo.md",
+    "/Users/brais/VSCODE/chatmemo/scripts/backup-chatmemo.sh"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-chatmemo-sync",
+   "label": "Session sync hooks",
+   "kind": "hook",
+   "parent": "proj-chatmemo",
+   "summary": "Laptop and cloud scripts that push Claude Code and Copilot sessions (and other imports) to ChatMemo's import API.",
+   "details": [
+    "npm run setup:sync registers Stop and SessionEnd hooks in ~/.claude/settings.json and writes ~/.chatmemo/config.json (import token + URL, no DB key).",
+    "Watcher/import scripts plus a Claude Code cloud hook served from public/hooks/chatmemo-cloud-sync.mjs; transcripts are cleaned and credentials redacted before posting.",
+    ".chatmemo-nosync opts a directory out; excludeProjects in config."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/scripts/chatmemo-hook-setup.mjs",
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/chatmemo.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-biglobster",
+   "label": "BigLobster (biglobster.top)",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Thin public web shell for Biglobster LLC: Eleventy marketing site (ES/EN, 100+ posts per language), email-only contact form, /health, /admin redirect to Hermes.",
+   "details": [
+    "Since PR #248 (2026-06-04) all agents, COO, CRM, Telegram bot and LLM calls were removed and archived; operations moved to Hermes.",
+    "Stateless Node server (no DB, no bot, no LLM): Dockerfile builds Eleventy then ships _site + src; Zeabur auto-deploys on push to main.",
+    "Sells AI automation subscriptions and agent rentals to freelancers and SMBs; apps directory lists SocialAgenda and FlyWell.",
+    "Flagship of bl-site-package: a parity rule requires porting improvements to bl-site-package in the same session.",
+    "Stripe code is kept but routes were removed (PR #508, 2026-09-13) while a merchant-of-record application is under review."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/biglobster"
+    },
+    {
+     "label": "Live",
+     "url": "https://biglobster.top"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "/Users/brais/VSCODE/biglobster/README.md",
+    "/Users/brais/VSCODE/biglobster/OPS.md",
+    "/Users/brais/VSCODE/biglobster/Dockerfile",
+    "/Users/brais/VSCODE/biglobster/zbpack.json",
+    "/Users/brais/VSCODE/memories/decisions/biglobster.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-biglobster-web",
+   "label": "BigLobster web server",
+   "kind": "server",
+   "parent": "proj-biglobster",
+   "summary": "Node HTTP server (src/web.js): static _site, /health, /api/contact, /api/knowledge, /api/data-deletion, /admin redirect, security headers.",
+   "details": [
+    "CSP, HSTS in prod, www->apex redirect, in-memory rate limiting.",
+    "/admin and /panel 302 to HERMES_PANEL_URL (Hermes operations panel).",
+    "/api/knowledge serves business info plus blog frontmatter read from source; the bl-site-package twin endpoint is for an external WhatsApp bot, biglobster's consumer was not verified.",
+    "Two CSPs must be edited together (header in src/web.js and meta in base.njk)."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "/Users/brais/VSCODE/biglobster/README.md",
+    "/Users/brais/VSCODE/biglobster/Dockerfile",
+    "/Users/brais/VSCODE/biglobster/OPS.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-biglobster-site",
+   "label": "BigLobster static site",
+   "kind": "service",
+   "parent": "proj-biglobster",
+   "summary": "Eleventy build of site/ into _site/: ES/EN pages, sectors, pricing, apps directory, /big.html salesperson landing, legal pages.",
+   "details": [
+    "Generated at build: blog index, sitemap, RSS feed, FAQPage JSON-LD, table-scroll wrappers, WhatsApp QR.",
+    "Build guards fail on SVG var() geometry, type scale below 14px and infographic rules.",
+    "Legal identity (Biglobster LLC) and company data in site/_data/site.json.",
+    "site/apps.html and en/apps.html still link agenda.experiencianatural.com for Social Agenda (detached 2026-10-03)."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Live",
+     "url": "https://biglobster.top"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "/Users/brais/VSCODE/biglobster/site/en/apps.html",
+    "/Users/brais/VSCODE/biglobster/site/_data/site.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-biglobster-blog",
+   "label": "BigLobster blog content",
+   "kind": "doc",
+   "parent": "proj-biglobster",
+   "summary": "Bilingual blog (100+ posts per language) with inline SVG infographics, written and maintained largely by Hermes agents via PRs.",
+   "details": [
+    "Hermes content agents: Biglobster Gap Hunter, Content Updater (shipped in DRY_RUN 2026-09-16), SEO agent, Infographic Engineer; commits appear under author 'Hermes Agent'.",
+    "No draft gate on blog posts (2026-09-17 finding); Auditor judge gates PRs and fails closed (2026-09-16).",
+    "Infographics: one 800-wide canvas, validated by hermes-sandbox infographic/validate_infographic.py."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "/Users/brais/VSCODE/biglobster/OPS.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "proj-biglobster-contact",
+   "label": "Contact form API",
+   "kind": "service",
+   "parent": "proj-biglobster",
+   "summary": "POST /api/contact: Turnstile + honeypot + gibberish filter, then emails the owner and a confirmation to the sender via Brevo SMTP.",
+   "details": [
+    "Spam reaching valid Turnstile tokens on 2026-10-01 led to src/spam.js; caught submissions get the same 200 and send no email.",
+    "Site key served at runtime from /api/turnstile-key; verification is OFF unless both keys are set (/health reports it)."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "/Users/brais/VSCODE/biglobster/.env.example"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-biglobster-legacy-agents",
+   "label": "Legacy multi-agent company",
+   "kind": "project",
+   "parent": "proj-biglobster",
+   "summary": "Retired BigLobster multi-agent stack (COO, PA, dev/designer/support/sales agents, CRM, Telegram bot) archived on 2026-06-04.",
+   "details": [
+    "Archived in biglobster/archive/legacy-multiagent-2026-06-04/; the workspace-root agents/ folder holds earlier role prompts (last touched 2026-05-12), not verified as the same set."
+   ],
+   "status": "retired",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/OPS.md",
+    "/Users/brais/VSCODE/biglobster/README.md",
+    "/Users/brais/VSCODE/agents/AGENT_TEMPLATE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "proj-biglobster-sentinel",
+   "label": "Ops Sentinel (osee)",
+   "kind": "service",
+   "parent": "proj-biglobster",
+   "summary": "Retired Ops Sentinel monitor with a SQLite store; its code was removed from the repo in the 2026-06-04 consolidation.",
+   "details": [
+    "A sentinel.db volume still existed on Zeabur at the 2026-07-22 Frankfurt migration (static since 2026-06-04) and is in the 2026-10-06 volume dump list; the live service itself was not verified."
+   ],
+   "status": "retired",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/OPS.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "proj-bl-site-package",
+   "label": "bl-site-package",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Deployable web package sold to Spanish SMB clients: public Eleventy site, management panel, blog, inbox, optional catalogue/shop and AI marketing agent; one Zeabur (or Plesk) deploy per customer.",
+   "details": [
+    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.16.0.",
+    "Customer-facing Spanish docs (INSTRUCCIONES-CLIENTE, DEPLOY, RELEASE) are treated as published.",
+    "Customer deploys put the customer as legal owner under Spanish law (2026-10-02); footer carries only a 'Creado por Biglobster' credit link.",
+    "Default agent model is the free openai/gpt-oss-20b via OpenRouter (BYOK per customer); do not change to a paid default.",
+    "Turnstile is mandatory for new customer onboarding (DEPLOY.md); fleet manifest is the source of truth for deployments.",
+    "Opt-in extras: B2B trade-price area, 'Pedido a pedido' hero game (2026-10-02)."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/bl-site-package"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/bl-site-package/README.md",
+    "/Users/brais/VSCODE/bl-site-package/DEPLOY.md",
+    "/Users/brais/VSCODE/bl-site-package/package.json",
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-bl-site-package-server",
+   "label": "bl-site-package server + panel",
+   "kind": "server",
+   "parent": "proj-bl-site-package",
+   "summary": "Express server (src/server.js) with panel, setup wizard, blog/contact/reservations/B2B APIs and SQLite store.",
+   "details": [
+    "Every async route wrapped in asyncHandler (Node 22 exits on unhandled rejection).",
+    "Panel login and contact form protected by Turnstile when configured; RENTAL_AUTOMATION_KEY lets Hermes agents bypass the captcha via X-Automation-Key.",
+    "Email via SMTP settings (SMTP_HOST etc.); passenger-startup.cjs supports Passenger hosts."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/bl-site-package/DEPLOY.md",
+    "/Users/brais/VSCODE/bl-site-package/.env.example",
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-bl-site-package-build",
+   "label": "Eleventy rebuild pipeline",
+   "kind": "tool",
+   "parent": "proj-bl-site-package",
+   "summary": "Out-of-process Eleventy rebuild into two build slots with an atomically swapped _site symlink.",
+   "details": [
+    "Introduced v1.8.5 (PR #83) after Shoroban's ~14.5k-page in-process rebuild froze the API for ~30s after each owned sheet write."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-bl-site-package-agent",
+   "label": "AI marketing agent",
+   "kind": "agent",
+   "parent": "proj-bl-site-package",
+   "summary": "Panel assistant that drafts posts and page content through OpenRouter using the customer's own key.",
+   "details": [
+    "Chat route rate-limited to protect the customer's BYOK credit; agents can publish posts and product sheets directly (no review gate)."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/bl-site-package/README.md",
+    "/Users/brais/VSCODE/bl-site-package/src/api/chat.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-bl-site-package-catalogue-sync",
+   "label": "Liderpapel catalogue sync",
+   "kind": "cron-job",
+   "parent": "proj-bl-site-package",
+   "summary": "node-cron job (default 0 6 * * *) that syncs a distributor product feed over sFTP and re-prices with the shop margin.",
+   "details": [
+    "Shoroban's catalogue is ~14.5k products from Liderpapel; feed owns cost/stock/specs, we own product_content.",
+    "Mode sftp or local fixtures (LIDERPAPEL_SYNC_MODE)."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/src/sync/liderpapel/scheduler.js",
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/bl-site-package/.env.example"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-bl-site-package-retention",
+   "label": "Privacy retention purge",
+   "kind": "cron-job",
+   "parent": "proj-bl-site-package",
+   "summary": "Daily scheduler deleting contact messages after 24 months and orders after 6 years, as promised on the legal pages.",
+   "details": [],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/bl-site-package/src/server.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-bl-site-package-fleet",
+   "label": "Fleet manifest + fleet-check",
+   "kind": "config",
+   "parent": "proj-bl-site-package",
+   "summary": "fleet/manifest.json lists every deployment (reference + customers); scripts/fleet-check.mjs compares each deploy's version to main.",
+   "details": [
+    "Two entries today: blcliente (reference, Zeabur) and shoroban-prod (production, Plesk Passenger, manual driver).",
+    "Continuous checking is done by the Hermes maintenance agent with per-profile credentials; rollout-log.jsonl records first-seen versions.",
+    "Shoroban staging retired 2026-09-19; validation is the shared unconfigured instance."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-bl-site-package-blcliente",
+   "label": "blcliente reference instance",
+   "kind": "service",
+   "parent": "proj-bl-site-package",
+   "summary": "BigLobster's own unconfigured test deployment; auto-deploys main and is the shared pre-release validation target.",
+   "details": [
+    "Unconfigured: no panel password, catalogue or posts, so a green smoke test proves boot and setup wizard only."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Instance",
+     "url": "https://blcliente.zeabur.app"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-bl-site-package-shoroban",
+   "label": "Shoroban production site",
+   "kind": "service",
+   "parent": "proj-bl-site-package",
+   "summary": "First customer deployment: catalogue shop site on its own Plesk (Passenger) host, updated through the panel with no SSH.",
+   "details": [
+    "Was on v1.8.11 on 2026-09-25 (updated via the panel, no SSH); Turnstile active on panel login; dedicated Hermes profile 'shoroban' and its own OpenRouter key.",
+    "Catalogue of ~14.5k products synced from Liderpapel; Hermes writes posts, product sheets and infographics here."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Site",
+     "url": "https://shoroban.com"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-grow-shop",
+   "label": "grow-shop.com",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Domain-sale landing page for grow-shop.com plus a micro-API that emails purchase offers.",
+   "details": [
+    "Two repos (grow-shop-landing, grow-shop-api), both on one Zeabur project (grow-shop), auto-deploy from main.",
+    "Also the first Hermes customer profile ('grow-shop') with its own Telegram forum topic (2026-06-06 multi-tenancy)."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Landing repo",
+     "url": "https://github.com/br41s/grow-shop-landing"
+    },
+    {
+     "label": "API repo",
+     "url": "https://github.com/br41s/grow-shop-api"
+    },
+    {
+     "label": "Live",
+     "url": "https://grow-shop.com"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/claude.md",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-grow-shop-landing",
+   "label": "grow-shop landing",
+   "kind": "service",
+   "parent": "proj-grow-shop",
+   "summary": "Single index.html (inline CSS/JS, no build) selling the domain with an offer form.",
+   "details": [
+    "Form posts to grow-shop-api /api/submit-offer; Cloudflare Turnstile widget on the form."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/claude.md",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/index.html"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-grow-shop-api",
+   "label": "grow-shop API",
+   "kind": "service",
+   "parent": "proj-grow-shop",
+   "summary": "Single-file Express 4 API (Node 20): GET /health, POST /api/submit-offer sending an owner notification and a visitor auto-reply.",
+   "details": [
+    "Verifies the Turnstile token before sending (commit 3d904a1); email via Resend using a verified sender domain.",
+    "No tests, no build step; intentionally minimal."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/api.js",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/package.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-heclient",
+   "label": "heclient (Agentic)",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Scaffold for 'Agentic': a control plane that provisions a dedicated Hermes coding agent per customer on Zeabur, connected to GitHub and Telegram.",
+   "details": [
+    "Next.js 16 / React 19 / Tailwind with SQLite (better-sqlite3) customer registry; 6-step onboarding wizard.",
+    "Only commit is the initial scaffold (2026-06-06); local git repo with no remote; PLAN.md roadmap items for Vercel deploy, dashboard auth and billing are unchecked.",
+    "No mention in decisions or memories; treat as dormant."
+   ],
+   "status": "planned",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/heclient/README.md",
+    "/Users/brais/VSCODE/heclient/PLAN.md",
+    "/Users/brais/VSCODE/heclient/package.json",
+    "/Users/brais/VSCODE/heclient/lib/zeabur.ts",
+    "/Users/brais/VSCODE/heclient/lib/hermes.ts"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-heclient-provision",
+   "label": "Provisioning API",
+   "kind": "service",
+   "parent": "proj-heclient",
+   "summary": "POST /api/provision creates a Zeabur project and service from the hermes-sandbox GHCR image, sets env vars, redeploys and seeds SOUL.md via /api/delegate.",
+   "details": [
+    "GET /api/status/:serviceId returns the customer record and health check.",
+    "Env names: ZEABUR_API_TOKEN, ZEABUR_OWNER_ID, GHCR_USERNAME, GHCR_PAT, OPENROUTER_API_KEY, EXA_API_KEY."
+   ],
+   "status": "planned",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/heclient/README.md",
+    "/Users/brais/VSCODE/heclient/lib/zeabur.ts",
+    "/Users/brais/VSCODE/heclient/lib/hermes.ts",
+    "/Users/brais/VSCODE/heclient/.env.example"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-offlinepics",
+   "label": "OfflinePics (MyTrove)",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Local-first desktop photo library (renamed MyTrove 2026-08-16): copies iPhone and legacy originals into a user-owned, verifiable library outside iCloud.",
+   "details": [
+    "GPL-3.0 fork of Lap (julyx10/lap); Tauri 2 + Rust backend, Vue 3 + Vite frontend, local ONNX models.",
+    "Managed import with BLAKE3 dedup, portable manifests, exact-path catalog indexing, interrupted-import recovery, OSXPhotos adapter for Apple Photos migration.",
+    "Backup design: manual immutable recovery snapshot into a Google Drive for Desktop folder; optional one-way Google Photos viewing copy (no direct API).",
+    "Status: review build, version 0.3.0, not approved for the full ~200-290 GB migration; releases/CI via GitHub workflows (mac/windows/homebrew).",
+    "Mobile viewing plan prefers a curated Google Photos copy over a custom iPhone client (workspace decision 2026-08-16)."
+   ],
+   "status": "dry-run",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/OfflinePics"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/OfflinePics/README.md",
+    "/Users/brais/VSCODE/OfflinePics/memories/decisions.md",
+    "/Users/brais/VSCODE/OfflinePics/tasks/todo.md",
+    "/Users/brais/VSCODE/OfflinePics/PRIVACY.md",
+    "/Users/brais/VSCODE/OfflinePics/src-tauri/Cargo.toml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-offlinepics-app",
+   "label": "MyTrove desktop app",
+   "kind": "service",
+   "parent": "proj-offlinepics",
+   "summary": "Tauri 2 app (src-tauri Rust + src-vite Vue) for browsing, importing and cataloguing the managed library.",
+   "details": [
+    "Local only: no account service, photo cloud or analytics; optional network use (e.g. map tiles) disclosed in PRIVACY.md."
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/OfflinePics/README.md",
+    "/Users/brais/VSCODE/OfflinePics/PRIVACY.md",
+    "/Users/brais/VSCODE/OfflinePics/src-vite/package.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-offlinepics-import",
+   "label": "Managed import + recovery snapshot",
+   "kind": "tool",
+   "parent": "proj-offlinepics",
+   "summary": "Verified import engine (staging journal, atomic commit, dedup) and the manual recovery snapshot of Originals/Renditions/Manifests.",
+   "details": [
+    "Snapshot written to a user-chosen Google Drive for Desktop folder; the app never claims knowledge of remote upload state."
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/OfflinePics/memories/decisions.md",
+    "/Users/brais/VSCODE/OfflinePics/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-experiencianatural-home",
+   "label": "experiencianatural.com home",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "One static index.html: an illustrated valley with a seed-catching game, teasing 'nature-friendly apps are taking root'.",
+   "details": [
+    "Zeabur static site auto-deployed from main; domain proxied by Cloudflare (orange cloud) so visitors skip Zeabur's HTTP/3 edge.",
+    "Deliberately names no builder or links; Google Fonts loaded from the page.",
+    "Its animation-plus-game idea was reused for FlyWell and SocialAgenda public faces (2026-10-02).",
+    "The Zeabur project 'experiencianatural' was 'born migrated' to the server (workspace decision 2026-10-02)."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/experiencianatural-home"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/experiencianatural-home/README.md",
+    "/Users/brais/VSCODE/experiencianatural-home/index.html",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-facturas",
+   "label": "FACTURAS",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Local Python tooling that rebuilds lost 2025 invoices (marked DUPLICADO, PrestaShop #CU numbering) for the owner's shop company from orders, picking lists and bank evidence.",
+   "details": [
+    "preparar.py builds data/pedidos.json and a review CSV; generar.py renders HTML to PDF with headless Chrome; standard library only plus pdftotext.",
+    "Tax rules confirmed 2026-09-30: PT 23%, Canarias 0%, else 21%; destination taken from carrier invoices; every invoice must total the charged amount.",
+    "Batches: January 2025 (#CU082631-#CU082814) and lote2 Feb-Jun (#CU082815-#CU084204) generated; batch 3 waits for inputs; numbering vs real invoices still open.",
+    "Folder is untracked inside the workspace repo (data never committed); contains customer and bank data, none copied here."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FACTURAS/README.md",
+    "/Users/brais/VSCODE/FACTURAS/generar.py",
+    "/Users/brais/VSCODE/memories/decisions/facturas.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "proj-shambhala-bangkok",
+   "label": "Shambhala Bangkok",
+   "kind": "project",
+   "parent": "layer-products",
+   "summary": "Community website for Bangkok Shambhala (non-profit meditation community): events, posts and calendar feed with a custom admin panel.",
+   "details": [
+    "Next.js 16 App Router, TypeScript, Tailwind v4; hosted on Vercel; Plausible analytics; Brevo email; n8n automation; Google Translate widget.",
+    "Admin panel at /admin with Markdown editor and event/post CRUD committed through the GitHub API.",
+    "Repo Shambhala-Bangkok/shambhalaBangkok (public, last push 2026-09-24); no local checkout in the workspace today (old table listed Shambala/shambala-bangkok).",
+    "https://shambhalabangkok.vercel.app answered HTTP 200 when checked on 2026-10-06."
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/Shambhala-Bangkok/shambhalaBangkok"
+    },
+    {
+     "label": "Live",
+     "url": "https://shambhalabangkok.vercel.app"
+    }
+   ],
+   "sources": [
+    "gh api repos/Shambhala-Bangkok/shambhalaBangkok/readme",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "supabase",
+   "label": "Supabase",
+   "kind": "external",
+   "parent": "layer-hosting",
+   "summary": "Hosted Postgres/Auth/Storage backing ChatMemo.",
+   "details": [
+    "Not in the canonical external list; created by the products mapper because ChatMemo depends on it."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/scripts/backup-chatmemo.sh"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-resend",
+   "label": "Resend",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Transactional email API used by grow-shop-api for offer notifications and auto-replies.",
+   "details": [
+    "Sender domain must be verified in Resend; key via RESEND_API_KEY or ZEABUR_EMAIL_API_KEY."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/api.js",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-tavily",
+   "label": "Tavily",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Web search API used by SocialAgenda's event discovery (ddgs is the weak fallback).",
+   "details": [],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-serpapi",
+   "label": "SerpApi",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Google Flights engine used by FlyWell for deal confirmation (250 free searches/month).",
+   "details": [
+    "Quota guarded by SERPAPI_MONTHLY_QUOTA."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "/Users/brais/VSCODE/FlyWell/.env.example"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-cron-job-org",
+   "label": "cron-job.org",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Free external scheduler that POSTs FlyWell's protected cron webhooks.",
+   "details": [
+    "Replaced an in-app clock/Redis design; jobs must be set to UTC."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md",
+    "/Users/brais/VSCODE/FlyWell/docs/operations.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-liderpapel",
+   "label": "Liderpapel feed",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Stationery distributor product feed (JSON over sFTP) feeding Shoroban's catalogue.",
+   "details": [],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/bl-site-package/.env.example"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-market-data-feeds",
+   "label": "FinView market data feeds",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Yahoo Finance (yfinance), MEFF HTML, Eurex RDF, ECB rates, FRED and CNMV catalogue used by FinView's prices and options.",
+   "details": [
+    "Yahoo calls bounded per loop (60 s per import, 120 s per geo cycle); MEFF rate-limits scraping (5 min cache TTL)."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude/rules/options.md",
+    "/Users/brais/VSCODE/FinView/CLAUDE.md",
+    "/Users/brais/VSCODE/FinView/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-geo-event-feeds",
+   "label": "FinView geo/event feeds",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "USGS seismic, EONET and GDACS, NASA FIRMS, AISStream, Windy, adsb.lol, GDELT exports, OFAC recent actions, Federal Register.",
+   "details": [
+    "Every source key is optional; a missing key degrades that source to empty. ACLED dropped 2026-09-20, OpenSky replaced by adsb.lol."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude/rules/geo.md",
+    "/Users/brais/VSCODE/FinView/backend/config.py",
+    "/Users/brais/VSCODE/memories/decisions/finview.md"
+   ],
+   "confidence": "verified"
+  }
+ ],
+ "edges": [
+  {
+   "source": "gcp-scheduler-geo-intel-cycle",
+   "target": "proj-finview-geo-intel",
+   "kind": "calls",
+   "label": "POST /api/geo/cron",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "gcp-scheduler-geo-intel-audit",
+   "target": "proj-finview-geo-intel",
+   "kind": "calls",
+   "label": "POST /api/geo/audit",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "gcp-scheduler-options-agent-cycle",
+   "target": "proj-finview-options-monitor",
+   "kind": "calls",
+   "label": "POST /api/options/agent/cron",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "gcp-scheduler-zonas-clave-cycle",
+   "target": "proj-finview-zonas-clave",
+   "kind": "calls",
+   "label": "POST /api/zonas-clave/cron",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview-frontend",
+   "target": "vercel",
+   "kind": "deployed-on",
+   "label": "Vercel auto-deploy from main",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/CLAUDE.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview-frontend",
+   "target": "proj-finview-api",
+   "kind": "calls",
+   "label": "/api/* rewrite to BACKEND_URL",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/frontend/next.config.ts"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview-api",
+   "target": "gcp",
+   "kind": "deployed-on",
+   "label": "Cloud Run europe-west1 (finview-api), Cloud Build trigger",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview-api",
+   "target": "neon",
+   "kind": "stores-in",
+   "label": "Neon Postgres (eu-central-1) in prod",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified",
+   "note": "SQLite locally"
+  },
+  {
+   "source": "proj-finview-api",
+   "target": "ext-turnstile",
+   "kind": "calls",
+   "label": "verifies Turnstile token on login/register",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/backend/config.py"
+   ],
+   "confidence": "verified",
+   "note": "Optional: skipped if FINVIEW_TURNSTILE_SECRET empty"
+  },
+  {
+   "source": "proj-finview-api",
+   "target": "ext-telegram",
+   "kind": "notifies",
+   "label": "options/geo/zone alerts via Telegram bot",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/backend/config.py",
+    "/Users/brais/VSCODE/FinView/README.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Also ntfy.sh and SMTP email; all optional"
+  },
+  {
+   "source": "proj-finview-api",
+   "target": "ext-stripe",
+   "kind": "depends-on",
+   "label": "billing code (checkout/webhook, account deletion closes billing)",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/finview.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Dormant: 2026-09-30 decision records no live Stripe account and terms describe a free service"
+  },
+  {
+   "source": "proj-finview-options-monitor",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "options cycle report, per-ticker report, chat",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview-geo-intel",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "geo analyst and generative thesis",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview-zonas-clave",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "zone break-probability scorer",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/.claude/rules/zonas.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview",
+   "target": "ext-deepseek",
+   "kind": "uses-model",
+   "label": "default model deepseek/deepseek-v4-flash (via OpenRouter)",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/CLAUDE.md"
+   ],
+   "confidence": "verified",
+   "note": "One shared model, FINVIEW_OPENROUTER_MODEL"
+  },
+  {
+   "source": "proj-finview-options-monitor",
+   "target": "ext-market-data-feeds",
+   "kind": "reads",
+   "label": "Yahoo options chains, MEFF scraping, Eurex RDF",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude/rules/options.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview-geo-intel",
+   "target": "ext-geo-event-feeds",
+   "kind": "reads",
+   "label": "9 event/hazard/sanctions sources",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude/rules/geo.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-finview-api",
+   "target": "ext-market-data-feeds",
+   "kind": "reads",
+   "label": "Yahoo prices, ECB rates, FRED, CNMV catalogue",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/README.md",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-finview",
+   "target": "biglobster-llc",
+   "kind": "depends-on",
+   "label": "owner and legal pages link to biglobster.top",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/frontend/src/lib/legal.ts",
+    "/Users/brais/VSCODE/memories/decisions/finview.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes",
+   "target": "proj-finview",
+   "kind": "monitors",
+   "label": "auditor reviews FinView PRs; gap-hunter cron",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Hermes auditor judged FinView PRs #264/#266/#267; 'FinView gap hunter' named among failing crons"
+  },
+  {
+   "source": "proj-optionsai",
+   "target": "proj-finview",
+   "kind": "routes-to",
+   "label": "merged into FinView",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/tasks/alt-investments-migration.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Options agent, fiscal engine, importers, ECB rates"
+  },
+  {
+   "source": "proj-worldhawk",
+   "target": "proj-finview-geo-intel",
+   "kind": "routes-to",
+   "label": "ported into FinView geo-intel",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/tasks/geo-rules-spec.md",
+    "/Users/brais/VSCODE/FinView/.claude/rules/geo.md"
+   ],
+   "confidence": "verified",
+   "note": "Rules spec ported from WorldHawk src/lib/financial/rules.ts"
+  },
+  {
+   "source": "proj-socialagenda-web",
+   "target": "zb-social-agenda",
+   "kind": "deployed-on",
+   "label": "Zeabur service 'web'",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/Dockerfile",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-scheduler",
+   "target": "zb-social-agenda",
+   "kind": "deployed-on",
+   "label": "Zeabur service 'scheduler'",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/Dockerfile",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-web",
+   "target": "zb-social-agenda",
+   "kind": "stores-in",
+   "label": "managed Postgres service in the project",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/README.md",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-web",
+   "target": "proj-socialagenda-discovery-agent",
+   "kind": "calls",
+   "label": "runs discovery in background threads",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-scheduler",
+   "target": "proj-socialagenda-reminders",
+   "kind": "calls",
+   "label": "starts alert loop",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-scheduler",
+   "target": "proj-socialagenda-security-scan",
+   "kind": "calls",
+   "label": "starts security daemon",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-web",
+   "target": "ext-brevo",
+   "kind": "notifies",
+   "label": "magic-link login emails",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md"
+   ],
+   "confidence": "verified",
+   "note": "Brevo IP block caused the 2026-09-24 login outage"
+  },
+  {
+   "source": "proj-socialagenda-reminders",
+   "target": "ext-brevo",
+   "kind": "notifies",
+   "label": "event reminder emails",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "/Users/brais/VSCODE/SocialAgenda/social_agenda/calendar_agent.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-web",
+   "target": "ext-turnstile",
+   "kind": "calls",
+   "label": "captcha on login (optional)",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-discovery-agent",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "event extraction and scoring",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda-discovery-agent",
+   "target": "ext-tavily",
+   "kind": "calls",
+   "label": "web search (ddgs fallback)",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda",
+   "target": "biglobster-llc",
+   "kind": "depends-on",
+   "label": "owner and legal pages link to biglobster.top",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/social_agenda/legal.py",
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-socialagenda",
+   "target": "ext-google-drive",
+   "kind": "backs-up-to",
+   "label": "Postgres volume dumped to Drive once (2026-10-06)",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs",
+   "note": "hermes-sandbox ops/backup-volumes.sh via rclone; one-off, not scheduled"
+  },
+  {
+   "source": "proj-flywell-web",
+   "target": "zb-flywell",
+   "kind": "deployed-on",
+   "label": "Zeabur service flywell-web (public)",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell-fli",
+   "target": "zb-flywell",
+   "kind": "deployed-on",
+   "label": "Zeabur service flywell-fli (internal only)",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell-web",
+   "target": "zb-flywell",
+   "kind": "stores-in",
+   "label": "Postgres service in the project",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell-web",
+   "target": "proj-flywell-fli",
+   "kind": "calls",
+   "label": "discovery searches over internal REST",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell-web",
+   "target": "proj-flywell-deal-engine",
+   "kind": "depends-on",
+   "label": "scoring and job orchestration packages",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell-web",
+   "target": "ext-serpapi",
+   "kind": "calls",
+   "label": "two-call confirmation of promising deals",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell-web",
+   "target": "ext-telegram",
+   "kind": "notifies",
+   "label": "deal alerts to a single operator chat",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/telegram-contract.md"
+   ],
+   "confidence": "verified",
+   "note": "No fan-out, no subscriber routing"
+  },
+  {
+   "source": "ext-cron-job-org",
+   "target": "proj-flywell-discovery-cron",
+   "kind": "controls",
+   "label": "schedules the webhook call",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/operations.md",
+    "/Users/brais/VSCODE/FlyWell/docs/architecture.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "ext-cron-job-org",
+   "target": "proj-flywell-recheck-cron",
+   "kind": "controls",
+   "label": "schedules the webhook call",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/operations.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell-discovery-cron",
+   "target": "proj-flywell-web",
+   "kind": "calls",
+   "label": "POST /api/cron/discovery",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/operations.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell-recheck-cron",
+   "target": "proj-flywell-web",
+   "kind": "calls",
+   "label": "POST /api/cron/recheck",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/docs/operations.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell",
+   "target": "biglobster-llc",
+   "kind": "depends-on",
+   "label": "operator and legal pages link to biglobster.top",
+   "sources": [
+    "/Users/brais/VSCODE/FlyWell/apps/web/src/lib/legal.ts",
+    "/Users/brais/VSCODE/memories/decisions/flywell.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-flywell",
+   "target": "ext-google-drive",
+   "kind": "backs-up-to",
+   "label": "Postgres volume dumped to Drive once (2026-10-06)",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs",
+   "note": "hermes-sandbox ops/backup-volumes.sh; one-off, not scheduled"
+  },
+  {
+   "source": "proj-chatmemo-web",
+   "target": "vercel",
+   "kind": "deployed-on",
+   "label": "Vercel deployment",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/vercel.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-chatmemo-web",
+   "target": "supabase",
+   "kind": "stores-in",
+   "label": "Postgres, Auth, Storage",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-chatmemo-memory",
+   "target": "supabase",
+   "kind": "stores-in",
+   "label": "summaries table with trigger-derived metadata",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-chatmemo-web",
+   "target": "proj-chatmemo-memory",
+   "kind": "calls",
+   "label": "injects memory block into every chat turn",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-chatmemo-web",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "memory summarisation and OpenRouter chat",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-chatmemo-web",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "Anthropic chat route (one of ~10 providers)",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/.env.local.example"
+   ],
+   "confidence": "from-docs",
+   "note": "Keys per user profile"
+  },
+  {
+   "source": "proj-chatmemo-sync",
+   "target": "claude-code",
+   "kind": "reads",
+   "label": "Claude Code session transcripts",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/scripts/chatmemo-hook-setup.mjs",
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-chatmemo-sync",
+   "target": "claude-code",
+   "kind": "configures",
+   "label": "registers Stop/SessionEnd hooks in ~/.claude/settings.json",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/scripts/chatmemo-hook-setup.mjs"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-chatmemo-sync",
+   "target": "proj-chatmemo-web",
+   "kind": "writes",
+   "label": "POST /api/import/conversation with import token",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-web",
+   "target": "zb-biglobster",
+   "kind": "deployed-on",
+   "label": "Zeabur service from Dockerfile, auto-deploy on main",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/Dockerfile",
+    "/Users/brais/VSCODE/biglobster/OPS.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-web",
+   "target": "proj-biglobster-site",
+   "kind": "serves",
+   "label": "serves built _site",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-web",
+   "target": "hermes",
+   "kind": "routes-to",
+   "label": "/admin and /panel 302 to Hermes panel",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "/Users/brais/VSCODE/biglobster/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-web",
+   "target": "proj-biglobster-contact",
+   "kind": "calls",
+   "label": "contact route handler",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-contact",
+   "target": "ext-brevo",
+   "kind": "notifies",
+   "label": "owner email + sender confirmation via Brevo SMTP",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.env.example",
+    "/Users/brais/VSCODE/biglobster/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-contact",
+   "target": "ext-turnstile",
+   "kind": "calls",
+   "label": "verifies Turnstile token",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes",
+   "target": "proj-biglobster-blog",
+   "kind": "writes",
+   "label": "content agents author posts, SEO fixes and infographics via PRs",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/OPS.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes",
+   "target": "proj-biglobster-site",
+   "kind": "monitors",
+   "label": "weekly site audit and daily SEO monitor",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/OPS.md"
+   ],
+   "confidence": "from-docs",
+   "note": "From OPS.md (2026-06 era); not re-verified"
+  },
+  {
+   "source": "proj-biglobster-blog",
+   "target": "proj-biglobster-site",
+   "kind": "depends-on",
+   "label": "posts are Eleventy source under site/blog",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-site",
+   "target": "biglobster-llc",
+   "kind": "serves",
+   "label": "publishes legal identity and documents used by all apps",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/biglobster/site/_data/site.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-site",
+   "target": "proj-socialagenda",
+   "kind": "routes-to",
+   "label": "apps directory lists Social Agenda",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/site/en/apps.html"
+   ],
+   "confidence": "verified",
+   "note": "Link still targets the detached agenda.experiencianatural.com"
+  },
+  {
+   "source": "proj-biglobster-site",
+   "target": "proj-flywell",
+   "kind": "routes-to",
+   "label": "apps directory lists FlyWell",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/site/en/apps.html"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-legacy-agents",
+   "target": "hermes",
+   "kind": "routes-to",
+   "label": "operations consolidated into Hermes (PR #248)",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/OPS.md",
+    "/Users/brais/VSCODE/biglobster/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster-sentinel",
+   "target": "zb-biglobster",
+   "kind": "deployed-on",
+   "label": "leftover service in the biglobster Zeabur project",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Per 2026-07-22 clone: 'biglobster (osee + bl-site-package)'"
+  },
+  {
+   "source": "proj-bl-site-package-blcliente",
+   "target": "zb-biglobster",
+   "kind": "deployed-on",
+   "label": "Zeabur instance blcliente",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json"
+   ],
+   "confidence": "from-docs",
+   "note": "Project membership from the 2026-07-22 clone note 'biglobster (osee + bl-site-package)'"
+  },
+  {
+   "source": "proj-bl-site-package-shoroban",
+   "target": "plesk",
+   "kind": "deployed-on",
+   "label": "Plesk Passenger host",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-bl-site-package-server",
+   "target": "proj-bl-site-package-build",
+   "kind": "calls",
+   "label": "spawns rebuild child process",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-bl-site-package-agent",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "customer BYOK OpenRouter key",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/bl-site-package/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-bl-site-package-catalogue-sync",
+   "target": "ext-liderpapel",
+   "kind": "reads",
+   "label": "distributor feed over sFTP",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
+    "/Users/brais/VSCODE/bl-site-package/.env.example"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-bl-site-package-catalogue-sync",
+   "target": "proj-bl-site-package-server",
+   "kind": "writes",
+   "label": "updates catalogue tables, then rebuild",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-bl-site-package-server",
+   "target": "proj-bl-site-package-agent",
+   "kind": "calls",
+   "label": "panel chat route",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/src/api/chat.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-bl-site-package-server",
+   "target": "ext-turnstile",
+   "kind": "calls",
+   "label": "panel login and contact captcha",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/DEPLOY.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-bl-site-package-fleet",
+   "target": "proj-bl-site-package-blcliente",
+   "kind": "monitors",
+   "label": "fleet-check availability and version",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-bl-site-package-fleet",
+   "target": "proj-bl-site-package-shoroban",
+   "kind": "monitors",
+   "label": "fleet-check availability and version",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes",
+   "target": "proj-bl-site-package-fleet",
+   "kind": "monitors",
+   "label": "maintenance agent checks every deployment",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes",
+   "target": "proj-bl-site-package-shoroban",
+   "kind": "writes",
+   "label": "publishes posts, product sheets and infographics via panel API",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/DEPLOY.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs",
+   "note": "bl_site_publish_tool.py with X-Automation-Key; dedicated profile 'shoroban'"
+  },
+  {
+   "source": "proj-bl-site-package",
+   "target": "proj-biglobster",
+   "kind": "depends-on",
+   "label": "productized version of the flagship; parity rule",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/biglobster.md"
+   ],
+   "confidence": "verified",
+   "note": "Improvements are ported both ways (Turnstile and table-scroll moved between them)"
+  },
+  {
+   "source": "proj-grow-shop-landing",
+   "target": "zb-grow-shop",
+   "kind": "deployed-on",
+   "label": "Zeabur static service",
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/claude.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Hosting detail from claude.md ('static hosting') and the 2026-10-02 migration note (2/2 services running)"
+  },
+  {
+   "source": "proj-grow-shop-api",
+   "target": "zb-grow-shop",
+   "kind": "deployed-on",
+   "label": "Zeabur service, auto-deploy from main",
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-grow-shop-landing",
+   "target": "proj-grow-shop-api",
+   "kind": "calls",
+   "label": "POST /api/submit-offer",
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/claude.md",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-grow-shop-landing",
+   "target": "ext-turnstile",
+   "kind": "calls",
+   "label": "captcha widget on offer form",
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/index.html"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-grow-shop-api",
+   "target": "ext-turnstile",
+   "kind": "calls",
+   "label": "verifies token before sending emails",
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/api.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-grow-shop-api",
+   "target": "ext-resend",
+   "kind": "notifies",
+   "label": "owner notification and visitor auto-reply",
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/api.js",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes",
+   "target": "proj-grow-shop",
+   "kind": "manages",
+   "label": "dedicated Hermes profile and Telegram forum topic",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/biglobster/OPS.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Customer = Hermes profile (2026-06-02); topic routing fixed 2026-06-06"
+  },
+  {
+   "source": "proj-heclient-provision",
+   "target": "zeabur",
+   "kind": "manages",
+   "label": "creates projects/services via Zeabur GraphQL API",
+   "sources": [
+    "/Users/brais/VSCODE/heclient/lib/zeabur.ts"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-heclient-provision",
+   "target": "hermes",
+   "kind": "deploys",
+   "label": "provisions one Hermes container per customer from the hermes-sandbox image",
+   "sources": [
+    "/Users/brais/VSCODE/heclient/README.md",
+    "/Users/brais/VSCODE/heclient/lib/hermes.ts"
+   ],
+   "confidence": "from-docs",
+   "note": "Intended flow; never deployed"
+  },
+  {
+   "source": "proj-heclient",
+   "target": "vercel",
+   "kind": "deployed-on",
+   "label": "intended control-plane host",
+   "sources": [
+    "/Users/brais/VSCODE/heclient/README.md",
+    "/Users/brais/VSCODE/heclient/PLAN.md"
+   ],
+   "confidence": "from-docs",
+   "note": "PLAN.md 'Deploy to Vercel' is unchecked"
+  },
+  {
+   "source": "proj-offlinepics-import",
+   "target": "ext-google-drive",
+   "kind": "backs-up-to",
+   "label": "manual recovery snapshot via Drive for Desktop folder",
+   "sources": [
+    "/Users/brais/VSCODE/OfflinePics/memories/decisions.md"
+   ],
+   "confidence": "verified",
+   "note": "Google Photos is an optional one-way viewing copy, never a recovery source"
+  },
+  {
+   "source": "proj-experiencianatural-home",
+   "target": "zb-experiencianatural",
+   "kind": "deployed-on",
+   "label": "Zeabur static site",
+   "sources": [
+    "/Users/brais/VSCODE/experiencianatural-home/README.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Project name from workspace decision; id not in the expected zb-* list"
+  },
+  {
+   "source": "cloudflare",
+   "target": "proj-experiencianatural-home",
+   "kind": "routes-to",
+   "label": "proxies traffic (orange cloud)",
+   "sources": [
+    "/Users/brais/VSCODE/experiencianatural-home/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-facturas",
+   "target": "ext-google-drive",
+   "kind": "reads",
+   "label": "recovered order/price data from Drive and Gmail exports",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/facturas.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-shambhala-bangkok",
+   "target": "vercel",
+   "kind": "deployed-on",
+   "label": "Vercel (shambhalabangkok.vercel.app)",
+   "sources": [
+    "gh api repos/Shambhala-Bangkok/shambhalaBangkok/readme"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-shambhala-bangkok",
+   "target": "ext-brevo",
+   "kind": "notifies",
+   "label": "email via Brevo",
+   "sources": [
+    "gh api repos/Shambhala-Bangkok/shambhalaBangkok/readme"
+   ],
+   "confidence": "from-docs"
+  }
+ ]
+}

@@ -1,0 +1,44 @@
+# stackmap — first slice
+
+Goal: one local page that shows the whole stack (Zeabur, Hermes, Claude Code, Buzz, products)
+as a zoomable, collapsible graph, plus a floating chat that answers questions about it.
+
+Decisions (2026-10-06, Brais): chat runs on the local `claude` CLI (no API key); app is
+localhost only (127.0.0.1).
+
+## Plan
+
+- [x] Map the stack read-only: Hermes, Zeabur + hosting, Claude Code, Buzz/Fizz, products
+- [x] `data/*.json` — one file per slice + `core.json` (layers, person, external services)
+- [x] `lib/stack.mjs` — merge slices, report dangling edges / duplicate ids / parent cycles
+- [x] `public/graph-model.js` — pure functions: visible nodes for an expanded set, edges
+      lifted to the nearest visible ancestor
+- [x] `public/app.js` — Cytoscape + fcose map: expand/collapse, search, details panel,
+      neighbourhood focus, legend
+- [x] `public/chat.js` — floating chat, SSE streaming, `[[node-id]]` links jump to the map
+- [x] `server.mjs` — static files + `/api/chat`; spawns `claude -p` with Read/Grep/Glob only,
+      no MCP servers, no settings/CLAUDE.md, no session persistence; Host/Origin checks
+- [x] `npm run check` + `node --test` for merge/validation and edge lifting
+
+## Verification
+
+- [x] `npm run check` reports 0 dangling edges
+- [x] `npm test` green
+- [x] Browser: expand Hermes, collapse it again, search a node, open details
+- [x] Chat: one answer from the map alone, one that needs a file read, `[[id]]` link focuses
+- [x] Request from a foreign Origin / Host is refused (403)
+
+## Done 2026-10-06
+
+- 6 slices merged: 333 nodes, 551 relations, 0 errors, 0 warnings (duplicates across slices merged,
+  29 containment-as-edge relations dropped; the validator now warns on those)
+- QA in /browse: search → reveal → details; Expand button and double-click; chat answer in 17 s with
+  `[[id]]` links that focus the map; phone width (no horizontal scroll)
+- Chat lockdown tested live: `.env` read refused (absolute `//**/` pattern), Grep finds nothing
+
+## Next
+
+- [ ] Brais: `mergeLiftedEdges` policy in `public/graph-model.js` (the cross-group hairball)
+- [ ] GitHub remote (`br41s/stackmap`, private) once Brais says so
+- [ ] If the ~72k-token chat prompt bites on limits: send summaries + edges only, let it Read `data/`
+- [ ] Map refresh: rerun the slice mappers, or a scanner, when the stack drifts

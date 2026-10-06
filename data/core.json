@@ -1,0 +1,290 @@
+{
+ "nodes": [
+  {
+   "id": "layer-hosting",
+   "label": "Hosting & infra",
+   "kind": "layer",
+   "parent": null,
+   "summary": "Where things run: Zeabur, Vercel, Google Cloud, Neon, Cloudflare, GitHub, Plesk, and the domains on top.",
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "stackmap (layer grouping)"
+   ]
+  },
+  {
+   "id": "layer-agents",
+   "label": "Agents & automation",
+   "kind": "layer",
+   "parent": null,
+   "summary": "Autonomous systems that act on their own schedule: Hermes and the Buzz community with its Fizz bot fleet.",
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "stackmap (layer grouping)"
+   ]
+  },
+  {
+   "id": "layer-dev",
+   "label": "Dev tooling",
+   "kind": "layer",
+   "parent": null,
+   "summary": "How Brais builds: Claude Code, its agents, skills, hooks and MCP servers, and the VS Code workspace with its memory logs.",
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "stackmap (layer grouping)"
+   ]
+  },
+  {
+   "id": "layer-products",
+   "label": "Products",
+   "kind": "layer",
+   "parent": null,
+   "summary": "The apps and sites, all owned by Biglobster LLC.",
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "stackmap (layer grouping)"
+   ]
+  },
+  {
+   "id": "layer-external",
+   "label": "External services",
+   "kind": "layer",
+   "parent": null,
+   "summary": "Third-party APIs the stack calls: model providers, observability, messaging, email, payments.",
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "stackmap (layer grouping)"
+   ]
+  },
+  {
+   "id": "brais",
+   "label": "Brais",
+   "kind": "person",
+   "parent": null,
+   "summary": "CEO. Gives orders through Claude Code, Telegram (Hermes) and Buzz; owns every account.",
+   "details": [],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "CLAUDE.md"
+   ]
+  },
+  {
+   "id": "ext-anthropic",
+   "label": "Anthropic",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Claude models: Claude Code's own model, and Claude via API where projects call it directly.",
+   "details": [],
+   "links": [
+    {
+     "label": "console",
+     "url": "https://console.anthropic.com"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-openrouter",
+   "label": "OpenRouter",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Model router; Hermes and several products reach most LLMs through it.",
+   "details": [],
+   "links": [
+    {
+     "label": "site",
+     "url": "https://openrouter.ai"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-huggingface",
+   "label": "Hugging Face",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Models, datasets and Spaces; reached through the hf-hub MCP server and Hermes media generation.",
+   "details": [],
+   "links": [
+    {
+     "label": "site",
+     "url": "https://huggingface.co"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-langfuse",
+   "label": "Langfuse",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "LLM tracing and observability; Hermes tenants have their own projects.",
+   "details": [],
+   "links": [
+    {
+     "label": "site",
+     "url": "https://langfuse.com"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-telegram",
+   "label": "Telegram",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Chat channel: Hermes gateway topics per tenant, alerts from products.",
+   "details": [],
+   "links": [
+    {
+     "label": "site",
+     "url": "https://telegram.org"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-google-drive",
+   "label": "Google Drive",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Backup target (Hermes nightly zip, volume dumps) and document sync.",
+   "details": [],
+   "links": [
+    {
+     "label": "drive",
+     "url": "https://drive.google.com"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-brevo",
+   "label": "Brevo",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Transactional email (magic links, notifications).",
+   "details": [],
+   "links": [
+    {
+     "label": "site",
+     "url": "https://www.brevo.com"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-stripe",
+   "label": "Stripe",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Payments. Code exists in some projects; no live account per the 2026-09-30 FinView decision.",
+   "details": [],
+   "links": [
+    {
+     "label": "site",
+     "url": "https://stripe.com"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-deepseek",
+   "label": "DeepSeek",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Model provider. Blocked on the account since 2026-10-01 (Hermes auditor pin retired).",
+   "details": [],
+   "links": [
+    {
+     "label": "site",
+     "url": "https://www.deepseek.com"
+    }
+   ],
+   "status": "retired",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  },
+  {
+   "id": "ext-turnstile",
+   "label": "Cloudflare Turnstile",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Anti-spam challenge on contact and sign-up forms.",
+   "details": [],
+   "links": [
+    {
+     "label": "docs",
+     "url": "https://developers.cloudflare.com/turnstile/"
+    }
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "memories/decisions.md"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "source": "brais",
+   "target": "claude-code",
+   "kind": "controls",
+   "label": "builds and operates through",
+   "confidence": "from-docs"
+  },
+  {
+   "source": "brais",
+   "target": "hermes",
+   "kind": "controls",
+   "label": "gives orders over Telegram",
+   "confidence": "from-docs"
+  },
+  {
+   "source": "brais",
+   "target": "buzz",
+   "kind": "controls",
+   "label": "runs the community",
+   "confidence": "from-docs"
+  }
+ ]
+}

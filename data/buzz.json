@@ -1,0 +1,2670 @@
+{
+ "nodes": [
+  {
+   "id": "buzz",
+   "label": "Buzz",
+   "kind": "platform",
+   "parent": "layer-agents",
+   "summary": "Nostr-based chat community platform (relay + Desktop app + CLI) where Brais's BigLobster bot team and the ClaudeCode identity live.",
+   "details": [
+    "Protocol: the CLI help describes a Nostr private key identity and NIP-01/02/23/34/38/51/AE/IA/OA events (kind numbers), so Buzz is Nostr-based",
+    "Pieces: relay, Buzz Desktop (chat UI), buzz CLI, channels, per-agent identities with owner attestation",
+    "Brais's community runs on one relay (see buzz-relay); human chat is in Buzz Desktop, bots run as containers (see fizz)",
+    "Upstream is open source (block/buzz)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "block/buzz (upstream)",
+     "url": "https://github.com/block/buzz"
+    }
+   ],
+   "sources": [
+    "mcp__buzz__buzz_help",
+    "mcp__buzz__doctor",
+    "~/fizz/mcp/README.md",
+    "~/.claude/projects/-Users-brais-fizz/memory/buzz-connector.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-upstream",
+   "label": "block/buzz upstream",
+   "kind": "repo",
+   "parent": "buzz",
+   "summary": "Open-source Buzz source repo that Desktop, the relay and the CLI come from; Fizz builds its bot CLI from it.",
+   "details": [
+    "Per a Claude memory note, answers about Desktop/relay behaviour are read from the source at the tag matching the installed version (desktop-v<version>)",
+    "Bots run CLI tag v0.4.26 (built from this repo by the buzz-agent base image); Desktop is 0.5.26"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "GitHub",
+     "url": "https://github.com/block/buzz"
+    }
+   ],
+   "sources": [
+    "~/.claude/projects/-Users-brais-fizz/memory/buzz-connector.md",
+    "~/fizz/buzz-agent/README.md",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "buzz-relay",
+   "label": "Buzz relay (biglobster)",
+   "kind": "server",
+   "parent": "buzz",
+   "summary": "The community's Nostr relay: stores channels and messages and authenticates every identity; all bots, Desktop and the CLI connect to it.",
+   "details": [
+    "Endpoint: wss://biglobster.communities.buzz.xyz (BUZZ_RELAY_URL in bots.compose.yml and ~/.buzz/AGENTS.md)",
+    "doctor reports relay access ok for the ClaudeCode identity (2026-10-06)",
+    "Hosting provider is not stated in any file read; the hostname sits under buzz.xyz, which suggests a hosted community (inferred, not verified)",
+    "Bots can be refused by the relay on version mismatch; remedy is raising BUZZ_REF in the buzz-agent Dockerfile (LEEME)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__doctor",
+    "~/fizz/bots.compose.yml",
+    "~/.buzz/AGENTS.md",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-desktop",
+   "label": "Buzz Desktop",
+   "kind": "tool",
+   "parent": "buzz",
+   "summary": "macOS Buzz app (v0.5.26) that is Brais's chat interface to the community; deliberately configured to run no agents of its own.",
+   "details": [
+    "Installed at /Applications/Buzz.app; doctor: desktop_version 0.5.26, 0 agents running",
+    "Policy (2026-10-05): Desktop must not launch agents because they would run as Brais without isolation; all bots are sandboxed containers instead",
+    "Desktop has no local API and its updater replaces the whole bundle; the CLI symlink at ~/.local/bin/buzz is recreated on each launch. Run doctor after a Desktop update",
+    "Desktop only lists a container bot in its Agents list and @-picker if the relay holds an owner-signed kind 30177 record (registrar.py publishes it)",
+    "Opening the private Welcome channel re-creates the factory agents; avoid it",
+    "Desktop keeps its own state under ~/Library/Application Support/xyz.block.buzz.app (not read; private)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__doctor",
+    "~/fizz/LEEME.md",
+    "~/fizz/memories/decisions.md",
+    "ls /Applications"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-desktop-legacy-agents",
+   "label": "Old Desktop-managed agents",
+   "kind": "agent",
+   "parent": "buzz-desktop",
+   "summary": "Four dormant, manual-start agent instances left in Buzz Desktop from before the container migration (OldFizz x2, OldHoney, OldPollen).",
+   "details": [
+    "Listed in ~/.buzz/AGENTS.md managed section; doctor shows 0 desktop agents running",
+    "Brais deleted the two auto-start instances (Old_SocialBot, Old_Video Edit Desk) on 2026-10-05 and accepted keeping these four, which hold fake model keys",
+    "An @mention can still wake a manual-start agent; quitar_agentes_desktop.py (~/fizz) is the plan-B script to remove their instance records with Desktop closed (backup kept)",
+    "Optional cleanup: profile -> Delete agent in Desktop"
+   ],
+   "status": "retired",
+   "links": [],
+   "sources": [
+    "~/.buzz/AGENTS.md",
+    "mcp__buzz__doctor",
+    "~/fizz/memories/decisions.md",
+    "~/fizz/quitar_agentes_desktop.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "buzz-cli",
+   "label": "buzz CLI",
+   "kind": "tool",
+   "parent": "buzz",
+   "summary": "Official Buzz command-line client for relay operations (messages, channels, DMs, canvas, workflows, repos/PRs NIP-34, notes, mem, moderation).",
+   "details": [
+    "Mac binary: ~/.local/bin/buzz -> /Applications/Buzz.app/Contents/MacOS/buzz",
+    "Config via BUZZ_RELAY_URL, BUZZ_PRIVATE_KEY, BUZZ_AUTH_TAG (env names only; values never recorded)",
+    "Command groups from buzz_help: agents, messages, channels, canvas, reactions, emoji, gifs, dms, users, workflows, feed, social, notes, repos, projects, patches, issues, pr, media, upload, mem, pack, moderation",
+    "Running bare `buzz --help` inside a bot container prints the bot's private key (version 0.4.26); `buzz <cmd> --help` is safe. Never do it from Bash",
+    "Containers carry their own CLI build (tag v0.4.26) from the buzz-agent image"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_help",
+    "ls -la ~/.local/bin/buzz",
+    "~/fizz/LEEME.md",
+    "~/.claude/projects/-Users-brais-fizz/memory/MEMORY.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-identity-claudecode",
+   "label": "ClaudeCode identity",
+   "kind": "agent",
+   "parent": "buzz",
+   "summary": "The attested Buzz identity ('ClaudeCode') that Claude Code uses through the MCP server; an identity, not a running agent.",
+   "details": [
+    "Created once by ~/fizz/mcp/setup.sh; Brais signs its owner attestation with his nsec; key lives in mcp/.env (mode 600, never shown to the model)",
+    "Appears in Buzz as one of Brais's agents; bots accept its messages because the attestation passes the buzz-acp owner-or-sibling gate",
+    "Bots are told (equipo-extra.txt) that ClaudeCode is the Biglobster platform maintainer who answers to Brais; it does not direct work (Fizz does)",
+    "Decision 2026-10-05: no background listener; it reads/answers Buzz only when Brais asks from Claude",
+    "Every ClaudeCode message in a channel wakes the bots that listen there (Fizz hears everything), so post sparingly"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__doctor",
+    "~/fizz/mcp/README.md",
+    "~/fizz/equipo-extra.txt",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-owner-attestation",
+   "label": "Owner attestation (NIP-OA)",
+   "kind": "config",
+   "parent": "buzz",
+   "summary": "Per-bot signed proof that Brais authorises the bot to join the community, plus the kind 30177 owner record that makes Desktop list it.",
+   "details": [
+    "BUZZ_AUTH_TAG (NIP-OA) is a BIP-340 signature by Brais over the bot's pubkey, stored in the bot's .env.<bot>; Brais's nsec is typed once per bot and never saved",
+    "Bots only obey Brais and his other agents (the other bots and ClaudeCode); the owner pubkey (public) is in the shared .env.comun",
+    "Retiring a bot destroys its private key, which invalidates its identity and attestation"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/atestar.py",
+    "~/fizz/registrar.py",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "buzz-channel-general",
+   "label": "#General",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "General conversation and community updates (relay description). Fizz posts the daily morning brief to Brais here.",
+   "details": [
+    "Channel UUID 6d77b79d-788d-5435-9372-dcbf3a7c32a8",
+    "Listed by `buzz channels list` as ClaudeCode (2026-10-06)",
+    "Memberships of each bot are verified live with fleet_channels; see edges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_read channels list/get",
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-channel-tech",
+   "label": "#tech",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "Technical channel; ClaudeCode joined it for the mention test on 2026-10-05 (OpsBot answered in 11 s).",
+   "details": [
+    "Channel UUID 2bfe6135-983a-40ae-b5a5-7e64cc9636cc",
+    "Listed by `buzz channels list` as ClaudeCode (2026-10-06)",
+    "Memberships of each bot are verified live with fleet_channels; see edges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_read channels list/get",
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-channel-seo",
+   "label": "#SEO",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "SEO channel for SEODesk's work on biglobster.top.",
+   "details": [
+    "Channel UUID 7f15bd95-3a15-4535-82a8-2eb6f8b30088",
+    "Listed by `buzz channels list` as ClaudeCode (2026-10-06)",
+    "Memberships of each bot are verified live with fleet_channels; see edges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_read channels list/get",
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-channel-social-media",
+   "label": "#Social Media",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "Social channel; SocialBot posts its nightly summary to Fizz here.",
+   "details": [
+    "Channel UUID c8006d6e-c92d-4958-9585-b9ff5354ff52",
+    "Listed by `buzz channels list` as ClaudeCode (2026-10-06)",
+    "Memberships of each bot are verified live with fleet_channels; see edges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_read channels list/get",
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-channel-cantine",
+   "label": "#Cantine",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "Content/video working channel shared by the marketing and video bots (purpose not stated in a file; inferred from membership).",
+   "details": [
+    "Channel UUID ff1529bf-4ea9-4a4c-ad0e-4511dbcfc7d5",
+    "Listed by `buzz channels list` as ClaudeCode (2026-10-06)",
+    "Memberships of each bot are verified live with fleet_channels; see edges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_read channels list/get",
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-channel-media-forgery",
+   "label": "#Media Forgery",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "Video/media production channel (relay description is the generic welcome text; role inferred from membership).",
+   "details": [
+    "Channel UUID f4a74eae-a548-56fe-9a2e-f89bfd929f0e",
+    "Listed by `buzz channels list` as ClaudeCode (2026-10-06)",
+    "Memberships of each bot are verified live with fleet_channels; see edges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_read channels list/get",
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-channel-growth",
+   "label": "#growth",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "Growth channel of Prospector; Brais types the signed 'aprobado <lote>' phrase here to approve outbound email batches.",
+   "details": [
+    "Channel UUID ba66ab7b-9278-4294-9b7d-6beb0c9e93ba",
+    "Listed by `buzz channels list` as ClaudeCode (2026-10-06)",
+    "Memberships of each bot are verified live with fleet_channels; see edges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_read channels list/get",
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-channel-migrations",
+   "label": "#migrations",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "Channel where Brais attached the Grok Bot / VideoEditDesk exports for migration into Buzz (2026-10-02/03).",
+   "details": [
+    "Channel UUID 1a4b492a-5308-4aa7-8fcb-7b16b9640345",
+    "Listed by `buzz channels list` as ClaudeCode (2026-10-06)",
+    "Memberships of each bot are verified live with fleet_channels; see edges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__buzz_read channels list/get",
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-dms",
+   "label": "DMs (Brais <-> bots)",
+   "kind": "channel",
+   "parent": "buzz-relay",
+   "summary": "Every bot has its own DM conversation with Brais; the bots also answer ClaudeCode and each other in DMs.",
+   "details": [
+    "Each bot opens an owner DM and says hello at first start",
+    "Per-bot DM channel ids differ (seen via fleet_channels); channels list shows two DM entries visible to ClaudeCode",
+    "Decision 2026-10-05: ClaudeCode answers DMs only on demand"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__fleet_channels",
+    "mcp__buzz__buzz_read channels list",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-nest",
+   "label": "Buzz Nest (~/.buzz)",
+   "kind": "config",
+   "parent": "buzz",
+   "summary": "Persistent workspace folder that Buzz Desktop created for its own agents: guides, plans, research, work logs, models and footage.",
+   "details": [
+    "Layout from AGENTS.md: GUIDES, PLANS, RESEARCH, WORK_LOGS, OUTBOX, REPOS, .scratch; extra: archive/archive.db, footage-library, models/",
+    "models/ holds two local speech models: parakeet-tdt-ctc-110m-en (STT) and pocket-tts (TTS voices)",
+    "Latest work log: 2026-10-03_VIDEOEDITDESK_MIGRATION.md; ENGAGEMENT_LEDGER.md also present",
+    "Managed section of AGENTS.md lists the four legacy Desktop agents and the relay URL"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/.buzz/AGENTS.md",
+    "ls ~/.buzz"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-skill-buzz-cli",
+   "label": "buzz-cli skill",
+   "kind": "skill",
+   "parent": "buzz-nest",
+   "summary": "Agent skill file documenting what `buzz --help` cannot: env vars, owner-reviewed agent drafts, usage conventions.",
+   "details": [
+    "Path ~/.buzz/.agents/skills/buzz-cli/SKILL.md; the MCP server's instructions point Claude Code here",
+    "Notes that agent creation from chat is an owner-reviewed Desktop draft (buzz agents draft-create), which the connector denies"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/.buzz/.agents/skills/buzz-cli/SKILL.md",
+    "~/fizz/mcp/src/index.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-nest-migration-docs",
+   "label": "Migration guides (SocialBot, VideoEditDesk, Grok)",
+   "kind": "doc",
+   "parent": "buzz-nest",
+   "summary": "Guides, research exports and work logs from moving Brais's Grok-based SocialBot and Video Edit Desk into Buzz agents (2026-10-02/03).",
+   "details": [
+    "GUIDES/SOCIALBOT and GUIDES/VIDEOEDITDESK: core system prompts and playbooks (X, Reddit, Facebook, Instagram, GEO sites; captions, cuts, short clips, weekly cut queue)",
+    "GUIDES/GROKBOT_TO_BUZZ_MIGRATION.md: finding that xAI offers no programmatic bot export, so export is manual",
+    "RESEARCH/*_EXPORT hold the raw exports; WORK_LOGS record the sessions",
+    "The persona and playbook content later reappears in the container bots SocialBot and VideoDesk (lineage inferred)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/.buzz/GUIDES/GROKBOT_TO_BUZZ_MIGRATION.md",
+    "~/.buzz/WORK_LOGS/2026-10-03_VIDEOEDITDESK_MIGRATION.md",
+    "ls ~/.buzz"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz",
+   "label": "fizz repo (~/fizz)",
+   "kind": "repo",
+   "parent": "buzz",
+   "summary": "Private repo br41s/fizz: everything that runs Brais's containerised Buzz bot fleet (./bot CLI, personas, compose files, tools, MCP connector, docs).",
+   "details": [
+    "Remote: https://github.com/br41s/fizz.git (private); 51 commits since 2026-10-05; main work merged via PRs (e.g. #14 per-task browsers, #15 active team)",
+    "Kept out of git (.gitignore): all .env.* except examples, mcp/.env, salida/, buzz-agent/, generated agents/*.agent.json, mcp/backups/, node_modules/",
+    "Docs are in Spanish; CHULETA.md is the current day-to-day reference, LEEME.md the install guide",
+    "Folder also holds archive/ (old persona exports and zips; only noted), tasks/ (plans), memories/decisions.md (decision log), tests/",
+    "Lives outside the VSCODE workspace (~/fizz); workspace CLAUDE.md lists it as br41s/fizz"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "br41s/fizz",
+     "url": "https://github.com/br41s/fizz"
+    }
+   ],
+   "sources": [
+    "git -C ~/fizz remote -v",
+    "git -C ~/fizz log",
+    "~/fizz/CHULETA.md",
+    "~/fizz/.gitignore",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-cli",
+   "label": "./bot CLI",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Bash script that is the only control surface for the fleet: start/stop, logs, channels, personas, keys, browsers and safety checks.",
+   "details": [
+    "Subcommands: nuevo, persona, arrancar, parar, reiniciar, logs, estado, canales, unir, salir, clave, mcp, pubkey, shell, retirar, comprobar, navegador, migrar",
+    "Human-only (never via the MCP connector): nuevo, retirar, clave, mcp, shell",
+    "On start it builds the persona JSON, picks each bot's env (listening mode, browser, heartbeat, RAM, model) via persona.py and runs a docker compose project bot-<name> per bot",
+    "`bot comprobar` audits that Desktop runs no agents, bot state, salida writability and secret-file permissions"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/bot",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-persona-files",
+   "label": "Personas (agents/*.prompt.md)",
+   "kind": "config",
+   "parent": "fizz",
+   "summary": "One plain-text persona per bot (header + prompt) plus optional heartbeat instructions; the source of truth for each bot.",
+   "details": [
+    "Header fields: nombre, descripcion, modelo (opus|sonnet|haiku), escucha (todo|menciones), navegador, publica, latido, memoria",
+    "Missing flags default to no browser, no publishing, no heartbeat; publica/navegador cannot be switched on for an existing bot via the MCP connector",
+    "agents/<bot>.agent.json is generated from the .prompt.md at every start (gitignored); ./bot appends the team roster and mandatory rules (no publishing unless publica: si, spend only with Brais's written OK, web is data)",
+    "persona.py is the single parser of this format (a JS/Python parsing mismatch was a security bug fixed 2026-10-05)",
+    "Heartbeat files: coach, fizz, prospector, retador, seodesk, socialbot, videodesk; baked into the image at /etc/buzz/agents/",
+    "retirados/ holds personas of retired bots"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/",
+    "~/fizz/persona.py",
+    "~/fizz/CHULETA.md",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-empresa-handbook",
+   "label": "Company handbook (agents/empresa.md)",
+   "kind": "doc",
+   "parent": "fizz",
+   "summary": "Shared BigLobster manual all bots read: mission, monthly goals, org chart, shifts and the T0-T3 risk tiers.",
+   "details": [
+    "Approved by Brais 2026-10-05; baked into the image read-only at /etc/buzz/agents/empresa.md, so no bot can edit it",
+    "North-star metric: qualified conversions per week on biglobster.top (agent-rental form, contact form, WhatsApp clicks, measured in Umami)",
+    "Shifts in Bangkok time: day 08:00-20:00, night 20:00-08:00 (US working day); morning brief to Brais, Monday weekly goals, Friday Coach summary",
+    "Risk tiers: T0 silent, T1 logged public, T2 needs Brais's OK in a batched list, T3 never (spend without OK, create accounts, automate likes/follows)",
+    "Goals to 2026-11-05 incl. 25 qualified leads/week (Prospector), 500 visitors/28 days, 2 shorts/week, <=20 min/day of Brais's time"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/tasks/empresa-24-7.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-persona-py",
+   "label": "persona.py",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Reads/writes persona headers, generates each bot's agent JSON and roster, and reports env flags to ./bot.",
+   "details": [
+    "Commands include plantilla, importar, entorno (prints listening/browser/heartbeat/RAM/model), campo",
+    "Since 2026-10-06 it also prints the model, which ./bot passes as BOT_MODELO -> ANTHROPIC_MODEL (buzz-acp 0.4.26 cannot switch models over ACP)",
+    "Reads equipo-extra.txt so bots know ClaudeCode exists"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/persona.py",
+    "~/fizz/equipo-extra.txt",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-signing-tools",
+   "label": "Signing helpers (atestar/registrar)",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Pure-Python BIP-340 tools that sign each bot's owner attestation and publish its kind 30177 registration so Desktop lists it.",
+   "details": [
+    "atestar.py: writes BUZZ_AUTH_TAG into .env.<bot>; Brais's nsec is read hidden and not stored; --test checks official vectors",
+    "registrar.py: --probar dry run, --retirar before `bot retirar`; also reused by the correo tool to verify Brais's signed approvals",
+    "npub2hex.mjs converts a public npub to hex for BUZZ_ACP_AGENT_OWNER",
+    "registrar.py was written 2026-10-05; the decisions log says Brais still had to run it for existing bots (status unknown now)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/atestar.py",
+    "~/fizz/registrar.py",
+    "~/fizz/npub2hex.mjs",
+    "~/fizz/tasks/todo.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-colima",
+   "label": "Colima VM",
+   "kind": "server",
+   "parent": "fizz",
+   "summary": "Linux VM on Brais's Mac (Colima, Docker runtime) that hosts every bot container and both visual browsers.",
+   "details": [
+    "colima status 2026-10-06: running, aarch64, macOS Virtualization.Framework, runtime docker, virtiofs mounts",
+    "Docs recommend 4 CPU / 12 GB / 40 GB disk and mounting only ~/fizz/salida (writable) so the bots cannot see the Mac home, keychain, ~/.ssh or repos",
+    "The fleet only runs while the Mac is awake; `bot arrancar` starts Colima if needed",
+    "Docker volumes seen: bot-<name>_work per bot, navegador_perfil, navegador_perfil-exploracion, and a leftover fizz_fizz-work"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "colima status",
+    "docker volume ls",
+    "~/fizz/LEEME.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bots-compose",
+   "label": "bots.compose.yml + Dockerfile.bots",
+   "kind": "config",
+   "parent": "fizz",
+   "summary": "Shared compose template and image recipe: one hardened container per bot, built on the buzz-agent base with the tool kit baked in.",
+   "details": [
+    "Image buzz-bots:local = buzz-agent:base + ffmpeg, Python venv (faster-whisper, kokoro-onnx, piper-tts, Google auth libs), Playwright MCP 0.0.83 + Chromium, gh, herramientas/bin, personas under /etc/buzz/agents",
+    "Container hardening: cap_drop ALL, no-new-privileges, pids_limit 512, shm 512m, restart unless-stopped, mem_limit default 1536m (overridden by persona memoria)",
+    "Each bot gets only .env.comun (Claude token, owner pubkey) and its own .env.<bot> (identity, attestation, its own keys); mounts its work volume and ~/fizz/salida",
+    "Env: BUZZ_RELAY_URL, BUZZ_ACP_SUBSCRIBE (all|mentions), ANTHROPIC_MODEL, BUZZ_ACP_HEARTBEAT_INTERVAL/PROMPT, ENABLE_CLAUDEAI_MCP_SERVERS=false",
+    "navegador-red.yml attaches a bot to the visual-browser network named by its PLAYWRIGHT_MCP_CDP_ENDPOINT"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/bots.compose.yml",
+    "~/fizz/Dockerfile.bots",
+    "~/fizz/navegador-red.yml",
+    "docker ps"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-buzz-agent-base",
+   "label": "Onnokh/buzz-agent base image",
+   "kind": "repo",
+   "parent": "fizz",
+   "summary": "Third-party repo cloned to ~/fizz/buzz-agent whose Dockerfile builds buzz-acp, the buzz CLI and Claude Code into buzz-agent:base.",
+   "details": [
+    "Pinned to the commit Brais notes; checkout is at 7cfc580 (merge of PR #10, 2026-07-28)",
+    "Not committed to br41s/fizz (gitignored); LEEME explains option A (compile locally) and B (pull ghcr.io/onnokh/buzz-agent:v0.4.26-13)",
+    "Originally packaged for Coolify one-resource-per-agent; Fizz reuses only the image"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Onnokh/buzz-agent",
+     "url": "https://github.com/Onnokh/buzz-agent"
+    }
+   ],
+   "sources": [
+    "~/fizz/buzz-agent/README.md",
+    "git -C ~/fizz/buzz-agent log",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-fleet",
+   "label": "Bot fleet (9 containers)",
+   "kind": "service",
+   "parent": "fizz",
+   "summary": "The nine Claude-Code-powered bot containers (compose project bot-<name> each) that act as the BigLobster team on Colima.",
+   "details": [
+    "fleet_status 2026-10-06: all nine Up (coach, fizz, guionista, opsbot, prospector, retador, seodesk, socialbot, videodesk)",
+    "Each runs buzz-acp bridging the relay to Claude Code (ACP); model from the persona via ANTHROPIC_MODEL; auth via Brais's Claude subscription token (name CLAUDE_CODE_OAUTH_TOKEN only)",
+    "Only Fizz listens to everything; all others wake on mentions, DMs and their own heartbeat",
+    "Container names bot-<name>-agent-1, networks bot-<name>_default; shared output folder ~/fizz/salida",
+    "Unverified: whether sessions really answer on the persona's model (logs never name it)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__buzz__fleet_status",
+    "mcp__buzz__doctor",
+    "docker ps",
+    "~/fizz/bots.compose.yml",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-salida",
+   "label": "salida/ (shared output)",
+   "kind": "config",
+   "parent": "fizz",
+   "summary": "~/fizz/salida: the only Mac folder mounted into the bots; where they leave state files, reports, drafts, videos and logs.",
+   "details": [
+    "Per-department subfolders: operaciones (state, backlog, retros, weekly goals), seo, growth, socialbot, video, coach, retador, fizz, prospector, plus dated work folders",
+    "Bots keep their memory in estado.md files here; Fizz, Coach and Retador read them at each heartbeat",
+    "Treated as untrusted: Brais is told not to run scripts that appear there; the MCP connector may only attach files from this folder",
+    "gitignored"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "ls ~/fizz/salida",
+    "~/fizz/LEEME.md",
+    "~/fizz/mcp/src/config.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-fizz",
+   "label": "Fizz (COO)",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Chief operating officer: sets daily/weekly plans, assigns work by @mention, reviews deliverables and sends Brais one morning brief.",
+   "details": [
+    "Model: opus (Claude, via Claude Code in the container)",
+    "Listens: all messages in its channels (the only bot that does)",
+    "Heartbeat: 2h",
+    "Memory limit: 1.5 GB default",
+    "Browser: no",
+    "Publishes: no",
+    "Container bot-fizz-agent-1, volume bot-fizz_work",
+    "Morning brief to Brais in #general between 07:00 and 11:00 ICT; Monday weekly goals; night handover",
+    "Mentions Retador before new plans, spend or public/irreversible moves"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/fizz.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-coach",
+   "label": "Coach",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Detects blocked work, checks each task follows the plan, and keeps Brais's decision queue.",
+   "details": [
+    "Model: sonnet (Claude, via Claude Code in the container)",
+    "Listens: mentions",
+    "Heartbeat: 4h",
+    "Memory limit: 2.5 GB",
+    "Browser: no",
+    "Publishes: no",
+    "Container bot-coach-agent-1, volume bot-coach_work",
+    "Queue in salida/coach/decisiones-brais.md surfaces in Fizz's brief; weekly Friday summary",
+    "Moved from listening-to-all to mentions on 2026-10-06 (132 of 163 turns were empty)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/coach.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-retador",
+   "label": "Retador",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Devil's advocate: challenges plans, spend and irreversible/public moves once per proposal with alternatives; never executes.",
+   "details": [
+    "Model: opus (Claude, via Claude Code in the container)",
+    "Listens: mentions",
+    "Heartbeat: 12h",
+    "Memory limit: 2.5 GB",
+    "Browser: yes (browser flag set)",
+    "Publishes: no",
+    "Container bot-retador-agent-1, volume bot-retador_work",
+    "One review a day from 09:00 ICT; challenges logged in salida/retador/retos.md",
+    "Answers 'Sin reto.' when nothing is material"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/retador.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-prospector",
+   "label": "Prospector",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Growth: finds leads and promotion sites for biglobster.top and sends approved outbound email batches.",
+   "details": [
+    "Model: sonnet (Claude, via Claude Code in the container)",
+    "Listens: mentions",
+    "Heartbeat: 2h",
+    "Memory limit: 2 GB",
+    "Browser: yes: exploration browser",
+    "Publishes: no",
+    "Container bot-prospector-agent-1, volume bot-prospector_work",
+    "Email only through the correo tool: batches approved by Brais with a signed 'aprobado <lote> <hash>' phrase, max 5 cold/day and 10 total/day",
+    "Leads and promotion lists under salida/growth; asks Brais in #growth to solve captchas"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/prospector.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-socialbot",
+   "label": "SocialBot",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Social media manager for BigLobster's official accounts; publishes via Zernio and prepares Brais's daily manual-actions list.",
+   "details": [
+    "Model: sonnet (Claude, via Claude Code in the container)",
+    "Listens: mentions",
+    "Heartbeat: 1h",
+    "Memory limit: 1.5 GB default",
+    "Browser: yes (browser flag set)",
+    "Publishes: yes (only bot with publica: si)",
+    "Container bot-socialbot-agent-1, volume bot-socialbot_work",
+    "Playbooks per network (X, Reddit, Facebook, Instagram, GEO sites) in salida/socialbot/playbooks",
+    "Nightly summary to Fizz around 20:00 ICT; likes/follows/group posts left to Brais in lista-hoy.md"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-guionista",
+   "label": "Guionista",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Turns a blog article or idea into a video script and storyboard with cost estimate for VideoDesk; produces and publishes nothing.",
+   "details": [
+    "Model: sonnet (Claude, via Claude Code in the container)",
+    "Listens: mentions",
+    "Heartbeat: none",
+    "Memory limit: 1.5 GB default",
+    "Browser: yes (browser flag set)",
+    "Publishes: no",
+    "Container bot-guionista-agent-1, volume bot-guionista_work",
+    "Hands scripts to VideoDesk for a free animatic before any spend"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/guionista.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-videodesk",
+   "label": "VideoDesk",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Video desk: edits recordings, makes shorts from blog articles, builds animatics and (with Brais's 'aprobado vN') generated shots; never publishes.",
+   "details": [
+    "Model: sonnet (Claude, via Claude Code in the container)",
+    "Listens: mentions",
+    "Heartbeat: none (weekly queue switchable)",
+    "Memory limit: 4 GB",
+    "Browser: no",
+    "Publishes: no",
+    "Container bot-videodesk-agent-1, volume bot-videodesk_work",
+    "Local free transcription (faster-whisper) and TTS (Kokoro); generated shots via OpenRouter HeyGen model with a 2 USD/day cap",
+    "Outputs in salida/video (entrada, renders, fichas, transcripciones, cola.md)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/videodesk.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-seodesk",
+   "label": "SEODesk",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Technical SEO/GEO for biglobster.top: audits with Search Console, PageSpeed and Umami and opens fix PRs on br41s/biglobster; never merges or deploys.",
+   "details": [
+    "Model: sonnet (Claude, via Claude Code in the container)",
+    "Listens: mentions",
+    "Heartbeat: 3h",
+    "Memory limit: 2 GB",
+    "Browser: yes: work browser (Brais's sessions)",
+    "Publishes: no",
+    "Container bot-seodesk-agent-1, volume bot-seodesk_work",
+    "GitHub limits: token sees only br41s/biglobster, push blocked to main/tags/deletes/force/other repos, gh wrapper blocks merge and repo/release changes",
+    "The repo's CLAUDE.md names Hermes as COO; its persona overrides that: its boss is Fizz (no Hermes integration found)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/seodesk.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-bot-opsbot",
+   "label": "OpsBot",
+   "kind": "bot",
+   "parent": "fizz-fleet",
+   "summary": "Operator for mechanical, high-volume jobs (transcripts, text dumps, raw lists, format conversion, data cleanup) with a verification file per delivery.",
+   "details": [
+    "Model: haiku (Claude, via Claude Code in the container)",
+    "Listens: mentions",
+    "Heartbeat: none",
+    "Memory limit: 2 GB",
+    "Browser: no",
+    "Publishes: no",
+    "Container bot-opsbot-agent-1, volume bot-opsbot_work",
+    "Deliveries under salida/opsbot/<date>-<task>/verificacion.md",
+    "Answered the 2026-10-05 mention test in 11 s"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/opsbot.prompt.md",
+    "mcp__buzz__fleet_status",
+    "docker ps",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-navegador",
+   "label": "Shared visual browsers",
+   "kind": "service",
+   "parent": "fizz",
+   "summary": "Two Chromium desktops (linuxserver/chromium) next to the bots, split by task: one with Brais's logins on a closed allowlist, one with no logins for open exploration.",
+   "details": [
+    "navegador.compose.yml run via `bot navegador arrancar|parar|estado`; desktops published only on the Mac's loopback (ports 3000 and 3001) with basic auth",
+    "Bots control them over CDP (port 9223, nginx in the image) on internal Docker networks fizz-navegador and fizz-exploracion; nginx accepts only Host <name>:9223 (DNS-rebinding fix 2026-10-06)",
+    "A bot joins a network only if its .env sets PLAYWRIGHT_MCP_CDP_ENDPOINT (set by Brais); whoever joins the work network controls Brais's sessions",
+    "Image pinned by digest; up to 3 GB each; RESTART_APP watchdog relaunches Chromium; both containers Up 2 hours on 2026-10-06"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/navegador.compose.yml",
+    "~/fizz/navegador-red.yml",
+    "docker ps",
+    "docker network ls",
+    "~/fizz/CHULETA.md",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-nav-trabajo",
+   "label": "Work browser (localhost:3000)",
+   "kind": "service",
+   "parent": "fizz-navegador",
+   "summary": "Chromium with Brais's real sessions (Google, Gmail, GitHub, Umami) restricted by Chromium policy to a closed list of sites.",
+   "details": [
+    "Allowlist: biglobster.top, search.google.com, accounts.google.com, mail.google.com, cloud.umami.is, github.com/br41s (+login/session), chrome://*, about:blank; all else blocked, including links clicked in Gmail",
+    "Container navegador-chromium-1; network fizz-navegador; SEODesk is the bot that uses it",
+    "Not checked: whether embedded Google frames break under the list"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/navegador.compose.yml",
+    "~/fizz/memories/decisions.md",
+    "docker ps"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-nav-exploracion",
+   "label": "Exploration browser (localhost:3001)",
+   "kind": "service",
+   "parent": "fizz-navegador",
+   "summary": "Chromium with no logins that can open any website; Prospector browses here and Brais solves captchas in it.",
+   "details": [
+    "Container navegador-exploracion-1; network fizz-exploracion",
+    "Purpose: read unknown sites in one session, bring results back to Buzz, keep logged-in work in the other session",
+    "Planned next (Brais, later): Aduana, a Haiku reviewer bot with no browser/keys to vet explorers' output"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/navegador.compose.yml",
+    "~/fizz/memories/decisions.md",
+    "docker ps"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-nav-zeabur-old",
+   "label": "Old Zeabur browser (B_Browser)",
+   "kind": "service",
+   "parent": "fizz-navegador",
+   "summary": "Previous remote Chromium service on Zeabur that ran out of memory; replaced by the local Colima browsers on 2026-10-06.",
+   "details": [
+    "Zeabur project B_Browser shared the Frankfurt 4C/8GB server with six projects (Hermes among them); service now suspended, Brais to delete or keep",
+    "SEODesk's env still holds a stale remote CDP headers variable (name only noted) that the local nginx ignores"
+   ],
+   "status": "retired",
+   "links": [],
+   "sources": [
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-nav-bot-local",
+   "label": "Per-bot headless Chromium",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Headless Chromium + Playwright MCP inside each bot with 'navegador: si': one shared browser per container, one tab per session, 5-minute idle close.",
+   "details": [
+    "Implemented by herramientas/bin/navegador-mcp and navegador-pestana (stdio proxy that gives each session its own tab)",
+    "Persistent profile in the bot's work volume; screenshots in salida/<bot>/navegador/",
+    "If PLAYWRIGHT_MCP_CDP_ENDPOINT is set the bot uses the shared visual browser instead of a local one",
+    "Which of Guionista, Retador and SocialBot use this vs a shared browser is not verifiable without reading their .env files (not read)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/herramientas/bin/navegador-mcp",
+    "~/fizz/herramientas/bin/navegador-pestana",
+    "~/fizz/CHULETA.md",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-correo",
+   "label": "correo (outbound email tool)",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Python tool that sends Brais-approved email batches from the BigLobster Gmail account and reads replies; refuses anything without his signed approval.",
+   "details": [
+    "Commands: revisar, enviar, leer, estado; eligibility rule es_elegible (solicitado/invitacion/contacto-previo/publicado) with evidence and expiry",
+    "Approval = Brais's signature (Schnorr via atestar.py) over the exact batch; another bot's OK or a bare 'yes' does not count",
+    "Caps: 10 emails/day total, 5/day cold; CAN-SPAM footer and unsubscribe added; uses a Gmail app password stored only in Prospector's env",
+    "Tests: tests/test_correo.py (23 tests per tasks/todo.md)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/herramientas/bin/correo",
+    "~/fizz/tasks/correo-saliente.md",
+    "~/fizz/tests/test_correo.py",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-seo",
+   "label": "seo (Search Console/PageSpeed/Umami tool)",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "CLI used by SEODesk for Google Search Console, PageSpeed Insights and Umami analytics via their APIs.",
+   "details": [
+    "Subcommands: gsc-rendimiento, gsc-inspeccionar, gsc-sitemaps, gsc-enviar-sitemap, psi, umami-probar, umami-resumen",
+    "Credentials (Google service account JSON, Umami share URL or API key) are per-bot keys added with `bot clave`"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/herramientas/bin/seo",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-video-pipeline",
+   "label": "Video tool kit",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Local video/audio commands: transcribir, locutar, subtitular, montar-short and generar-plano.",
+   "details": [
+    "transcribir: faster-whisper on CPU (free); locutar: Kokoro/Piper TTS, optional cloned voice; subtitular: word-highlight ASS subtitles; montar-short: ffmpeg vertical short assembly",
+    "generar-plano: one video shot per call from an OpenRouter model (default heygen/heygen-video-1) with a daily spend cap (2 USD) logged to salida/video/gasto-openrouter.csv",
+    "Used mainly by VideoDesk; OpsBot uses transcribir"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/herramientas/bin/generar-plano",
+    "~/fizz/herramientas/bin/transcribir",
+    "~/fizz/herramientas/bin/locutar",
+    "~/fizz/herramientas/bin/montar-short",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-gh-guard",
+   "label": "gh wrapper + git pre-push hook",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Safety net that lets bots open branches and PRs but not merge, delete, create repos/releases or push to main.",
+   "details": [
+    "gh wrapper blocks pr merge, repo create/delete/edit, release create/delete/edit, secrets/variables, auth changes",
+    "pre-push hook allows only repos listed in the bot's GIT_REPOS_PERMITIDOS and never main/master, tags or deletions",
+    "Real limit is the fine-grained token (one repo); the wrapper is a second layer"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/herramientas/bin/gh",
+    "~/fizz/herramientas/git-hooks/pre-push",
+    "~/fizz/Dockerfile.bots",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "cc-mcp-buzz",
+   "label": "buzz MCP server (~/fizz/mcp)",
+   "kind": "mcp-server",
+   "parent": "cc-mcp",
+   "summary": "Node stdio MCP server that lets Claude Code read/write the Buzz community and manage the bot fleet; registered in Claude Code as 'buzz'.",
+   "details": [
+    "11 tools: buzz_help, buzz_read, buzz_write, doctor, fleet_status, fleet_power, fleet_logs, fleet_channels, fleet_channel_set, persona_get, persona_set",
+    "Registered at user scope in ~/.claude.json: server name buzz, stdio, command = fnm default node, arg ~/fizz/mcp/src/index.js (no env values)",
+    "Policy (policy.js): READ whitelist for buzz_read, everything else is a write; DENY = agents *, pack *, channels delete, messages delete, moderation ban, moderation timeout; file flags only inside ~/fizz/salida",
+    "persona_set backs up the old persona to mcp/backups and restores it if the restart fails; the publica/navegador gate asks persona.py, not a JS parser",
+    "Human-only: bot nuevo, retirar, clave, mcp, shell. Dependencies: @modelcontextprotocol/sdk, zod; tests via node --test",
+    "Verified working this session: doctor, fleet_status, fleet_channels, buzz_help, buzz_read"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/mcp/README.md",
+    "~/fizz/mcp/src/index.js",
+    "~/fizz/mcp/src/policy.js",
+    "~/.claude.json (mcpServers.buzz)",
+    "mcp__buzz__doctor"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-docs",
+   "label": "Fizz docs, plans and decision log",
+   "kind": "doc",
+   "parent": "fizz",
+   "summary": "LEEME.md (install), CHULETA.md (day-to-day), tasks/ plans and memories/decisions.md in ~/fizz.",
+   "details": [
+    "tasks/: empresa-24-7.md (company operating model), correo-saliente.md, latam-correo.md, todo.md",
+    "memories/decisions.md logs decisions with rejected alternatives (connector design, persona_set security fix, browser split, Zeabur-to-Colima move, retro fixes)",
+    "archive/ holds old exports and zips of earlier bot versions (noted only, not read)",
+    "A Claude memory note flags LEEME.md as possibly stale; CHULETA.md is current"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/LEEME.md",
+    "~/fizz/CHULETA.md",
+    "~/fizz/tasks/",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "fizz-ci-tests",
+   "label": "Tests and CI workflow",
+   "kind": "config",
+   "parent": "fizz",
+   "summary": "Python unittests for the correo tool and signing vectors plus Node tests for the MCP connector, with a GitHub Actions workflow file.",
+   "details": [
+    ".github/workflows/tests.yml runs on PRs and pushes to main: correo unittests, atestar self-test, mcp npm ci && npm test",
+    "Caveat: workspace memory says no GitHub Actions run on any br41s repo (Cloud Build/Hermes cron are used instead), so whether this workflow executes is unclear"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "~/fizz/.github/workflows/tests.yml",
+    "~/fizz/tests/",
+    "~/fizz/mcp/test/"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "cc-sched-buzz-retro",
+   "label": "buzz-retro-diaria (daily retro)",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "Claude Code scheduled task that reviews the bot fleet's day every night, compares with yesterday and proposes 3 fixes plus 1 experiment for Brais to approve.",
+   "details": [
+    "Schedule: cron 30 22 * * * (local Bangkok time, plus jitter); enabled; next run 2026-10-07",
+    "Reads decisions.md, empresa.md and the previous retro; summarises channels with buzz_read and logs with fleet_logs; writes salida/operaciones/retro/<date>.md",
+    "Constrained to read-only: no persona/config changes, no restarts, no posting in Buzz"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "mcp__scheduled-tasks__list_scheduled_tasks",
+    "~/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-sched-fizz-volume",
+   "label": "fizz-old-volume-check (one-time)",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "One-time Claude Code scheduled task (2026-10-12) that checks whether the leftover Docker volume fizz_fizz-work was used and reminds Brais to remove it.",
+   "details": [
+    "Read-only check; if unused it gives Brais the docker volume rm command to run himself",
+    "Baseline 2026-10-05: 1 file (.bootstrap-done), 4.0K, no container referencing it"
+   ],
+   "status": "planned",
+   "links": [],
+   "sources": [
+    "mcp__scheduled-tasks__list_scheduled_tasks",
+    "~/.claude/scheduled-tasks/fizz-old-volume-check/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-zernio",
+   "label": "Zernio (social scheduler API)",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Social publishing/scheduling API with an MCP server that SocialBot uses to post, comment, reply and read analytics on BigLobster's accounts.",
+   "details": [
+    "Connected per bot with `bot mcp socialbot zernio https://mcp.zernio.com/mcp`; the key is stored only in SocialBot's env",
+    "Rule: social via a scheduler API in draft/approval mode, never passwords or browser sessions"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md",
+    "~/fizz/CHULETA.md",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-google-search",
+   "label": "Google Search Console + PageSpeed",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Google APIs SEODesk reads for indexing, performance and speed of biglobster.top.",
+   "details": [
+    "Search Console property sc-domain:biglobster.top via a Google service account credential held only by SEODesk",
+    "PageSpeed Insights used through the seo tool"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/seodesk.prompt.md",
+    "~/fizz/herramientas/bin/seo",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-umami",
+   "label": "Umami Cloud analytics",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Web analytics for biglobster.top that supplies the north-star conversion events; SEODesk reads it by share link or API.",
+   "details": [
+    "Events set up 2026-10-04; as of the 2026-10-05 plan the conversion metric was still 'sin datos'; target live by 2026-10-12",
+    "cloud.umami.is is on the work browser's allowlist"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/seodesk.prompt.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-gmail",
+   "label": "Gmail (BigLobster outbound mailbox)",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "The BigLobster Gmail account used by Prospector's correo tool for approved outbound email and for reading replies and Facebook notices.",
+   "details": [
+    "Auth via a Gmail app password stored only in Prospector's env; account is also used for other things",
+    "Cold email from Gmail breaches Gmail's terms; Brais accepted the risk at low volume (decision 2026-10-05) and would move to Migadu on a separate domain if Google limits it"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/tasks/correo-saliente.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  }
+ ],
+ "edges": [
+  {
+   "source": "cc-mcp-buzz",
+   "target": "buzz-cli",
+   "kind": "calls",
+   "label": "buzz_read/buzz_write run the CLI as ClaudeCode",
+   "sources": [
+    "~/fizz/mcp/src/buzz.js",
+    "~/fizz/mcp/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-mcp-buzz",
+   "target": "fizz-bot-cli",
+   "kind": "calls",
+   "label": "fleet_* and persona_* wrap ./bot",
+   "sources": [
+    "~/fizz/mcp/src/fleet.js",
+    "~/fizz/mcp/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-mcp-buzz",
+   "target": "buzz-identity-claudecode",
+   "kind": "depends-on",
+   "label": "authenticates to the relay as ClaudeCode",
+   "sources": [
+    "~/fizz/mcp/README.md",
+    "mcp__buzz__doctor"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-mcp-buzz",
+   "target": "fizz-persona-files",
+   "kind": "writes",
+   "label": "persona_set edits a persona (backup + rollback)",
+   "sources": [
+    "~/fizz/mcp/README.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-mcp-buzz",
+   "target": "fizz-fleet",
+   "kind": "manages",
+   "label": "start/stop/restart bots, read logs, join/leave channels",
+   "sources": [
+    "~/fizz/mcp/src/index.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "buzz-identity-claudecode",
+   "target": "buzz-owner-attestation",
+   "kind": "depends-on",
+   "label": "attested by Brais via mcp/setup.sh",
+   "sources": [
+    "~/fizz/mcp/README.md",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "buzz-skill-buzz-cli",
+   "target": "buzz-cli",
+   "kind": "configures",
+   "label": "documents flags --help does not cover",
+   "sources": [
+    "~/.buzz/.agents/skills/buzz-cli/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-mcp-buzz",
+   "target": "buzz-skill-buzz-cli",
+   "kind": "reads",
+   "label": "instructions point to the skill file",
+   "sources": [
+    "~/fizz/mcp/src/index.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "buzz-cli",
+   "target": "buzz-relay",
+   "kind": "calls",
+   "label": "relay API / websocket",
+   "sources": [
+    "mcp__buzz__buzz_help",
+    "mcp__buzz__doctor"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "buzz-desktop",
+   "target": "buzz-relay",
+   "kind": "calls",
+   "label": "chat client connection",
+   "sources": [
+    "mcp__buzz__doctor",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "brais",
+   "target": "buzz-desktop",
+   "kind": "controls",
+   "label": "chats with the team from Desktop",
+   "sources": [
+    "~/fizz/LEEME.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "brais",
+   "target": "fizz-bot-cli",
+   "kind": "controls",
+   "label": "runs ./bot for everything the connector may not do",
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "brais",
+   "target": "buzz-owner-attestation",
+   "kind": "configures",
+   "label": "signs each bot's attestation (nsec typed once per bot)",
+   "sources": [
+    "~/fizz/atestar.py",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-signing-tools",
+   "target": "buzz-owner-attestation",
+   "kind": "writes",
+   "label": "writes BUZZ_AUTH_TAG into the bot's env",
+   "sources": [
+    "~/fizz/atestar.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-signing-tools",
+   "target": "buzz-relay",
+   "kind": "writes",
+   "label": "registrar.py publishes kind 30177 owner records",
+   "sources": [
+    "~/fizz/registrar.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "buzz-relay",
+   "target": "buzz-upstream",
+   "kind": "depends-on",
+   "label": "relay/Desktop/CLI come from block/buzz",
+   "sources": [
+    "~/.claude/projects/-Users-brais-fizz/memory/buzz-connector.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-cli",
+   "target": "fizz-signing-tools",
+   "kind": "calls",
+   "label": "bot nuevo signs identity and registration",
+   "sources": [
+    "~/fizz/bot",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-cli",
+   "target": "fizz-persona-py",
+   "kind": "calls",
+   "label": "reads headers, builds agent JSON and env",
+   "sources": [
+    "~/fizz/bot",
+    "~/fizz/persona.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-persona-py",
+   "target": "fizz-persona-files",
+   "kind": "reads",
+   "label": "parses headers; generates agents/<bot>.agent.json",
+   "sources": [
+    "~/fizz/persona.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-persona-files",
+   "target": "fizz-fleet",
+   "kind": "configures",
+   "label": "each bot's prompt, model, listening mode, heartbeat",
+   "sources": [
+    "~/fizz/bots.compose.yml",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-empresa-handbook",
+   "target": "fizz-fleet",
+   "kind": "configures",
+   "label": "shared rules read by every bot at /etc/buzz/agents/empresa.md",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/Dockerfile.bots"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-cli",
+   "target": "fizz-fleet",
+   "kind": "manages",
+   "label": "arrancar, parar, logs, canales, estado",
+   "sources": [
+    "~/fizz/bot"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-cli",
+   "target": "fizz-navegador",
+   "kind": "manages",
+   "label": "bot navegador arrancar|parar|estado",
+   "sources": [
+    "~/fizz/bot",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-cli",
+   "target": "fizz-colima",
+   "kind": "manages",
+   "label": "starts Colima when needed",
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/bot"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bots-compose",
+   "target": "fizz-fleet",
+   "kind": "configures",
+   "label": "hardened container template and image",
+   "sources": [
+    "~/fizz/bots.compose.yml",
+    "~/fizz/Dockerfile.bots"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bots-compose",
+   "target": "fizz-buzz-agent-base",
+   "kind": "depends-on",
+   "label": "FROM buzz-agent:base",
+   "sources": [
+    "~/fizz/Dockerfile.bots"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-buzz-agent-base",
+   "target": "buzz-upstream",
+   "kind": "depends-on",
+   "label": "compiles buzz-acp and the CLI from block/buzz",
+   "sources": [
+    "~/fizz/buzz-agent/README.md",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-fleet",
+   "target": "fizz-colima",
+   "kind": "deployed-on",
+   "label": "Docker containers inside the VM",
+   "sources": [
+    "docker ps",
+    "colima status"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-navegador",
+   "target": "fizz-colima",
+   "kind": "deployed-on",
+   "label": "two Chromium containers in the same VM",
+   "sources": [
+    "docker ps",
+    "~/fizz/navegador.compose.yml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-fleet",
+   "target": "buzz-relay",
+   "kind": "calls",
+   "label": "buzz-acp websocket per bot",
+   "sources": [
+    "~/fizz/bots.compose.yml",
+    "mcp__buzz__fleet_status"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-fleet",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "Claude Code with Brais's subscription token",
+   "sources": [
+    "~/fizz/bots.compose.yml",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-fleet",
+   "target": "fizz-salida",
+   "kind": "writes",
+   "label": "state, reports, drafts, videos (only shared mount)",
+   "sources": [
+    "~/fizz/bots.compose.yml",
+    "~/fizz/LEEME.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz",
+   "target": "github",
+   "kind": "stores-in",
+   "label": "private repo br41s/fizz",
+   "sources": [
+    "git -C ~/fizz remote -v"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-ci-tests",
+   "target": "github",
+   "kind": "depends-on",
+   "label": "workflow file for Actions (execution unconfirmed)",
+   "sources": [
+    "~/fizz/.github/workflows/tests.yml"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "cc-sched-buzz-retro",
+   "target": "fizz-fleet",
+   "kind": "monitors",
+   "label": "daily review of channels, logs and salida files",
+   "sources": [
+    "~/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-buzz-retro",
+   "target": "fizz-salida",
+   "kind": "writes",
+   "label": "salida/operaciones/retro/<date>.md",
+   "sources": [
+    "~/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-fizz-volume",
+   "target": "fizz-colima",
+   "kind": "monitors",
+   "label": "checks leftover volume fizz_fizz-work",
+   "sources": [
+    "~/.claude/scheduled-tasks/fizz-old-volume-check/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-nav-zeabur-old",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "was hosted on the shared Frankfurt server (suspended)",
+   "sources": [
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-nav-trabajo",
+   "target": "fizz-colima",
+   "kind": "deployed-on",
+   "label": "navegador-chromium-1",
+   "sources": [
+    "docker ps"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-nav-exploracion",
+   "target": "fizz-colima",
+   "kind": "deployed-on",
+   "label": "navegador-exploracion-1",
+   "sources": [
+    "docker ps"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "opus",
+   "sources": [
+    "~/fizz/agents/fizz.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "sonnet",
+   "sources": [
+    "~/fizz/agents/coach.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "opus",
+   "sources": [
+    "~/fizz/agents/retador.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-prospector",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "sonnet",
+   "sources": [
+    "~/fizz/agents/prospector.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "sonnet",
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-guionista",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "sonnet",
+   "sources": [
+    "~/fizz/agents/guionista.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "sonnet",
+   "sources": [
+    "~/fizz/agents/videodesk.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "sonnet",
+   "sources": [
+    "~/fizz/agents/seodesk.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-opsbot",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "haiku",
+   "sources": [
+    "~/fizz/agents/opsbot.prompt.md",
+    "~/fizz/bots.compose.yml"
+   ],
+   "confidence": "from-docs",
+   "note": "Set via ANTHROPIC_MODEL from the persona; actual model used per session not verified (decisions.md 2026-10-06)"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-bot-coach",
+   "kind": "routes-to",
+   "label": "assigns work by @mention",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/fizz.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-bot-retador",
+   "kind": "routes-to",
+   "label": "assigns work by @mention",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/fizz.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-bot-prospector",
+   "kind": "routes-to",
+   "label": "assigns work by @mention",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/fizz.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-bot-socialbot",
+   "kind": "routes-to",
+   "label": "assigns work by @mention",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/fizz.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-bot-guionista",
+   "kind": "routes-to",
+   "label": "assigns work by @mention",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/fizz.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-bot-videodesk",
+   "kind": "routes-to",
+   "label": "assigns work by @mention",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/fizz.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-bot-seodesk",
+   "kind": "routes-to",
+   "label": "assigns work by @mention",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/fizz.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-bot-opsbot",
+   "kind": "routes-to",
+   "label": "assigns work by @mention",
+   "sources": [
+    "~/fizz/agents/empresa.md",
+    "~/fizz/agents/fizz.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-growth",
+   "kind": "reads",
+   "label": "member, hears every message",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-migrations",
+   "kind": "reads",
+   "label": "member, hears every message",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-general",
+   "kind": "reads",
+   "label": "member, hears every message",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-seo",
+   "kind": "reads",
+   "label": "member, hears every message",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-social-media",
+   "kind": "reads",
+   "label": "member, hears every message",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-cantine",
+   "kind": "reads",
+   "label": "member, hears every message",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-media-forgery",
+   "kind": "reads",
+   "label": "member, hears every message",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-tech",
+   "kind": "reads",
+   "label": "member, hears every message",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "buzz-channel-social-media",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "buzz-channel-cantine",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "buzz-channel-media-forgery",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "buzz-channel-seo",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "buzz-channel-social-media",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "buzz-channel-cantine",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "buzz-channel-tech",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-prospector",
+   "target": "buzz-channel-growth",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-prospector",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "buzz-channel-migrations",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "buzz-channel-general",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "buzz-channel-seo",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "buzz-channel-social-media",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "buzz-channel-cantine",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "buzz-channel-media-forgery",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "buzz-channel-tech",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "buzz-channel-migrations",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "buzz-channel-general",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "buzz-channel-seo",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "buzz-channel-social-media",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "buzz-channel-cantine",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "buzz-channel-media-forgery",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "buzz-channel-tech",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-guionista",
+   "target": "buzz-channel-cantine",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-guionista",
+   "target": "buzz-channel-media-forgery",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-guionista",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "buzz-channel-cantine",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "buzz-channel-media-forgery",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-opsbot",
+   "target": "buzz-channel-cantine",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-opsbot",
+   "target": "buzz-channel-tech",
+   "kind": "reads",
+   "label": "member, wakes on mentions",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "fizz-bot-opsbot",
+   "target": "buzz-dms",
+   "kind": "reads",
+   "label": "owner DM",
+   "sources": [
+    "mcp__buzz__fleet_channels"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "buzz-identity-claudecode",
+   "target": "buzz-channel-tech",
+   "kind": "writes",
+   "label": "member; mention test 2026-10-05",
+   "sources": [
+    "~/fizz/tasks/todo.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "brais",
+   "kind": "notifies",
+   "label": "one morning brief in #general (approvals numbered)",
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/agents/fizz.latido.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-coach",
+   "target": "fizz-bot-fizz",
+   "kind": "notifies",
+   "label": "hands over work-allocation issues and Brais's decision queue",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-prospector",
+   "target": "brais",
+   "kind": "notifies",
+   "label": "asks approval of email batches and captcha help in #growth",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "brais",
+   "kind": "notifies",
+   "label": "daily manual-actions list (lista-hoy.md)",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "proj-biglobster",
+   "kind": "writes",
+   "label": "opens fix PRs on br41s/biglobster (never merges)",
+   "sources": [
+    "~/fizz/agents/seodesk.prompt.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "proj-biglobster",
+   "kind": "serves",
+   "label": "runs BigLobster's official social accounts",
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-prospector",
+   "target": "proj-biglobster",
+   "kind": "serves",
+   "label": "leads and promotion for biglobster.top",
+   "sources": [
+    "~/fizz/agents/prospector.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "proj-biglobster",
+   "kind": "serves",
+   "label": "shorts from the BigLobster blog",
+   "sources": [
+    "~/fizz/agents/videodesk.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-guionista",
+   "target": "proj-biglobster",
+   "kind": "serves",
+   "label": "scripts and storyboards from blog articles",
+   "sources": [
+    "~/fizz/agents/guionista.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "github",
+   "kind": "calls",
+   "label": "branches and PRs through the guarded gh/git",
+   "sources": [
+    "~/fizz/herramientas/bin/gh",
+    "~/fizz/herramientas/git-hooks/pre-push"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-prospector",
+   "target": "fizz-tool-correo",
+   "kind": "calls",
+   "label": "sends approved batches, reads replies",
+   "sources": [
+    "~/fizz/agents/prospector.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-correo",
+   "target": "ext-gmail",
+   "kind": "writes",
+   "label": "SMTP send; reads replies and Facebook notices",
+   "sources": [
+    "~/fizz/tasks/correo-saliente.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-correo",
+   "target": "fizz-signing-tools",
+   "kind": "depends-on",
+   "label": "verifies Brais's Schnorr-signed approval",
+   "sources": [
+    "~/fizz/Dockerfile.bots",
+    "~/fizz/atestar.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "fizz-tool-seo",
+   "kind": "calls",
+   "label": "Search Console, PageSpeed, Umami",
+   "sources": [
+    "~/fizz/agents/seodesk.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-seo",
+   "target": "ext-google-search",
+   "kind": "reads",
+   "label": "service-account API calls",
+   "sources": [
+    "~/fizz/herramientas/bin/seo"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-seo",
+   "target": "ext-umami",
+   "kind": "reads",
+   "label": "share link or API",
+   "sources": [
+    "~/fizz/herramientas/bin/seo"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "ext-zernio",
+   "kind": "calls",
+   "label": "publishes, replies, DMs, analytics",
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "fizz-tool-video-pipeline",
+   "kind": "calls",
+   "label": "transcribe, voice, subtitles, assemble shorts, generate shots",
+   "sources": [
+    "~/fizz/agents/videodesk.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-opsbot",
+   "target": "fizz-tool-video-pipeline",
+   "kind": "calls",
+   "label": "transcribir for bulk transcripts",
+   "sources": [
+    "~/fizz/agents/opsbot.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-video-pipeline",
+   "target": "ext-openrouter",
+   "kind": "calls",
+   "label": "generar-plano video shots, 2 USD/day cap",
+   "sources": [
+    "~/fizz/herramientas/bin/generar-plano",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "fizz-tool-gh-guard",
+   "kind": "calls",
+   "label": "all GitHub access passes the wrapper",
+   "sources": [
+    "~/fizz/agents/seodesk.prompt.md",
+    "~/fizz/herramientas/bin/gh"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-gh-guard",
+   "target": "github",
+   "kind": "calls",
+   "label": "gh/git limited to allowed repos",
+   "sources": [
+    "~/fizz/herramientas/gitconfig"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "fizz-nav-trabajo",
+   "kind": "calls",
+   "label": "CDP via http://navegador:9223 (Brais's sessions)",
+   "sources": [
+    "~/fizz/memories/decisions.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-prospector",
+   "target": "fizz-nav-exploracion",
+   "kind": "calls",
+   "label": "CDP via http://exploracion:9223 (no sessions)",
+   "sources": [
+    "~/fizz/memories/decisions.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-guionista",
+   "target": "fizz-nav-bot-local",
+   "kind": "calls",
+   "label": "headless Chromium in its own container",
+   "sources": [
+    "~/fizz/agents/guionista.prompt.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "fizz-bot-retador",
+   "target": "fizz-nav-bot-local",
+   "kind": "calls",
+   "label": "headless Chromium in its own container",
+   "sources": [
+    "~/fizz/agents/retador.prompt.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "fizz-nav-bot-local",
+   "kind": "calls",
+   "label": "headless Chromium in its own container",
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "fizz-nav-trabajo",
+   "target": "ext-umami",
+   "kind": "reads",
+   "label": "logged-in Umami dashboard (allowlisted)",
+   "sources": [
+    "~/fizz/navegador.compose.yml"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-nav-trabajo",
+   "target": "ext-gmail",
+   "kind": "reads",
+   "label": "logged-in Gmail (allowlisted)",
+   "sources": [
+    "~/fizz/navegador.compose.yml"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "buzz-nest-migration-docs",
+   "target": "fizz-persona-files",
+   "kind": "configures",
+   "label": "SocialBot and VideoDesk prompts/playbooks originate here",
+   "sources": [
+    "~/.buzz/GUIDES/",
+    "~/fizz/archive/"
+   ],
+   "confidence": "inferred"
+  }
+ ]
+}

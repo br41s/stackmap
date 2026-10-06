@@ -1,0 +1,2176 @@
+{
+ "nodes": [
+  {
+   "id": "claude-code",
+   "label": "Claude Code",
+   "kind": "platform",
+   "parent": "layer-dev",
+   "summary": "Anthropic's coding agent, Brais's main operator interface for the whole workspace (CLI, Claude desktop app Code tab and VS Code).",
+   "details": [
+    "Native install, autoUpdates disabled in ~/.claude.json; 206 per-project entries recorded there",
+    "Configured by layered CLAUDE.md files, settings.json, hooks, agents, skills, plugins and MCP servers (children of this node)",
+    "Brais's global rules: no rm/mv/git clean, no push or deploy without confirmation in the current message, plan in tasks/todo.md, log decisions/errors/lessons",
+    "Most-used skills by counter: browse 30, zeabur-deployment-logs 22, review 21, zeabur-service-exec 19, zeabur-service-list 13"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Claude Code docs",
+     "url": "https://docs.claude.com/en/docs/claude-code"
+    }
+   ],
+   "sources": [
+    "/Users/brais/.claude/CLAUDE.md",
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "vscode-workspace",
+   "label": "VSCODE workspace",
+   "kind": "repo",
+   "parent": "layer-dev",
+   "summary": "The /Users/brais/VSCODE folder: a workspace repo (br41s/VSCode) holding shared memories, tasks, mcp-hub and agent config, with every other top-level folder an independent git repo.",
+   "details": [
+    "Workspace repo tracks CLAUDE.md, .claude/ (agents, rules, skills), memories/, tasks/, mcp-hub/, scripts/",
+    "Each project folder (FinView, biglobster, chatmemo, hermes-sandbox, ...) has its own repo; never mix changes across repos",
+    "VS.code-workspace lists the folders; .mcp.json is gitignored at the workspace level",
+    "Also contains folders not mapped here (agents/, audits/, research/, docs/, dotfiles/, shortcuts/, FACTURAS/, ...)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "br41s/VSCode",
+     "url": "https://github.com/br41s/VSCode"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md",
+    "/Users/brais/VSCODE/.gitignore",
+    "/Users/brais/VSCODE/scripts/sync-repos-on-open.sh"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-surface-cli",
+   "label": "Claude Code CLI",
+   "kind": "platform",
+   "parent": "claude-code",
+   "summary": "Terminal (native-installed) Claude Code; the surface used for hooks, scripts and MCP registration via `claude mcp add`.",
+   "details": [
+    "installMethod native; deepLinkTerminal = Terminal.app",
+    "MCP servers are registered with `claude mcp add --scope user`"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/fizz/mcp/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-surface-desktop",
+   "label": "Claude desktop app (Code tab)",
+   "kind": "platform",
+   "parent": "claude-code",
+   "summary": "Claude.app on macOS; hosts Claude Code sessions with built-in panes (browser, terminal, iOS simulator), session management and the scheduled-tasks runner.",
+   "details": [
+    "/Applications/Claude.app is installed; session tools named ccd_* (directory, session, sidebar, view, window, PR, connectors) and scheduled-tasks are present in this session",
+    "Scheduled tasks are stored as SKILL.md under ~/.claude/scheduled-tasks/"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Applications/Claude.app",
+    "/Users/brais/.claude/scheduled-tasks"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "cc-surface-vscode",
+   "label": "VS Code + Claude Code extension",
+   "kind": "platform",
+   "parent": "claude-code",
+   "summary": "VS Code is the editor surface: Claude Code runs there (useTerminal=true) next to GitHub Copilot, with workspace MCP registrations and tasks.",
+   "details": [
+    "claudeCode.useTerminal = true in .vscode/settings.json; ~/.claude/ide holds IDE lock files",
+    "Workspace CLAUDE.md names 'VS Code chat or Claude Code' as the way the CEO gives orders",
+    "Copilot is also used: chatmemo has Copilot session importers; mcp-hub docs target Copilot"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.vscode/settings.json",
+    "/Users/brais/VSCODE/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/scripts"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "cc-models",
+   "label": "Models and effort",
+   "kind": "config",
+   "parent": "claude-code",
+   "summary": "Model selection is not pinned in settings.json; effortLevel is medium and subagents pin their own models.",
+   "details": [
+    "settings.json has no `model` key; effortLevel = medium",
+    "Workspace subagents: Explore = haiku (effort low), reviewer = sonnet (effort high), docs-writer = sonnet (effort medium)",
+    "A scheduled-task prompt mentions commits co-authored by Opus 5.5; this mapping session ran on Sonnet 5.5",
+    "~/.claude.json caches show Fable 5.1 as an extra model option and a notice that Fable 5 was unavailable"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/VSCODE/.claude/agents",
+    "/Users/brais/.claude.json",
+    "/Users/brais/.claude/scheduled-tasks/hermes-http-cache-semantics-recheck/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "cc-config",
+   "label": "Configuration hierarchy",
+   "kind": "config",
+   "parent": "claude-code",
+   "summary": "How Claude Code is configured: global CLAUDE.md, workspace CLAUDE.md, project CLAUDE.md files, settings, rules and per-user state.",
+   "details": [
+    "Precedence as documented: project CLAUDE.md > workspace CLAUDE.md > global ~/.claude/CLAUDE.md",
+    "Both global and workspace files demand reading the project's CLAUDE.md at session start"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md",
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "cc-global-claude-md",
+   "label": "~/.claude/CLAUDE.md (global)",
+   "kind": "config",
+   "parent": "cc-config",
+   "summary": "Brais's private global instructions loaded in every project: hf-hub registry, hard limits, 'Work Bible', gstack lean mode, codebase-topology reasoning rules.",
+   "details": [
+    "Contains the hf-hub tool registry and says to add an hf-hub block to every new project's .mcp.json",
+    "Hard rules: never rm/mv/git clean; no push, reset --hard or branch deletion without permission; confirm externally visible actions in the current message",
+    "Section 11: gstack lean mode - default skills /office-hours, /review, /qa; web browsing only through /browse, never mcp__claude-in-chrome__*",
+    "Section 12: 'Codebase Reasoning Topology' (4 invariables, ambiguity detection, verification gate)",
+    "Tool names in its hf-hub list (e.g. gethfrows, searchhfdatasets) differ from the real registered names (get_hf_rows, search_hf_datasets)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/CLAUDE.md",
+    "/Users/brais/VSCODE/ai-infra/hf-hub/src/index.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-workspace-claude-md",
+   "label": "VSCODE/CLAUDE.md (workspace)",
+   "kind": "config",
+   "parent": "vscode-workspace",
+   "summary": "Workspace-level instructions: hard limits, session-start ritual, layout, when to act vs ask, delegation, memory files, git conventions.",
+   "details": [
+    "Session start: read the project's CLAUDE.md; at workspace level read memories/decisions.md and memories/lessons.md",
+    "decisions.md is an index only; full entries live in memories/decisions/<topic>.md",
+    "Names the workspace agents (Explore, reviewer, docs-writer), the codebase-topology skill and the gstack rule",
+    "Docs-travel-with-the-change rule: update stale CLAUDE.md/README/docs in the same PR"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-project-claude-mds",
+   "label": "Per-project CLAUDE.md files",
+   "kind": "config",
+   "parent": "cc-config",
+   "summary": "Project-specific instruction files that take precedence over the workspace file.",
+   "details": [
+    "Present in: FinView, SocialAgenda, biglobster, bl-site-package, chatmemo, heclient, hermes-sandbox, mcp-hub, grow-shop-api, grow-shop-landing, ai-infra/hf-hub (lowercase claude.md)",
+    "Not present at the folder root of: FlyWell, OfflinePics (only .claude/launch.json and worktrees)",
+    "hermes-sandbox/CLAUDE.md is also the operating manual for deploying and inspecting Hermes via the Zeabur CLI"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE (ls of each project folder)",
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-global-settings",
+   "label": "~/.claude/settings.json",
+   "kind": "config",
+   "parent": "cc-config",
+   "summary": "User-scope Claude Code settings: permission allow/deny lists, the Zeabur guard hook, ChatMemo hooks, enabled plugins, auto-mode classifier notes and Langfuse env.",
+   "details": [
+    "permissions: 251 allow rules (mostly Bash: git 65, node 44, curl 28, python3, zeabur 8, gcloud 6, gstack browse binary 6, gh 2) and 6 deny rules (Zeabur destructive verbs)",
+    "Stale allow entries for mcp__playwright__* and mcp__biglobster__get_biglobster_context (no such server is currently configured)",
+    "hooks: PreToolUse(Bash) Zeabur guard, Stop and SessionEnd ChatMemo sync",
+    "enabledPlugins: 16 from claude-plugins-official plus zeabur@zeabur and typesafe@typesafe-ai; extraKnownMarketplaces: zeabur, typesafe-ai",
+    "autoMode.soft_deny adds zeabur service delete and rclone on production paths; autoMode.environment describes the Hermes production deployment as protected",
+    "env block carries LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_BASE_URL (cloud.langfuse.com); values not recorded",
+    "additionalDirectories: /tmp and VSCODE/.vscode",
+    "SECURITY NOTE: some allow rules embed literal credentials (a database URL and a GitHub token); values deliberately not recorded"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-local-settings",
+   "label": "VSCODE/.claude/settings.local.json",
+   "kind": "config",
+   "parent": "vscode-workspace",
+   "summary": "Workspace-local permission allow rules (brew, pg_dump/pg_restore version checks, gcloud auth/config/projects, python PDF-library import checks, a migration script).",
+   "details": [
+    "Machine-local; allow rules only, no hooks or deny rules",
+    "One allow rule embeds a literal database connection string with a password (not recorded)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.claude/settings.local.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-rule-gstack",
+   "label": "VSCODE/.claude/rules/gstack.md",
+   "kind": "config",
+   "parent": "vscode-workspace",
+   "summary": "Path-scoped rule (code, json/yaml/toml, css/html files) that restates gstack lean mode: only /office-hours, /review, /qa plus /browse unless asked by name.",
+   "details": [
+    "Loads only when editing matching file types",
+    "Says to load gstack in a repo that has .gstack/ (only the workspace root has one)",
+    "If gstack is not loaded, fall back to mcp__claude-in-chrome__* and say so (the global CLAUDE.md is stricter: never use it)",
+    "Flow: office-hours (if scope is large) > implement > review > qa (UI flows only)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.claude/rules/gstack.md",
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-project-settings",
+   "label": "Per-project .claude directories",
+   "kind": "config",
+   "parent": "cc-config",
+   "summary": "Project-level Claude Code config: FinView rule files, biglobster's redundant Zeabur guard and graphify hooks, and launch.json / settings.local.json in most projects.",
+   "details": [
+    "FinView/.claude/rules: alt-investments, auth-security, fiscal-importers, frontend, geo, options, zonas (.md)",
+    "biglobster/.claude: settings.json (Zeabur deny + PreToolUse hooks), hooks/block-zeabur-destructive.sh, skills/graphify, zeabur-safety-checklist.md",
+    "launch.json (dev-server configs) in FinView, FlyWell, SocialAgenda, biglobster, bl-site-package, chatmemo",
+    "settings.local.json in FinView, SocialAgenda, biglobster, bl-site-package, chatmemo, hermes-sandbox; .claude/worktrees in most repos"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude",
+    "/Users/brais/VSCODE/biglobster/.claude",
+    "/Users/brais/VSCODE/SocialAgenda/.claude",
+    "/Users/brais/VSCODE/chatmemo/.claude"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-user-state",
+   "label": "~/.claude.json (user state)",
+   "kind": "config",
+   "parent": "cc-config",
+   "summary": "Per-user Claude Code state file: user-scope MCP servers, per-project entries, usage counters, claude.ai connector history, repo path mappings.",
+   "details": [
+    "mcpServers (user scope): only `buzz`; no project-scoped servers recorded in it",
+    "githubRepoPaths maps br41s/vscode, br41s/hermes-sandbox and legacy braisntext/* names to local folders",
+    "skillUsage and pluginUsage counters; claudeAiMcpEverConnected list; native install, autoUpdates false",
+    "~/.claude also holds plans/ (8 plan files), file-history/, session-env/, shell-snapshots/, backups/, telemetry/"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/.claude"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-agents",
+   "label": "Subagents",
+   "kind": "config",
+   "parent": "claude-code",
+   "summary": "Custom subagents defined in the workspace plus built-in and plugin-provided ones; no user-level ~/.claude/agents exists.",
+   "details": [
+    "Workspace agents are version-controlled in VSCODE/.claude/agents (3)",
+    "~/.claude/agents does not exist"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.claude/agents"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-agent-explore",
+   "label": "Explore (workspace override)",
+   "kind": "agent",
+   "parent": "cc-agents",
+   "summary": "Read-only codebase search agent on haiku that returns file:line hits, never edits.",
+   "details": [
+    "model haiku, effort low, tools Read/Grep/Glob/Bash, Write/Edit/NotebookEdit disallowed",
+    "Output capped around 30 lines; says 'not found' rather than inventing paths",
+    "Workspace CLAUDE.md notes only built-in Explore and Plan skip loading CLAUDE.md"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.claude/agents/Explore.md",
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-agent-reviewer",
+   "label": "reviewer",
+   "kind": "agent",
+   "parent": "cc-agents",
+   "summary": "Staff-engineer pre-merge reviewer: production bugs, blast radius, race conditions first, style last; read-only.",
+   "details": [
+    "model sonnet, effort high, memory: project, Write/Edit disallowed",
+    "Reviews only the diff against the default branch"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.claude/agents/reviewer.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-agent-docs-writer",
+   "label": "docs-writer",
+   "kind": "agent",
+   "parent": "cc-agents",
+   "summary": "Documentation agent that reads the code before writing README/CLAUDE.md/CHANGELOG changes and refuses to restructure without confirmation.",
+   "details": [
+    "model sonnet, effort medium, tools Read/Grep/Glob/Write/Edit/Bash"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.claude/agents/docs-writer.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-agents-builtin",
+   "label": "Built-in and plugin subagents",
+   "kind": "agent",
+   "parent": "cc-agents",
+   "summary": "Agent types shipped by Claude Code and by installed plugins (general-purpose, Plan, claude-code-guide, code-modernization, feature-dev, plugin-dev, agent-sdk-dev, code-simplifier, hookify, Zapier specialist).",
+   "details": [
+    "Taken from the harness's agent-type list, not from a file"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "session agent-type listing"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "cc-skills",
+   "label": "Skills and plugins",
+   "kind": "config",
+   "parent": "claude-code",
+   "summary": "All skill sources: workspace-own skill, gstack, Anthropic and third-party plugin marketplaces, claude.ai-synced skills, built-ins.",
+   "details": [
+    "~/.claude/skills has 59 entries (gstack suite plus pinokio, gepeto, synced)",
+    "Marketplaces known: claude-plugins-official, zeabur, typesafe-ai"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/skills",
+    "/Users/brais/.claude/plugins/known_marketplaces.json",
+    "/Users/brais/.claude/plugins/installed_plugins.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-skill-codebase-topology",
+   "label": "codebase-topology (own skill)",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "Brais's own skill: resolve ambiguity and map the 4 invariables (state, feedback, coupling, timing) before large or vague changes.",
+   "details": [
+    "Lives in VSCODE/.claude/skills/codebase-topology/SKILL.md; version-controlled with the workspace",
+    "Explicitly not for trivial or fully specified changes"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.claude/skills/codebase-topology/SKILL.md",
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-gstack",
+   "label": "gstack",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "Garry Tan's open-source gstack skill suite (v1.60.1.0), run in Brais's 'lean mode': only office-hours, review, qa and browse are used by default.",
+   "details": [
+    "~/.claude/skills/gstack plus about 55 slash-command skill folders (autoplan, ship, cso, retro, plan-*, design-*, land-and-deploy, ios-*, careful/freeze/guard, ...)",
+    "Per policy the rest are not used unless Brais names them",
+    "~/.gstack/config.yaml: skill_prefix false, auto_upgrade true, cross_project_learnings true; also holds a chromium profile and per-project state",
+    "VSCODE/.gstack contains browse audit/console/network logs from 2026-04-21",
+    "Six allow rules point at the gstack browse binary"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "garrytan/gstack",
+     "url": "https://github.com/garrytan/gstack"
+    }
+   ],
+   "sources": [
+    "/Users/brais/.claude/skills/gstack/VERSION",
+    "/Users/brais/.claude/skills/gstack/README.md",
+    "/Users/brais/.gstack/config.yaml",
+    "/Users/brais/VSCODE/.gstack",
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-gstack-office-hours",
+   "label": "/office-hours",
+   "kind": "skill",
+   "parent": "cc-gstack",
+   "summary": "Scope-clarifying forcing questions before a non-trivial feature; short, smallest shippable slice.",
+   "details": [
+    "Usage counter in ~/.claude.json: 6"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-gstack-review",
+   "label": "/review",
+   "kind": "skill",
+   "parent": "cc-gstack",
+   "summary": "Staff-engineer pre-landing review of a branch; the most-used gstack workflow skill.",
+   "details": [
+    "Usage counter in ~/.claude.json: 21"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-gstack-qa",
+   "label": "/qa",
+   "kind": "skill",
+   "parent": "cc-gstack",
+   "summary": "Lean QA of user-visible flows on localhost or staging through the browse daemon.",
+   "details": [
+    "Usage counter in ~/.claude.json: 2"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-gstack-browse",
+   "label": "/browse",
+   "kind": "skill",
+   "parent": "cc-gstack",
+   "summary": "Headless browser used for all web browsing and screenshots instead of the Chrome MCP tools.",
+   "details": [
+    "Usage counter in ~/.claude.json: 30 (the top skill)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-skills-official",
+   "label": "claude-plugins-official bundle",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "16 installed plugins from Anthropic's official marketplace for dev workflows (code-review, commit-commands, feature-dev, hookify, plugin-dev, skill-creator, security-guidance, ...).",
+   "details": [
+    "Installed: claude-code-setup, agent-sdk-dev, claude-md-management, code-modernization, code-review, code-simplifier, commit-commands, feature-dev, frontend-design, learning-output-style, mcp-server-dev, hookify, mcp-tunnels, plugin-dev, skill-creator, security-guidance",
+    "security-guidance 2.0.9; others 1.0.0 or a commit-hash version",
+    "Marketplace last updated 2026-10-03"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "anthropics/claude-plugins-official",
+     "url": "https://github.com/anthropics/claude-plugins-official"
+    }
+   ],
+   "sources": [
+    "/Users/brais/.claude/plugins/installed_plugins.json",
+    "/Users/brais/.claude/plugins/known_marketplaces.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-skills-zeabur",
+   "label": "Zeabur plugin (32 skills)",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "zeabur/agent-skills plugin v1.19.0: skills that wrap the Zeabur CLI for deploy, logs, exec, variables, restart, domains, templates, database and server SSH.",
+   "details": [
+    "Most used: zeabur-deployment-logs 22, zeabur-service-exec 19, zeabur-service-list 13, zeabur-variables 7, zeabur-restart 6",
+    "Guarded by the global deny rules and PreToolUse hook for destructive and spend verbs"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "zeabur/agent-skills",
+     "url": "https://github.com/zeabur/agent-skills"
+    }
+   ],
+   "sources": [
+    "/Users/brais/.claude/plugins/cache/zeabur/zeabur/1.19.0/skills",
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-skills-typesafe",
+   "label": "typesafe plugin",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "typesafe-ai/skills plugin v0.5.7 exposing the typesafe:typesafe-ai skill.",
+   "details": [
+    "Registered via extraKnownMarketplaces and enabled in settings.json",
+    "Purpose beyond its name was not inspected"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "typesafe-ai/skills",
+     "url": "https://github.com/typesafe-ai/skills"
+    }
+   ],
+   "sources": [
+    "/Users/brais/.claude/plugins/installed_plugins.json",
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "cc-skills-knowledge-work",
+   "label": "claude.ai synced plugins (knowledge-work)",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "19 plugins synced from the claude.ai account's knowledge-work-plugins marketplace (sales 36 skills, small-business 44, data, engineering, finance, legal, marketing, ...), about 180 skill entries in total.",
+   "details": [
+    "Synced into ~/.claude/plugins/synced; installationPreference 'available' (on demand)",
+    "Most bundled connectors need OAuth and are not authorized",
+    "Plugins: apollo, cowork-plugin-management, customer-support, data, design, engineering, finance, human-resources, langfuse, legal, marketing, operations, pdf-viewer, product-management, productivity, sales, small-business, sp-global, zapier"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/plugins/synced"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-skills-anthropic-synced",
+   "label": "claude.ai synced skills (anthropic-skills)",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "22 account-synced skills (docx, pdf, pptx, xlsx, skill-creator, mcp-builder, deep-research, web-artifacts-builder, ...), mostly Anthropic examples.",
+   "details": [
+    "Stored in ~/.claude/skills/synced/<org>_<account>/ with a manifest.json"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/skills/synced"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-skill-valorar",
+   "label": "valorar-empresas-gregorio (custom)",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "A custom skill in the synced set that values listed companies for long-term dividend investing in a Spanish investor-educator's style.",
+   "details": [
+    "Spanish-language description; appears user-authored (not an Anthropic example)",
+    "Not linked to any project in the files read"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/skills/synced"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "cc-skills-langfuse",
+   "label": "langfuse skill",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "Langfuse plugin skill for tracing, prompts, datasets and evaluation docs and queries.",
+   "details": [
+    "Usage counters: langfuse:langfuse 5, langfuse 2"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/plugins/synced/langfuse",
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-skills-pinokio",
+   "label": "pinokio and gepeto skills",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "Third-party Pinokio skills (discover and launch apps; build 1-click launchers), installed 2026-09-21.",
+   "details": [
+    "Plain skill folders under ~/.claude/skills; not part of gstack"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/skills/pinokio/SKILL.md",
+    "/Users/brais/.claude/skills/gepeto/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-skills-builtin",
+   "label": "Built-in skills",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "Skills shipped with Claude Code: update-config, loop, schedule, simplify, code-review, claude-api, init, run, security-review, artifact-* and others.",
+   "details": [
+    "Counters: simplify 3, schedule 3, artifact-design 3"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "session skill listing",
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "cc-skill-graphify",
+   "label": "graphify (biglobster project skill)",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "Project skill that builds a knowledge graph of a codebase; biglobster hooks push Claude to query graphify-out before grepping.",
+   "details": [
+    "Lives in biglobster/.claude/skills/graphify with reference docs"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.claude/skills/graphify/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-hooks",
+   "label": "Hooks and guardrails",
+   "kind": "config",
+   "parent": "claude-code",
+   "summary": "Event hooks and deny rules that run around tool calls.",
+   "details": [
+    "Global: 1 PreToolUse, 1 Stop, 1 SessionEnd hook; project: biglobster adds PreToolUse hooks"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/VSCODE/biglobster/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-hook-zeabur-guard",
+   "label": "Zeabur destructive-verb guard",
+   "kind": "hook",
+   "parent": "cc-hooks",
+   "summary": "PreToolUse(Bash) hook ~/.claude/hooks/block-zeabur-destructive.sh that exits 2 when a command mentions zeabur plus a destructive or spend verb.",
+   "details": [
+    "Blocks: project delete, service delete, server rent, domain purchase, domain renew, ai-hub add-balance",
+    "Catches bash -c wrappers, pinned npx zeabur@x and bare `zeabur`; fires even on allow-listed commands",
+    "It scans the whole command text, so it also fires on harmless text that merely contains those words (observed while writing this map)",
+    "Rationale in auto-memory: Zeabur has no token scopes or spend cap, so this is the primary control on a fixed-price plan",
+    "Requires jq; status message 'Checking Zeabur command safety'"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/hooks/block-zeabur-destructive.sh",
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_zeabur_guardrail.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-deny-zeabur",
+   "label": "Zeabur deny rules",
+   "kind": "config",
+   "parent": "cc-hooks",
+   "summary": "permissions.deny entries for the six destructive/spend verbs in `npx zeabur@latest <verb>` form, the first layer behind the hook.",
+   "details": [
+    "Same six verbs as the hook",
+    "Copied into biglobster/.claude/settings.json for defense in depth"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/VSCODE/biglobster/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-hook-biglobster-zeabur",
+   "label": "biglobster Zeabur guard (project copy)",
+   "kind": "hook",
+   "parent": "cc-hooks",
+   "summary": "Redundant project-level copy of the Zeabur guard hook in biglobster/.claude/hooks.",
+   "details": [
+    "Referenced via ${CLAUDE_PROJECT_DIR}/.claude/hooks/block-zeabur-destructive.sh"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.claude/settings.json",
+    "/Users/brais/VSCODE/biglobster/.claude/zeabur-safety-checklist.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-hook-graphify",
+   "label": "biglobster graphify nudges",
+   "kind": "hook",
+   "parent": "cc-hooks",
+   "summary": "Project PreToolUse hooks that, when graphify-out/graph.json exists, inject a mandatory reminder to run graphify before Grep/Find or reading source files.",
+   "details": [
+    "Matchers: Bash (grep/rg/find) and Read|Glob"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-hook-chatmemo-stop",
+   "label": "ChatMemo sync (Stop)",
+   "kind": "hook",
+   "parent": "cc-hooks",
+   "summary": "Stop hook running chatmemo/scripts/sync-to-chatmemo.mjs after every turn to summarise and store the session in ChatMemo.",
+   "details": [
+    "Reads the hook payload, spawns a detached worker, always exits 0",
+    "Summarises once a session has enough user messages, then again as it grows",
+    "Config from ~/.chatmemo/config.json; outcomes logged to ~/.chatmemo/sync.log (contents not read)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/VSCODE/chatmemo/scripts/sync-to-chatmemo.mjs"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-hook-chatmemo-sessionend",
+   "label": "ChatMemo sync (SessionEnd)",
+   "kind": "hook",
+   "parent": "cc-hooks",
+   "summary": "SessionEnd hook running the same sync script once more when a session closes (final summary).",
+   "details": [
+    "Same script as the Stop hook"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/VSCODE/chatmemo/scripts/sync-to-chatmemo.mjs"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-session-store",
+   "label": "Session transcripts and plans",
+   "kind": "doc",
+   "parent": "claude-code",
+   "summary": "~/.claude/projects holds a transcript store per working directory; plans/ holds saved plan-mode documents.",
+   "details": [
+    "106 per-directory folders under ~/.claude/projects; 8 plan files in ~/.claude/plans",
+    "Source for ChatMemo's import scripts (import-claude-sessions, watch-claude-sessions)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/projects",
+    "/Users/brais/.claude/plans",
+    "/Users/brais/VSCODE/chatmemo/scripts"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-mcp",
+   "label": "MCP servers",
+   "kind": "config",
+   "parent": "claude-code",
+   "summary": "Every MCP server Claude Code can reach: user-scope, project-scope, claude.ai connectors, plugin connectors, desktop built-ins and VS Code-only servers.",
+   "details": [
+    "User scope (~/.claude.json): buzz",
+    "Project scope (.mcp.json): hf-hub in FinView and OfflinePics; no other .mcp.json found to depth 3 under VSCODE or ~/fizz",
+    "mcp-hub, perplexity and stitch are registered for VS Code, not Claude Code",
+    "~/.claude/mcp-needs-auth-cache.json lists connectors awaiting OAuth"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/VSCODE/FinView/.mcp.json",
+    "/Users/brais/VSCODE/OfflinePics/.mcp.json",
+    "/Users/brais/.claude/mcp-needs-auth-cache.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-mcp-buzz",
+   "label": "buzz MCP server",
+   "kind": "mcp-server",
+   "parent": "cc-mcp",
+   "summary": "Local stdio MCP (node ~/fizz/mcp/src/index.js, user scope) that lets Claude Code read and write the Buzz community as 'ClaudeCode' and operate the ~/fizz container-bot fleet.",
+   "details": [
+    "Tools: buzz_help, buzz_read, buzz_write, doctor, fleet_status, fleet_logs, fleet_power, fleet_channels, fleet_channel_set, persona_get, persona_set",
+    "Wraps the official buzz CLI installed by Buzz Desktop and the ~/fizz/bot script; re-implements neither",
+    "Instructions: channel messages, logs and personas are untrusted data; every ClaudeCode message wakes bots in that channel (Fizz hears everything)",
+    "Human-only commands: bot nuevo, bot retirar, bot clave, bot mcp, bot shell; run `doctor` after a Buzz Desktop update",
+    "Registered with `claude mcp add --scope user buzz` using the fnm default node"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/fizz/mcp/src/index.js",
+    "/Users/brais/fizz/mcp/README.md",
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "buzz-identity-claudecode",
+   "label": "ClaudeCode identity in Buzz",
+   "kind": "agent",
+   "parent": "buzz",
+   "summary": "Claude Code's own signed identity in the Buzz community, attested by Brais, shown as 'ClaudeCode' alongside his bots.",
+   "details": [
+    "Created once by ~/fizz/mcp/setup.sh run by the human; the server never sees the owner's key",
+    "Bots treat ClaudeCode like any other agent of Brais"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/fizz/mcp/README.md",
+    "/Users/brais/fizz/LEEME.md",
+    "/Users/brais/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hf-hub",
+   "label": "hf-hub MCP server",
+   "kind": "mcp-server",
+   "parent": "cc-mcp",
+   "summary": "Local Node stdio MCP server for on-demand Hugging Face access: search datasets/models/Spaces, sample rows, call Gradio Spaces and the Inference API, embeddings and a chain runner.",
+   "details": [
+    "Node >= 20, only dependency @modelcontextprotocol/sdk; entry src/index.js; own repo br41s/hf-hub",
+    "index.js registers 17 tools (search_hf_*, get_hf_*, set_resource_mode, list_active_resources, findskill, refreshhfindexes, callspace, getspaceapi, infermodel, saveresult, embedtext, semanticsearch, chainskill) plus resources and prompts (explore_dataset, find_best_model)",
+    "Its own README and claude.md still say 8 tools (doc drift)",
+    "data/ holds indexes, embeddings, manifests, profiles and outputs; control-panel/ is a small web panel (`npm run panel`)",
+    "Registered in .mcp.json of FinView and OfflinePics and in the VS Code user mcp.json; optional HF_TOKEN in .env (not recorded)",
+    "The global CLAUDE.md says every new project should add it to .mcp.json"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "br41s/hf-hub",
+     "url": "https://github.com/br41s/hf-hub"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/ai-infra/hf-hub/src/index.js",
+    "/Users/brais/VSCODE/ai-infra/hf-hub/README.md",
+    "/Users/brais/VSCODE/ai-infra/hf-hub/claude.md",
+    "/Users/brais/VSCODE/ai-infra/hf-hub/package.json",
+    "/Users/brais/VSCODE/FinView/.mcp.json",
+    "/Users/brais/VSCODE/OfflinePics/.mcp.json",
+    "/Users/brais/Library/Application Support/Code/User/mcp.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "mcp-hub",
+   "label": "mcp-hub MCP server",
+   "kind": "mcp-server",
+   "parent": "cc-mcp",
+   "summary": "Local Python (FastMCP) stdio MCP server that delegates to AI providers: Perplexity Sonar research, OpenRouter multi-model chat, ElevenLabs voice, and a Veo video placeholder.",
+   "details": [
+    "Tools: health_check, list_capabilities, save_project_artifact, research_with_sonar, ask_openrouter, generate_voice, generate_video_veo (placeholder only)",
+    "Starts without API keys; unconfigured providers report disabled",
+    "Layout: config > clients/ > tools/ > server.py; uv-managed venv; tests via pytest",
+    "Registered in VSCODE/.vscode/mcp.json and started by a VS Code folderOpen task; not registered in Claude Code's own config",
+    "Lives inside the workspace repo (not its own repo); keys only in .env (not recorded)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/mcp-hub/README.md",
+    "/Users/brais/VSCODE/mcp-hub/CLAUDE.md",
+    "/Users/brais/VSCODE/mcp-hub/server.py",
+    "/Users/brais/VSCODE/.vscode/mcp.json",
+    "/Users/brais/VSCODE/.vscode/tasks.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-mcp-claudeai",
+   "label": "claude.ai connectors",
+   "kind": "mcp-server",
+   "parent": "cc-mcp",
+   "summary": "Account-level connectors surfaced in sessions: Gmail, Google Calendar, Google Drive, Vercel, Claude Docs, Hugging Face, Make, Zapier, PubMed.",
+   "details": [
+    "claudeAiMcpEverConnected lists: PubMed, Google Calendar, Google Drive, Gmail, Vercel, Make, Zapier, Hugging Face, Claude Docs",
+    "Connector tool sets for Gmail, Calendar, Drive, Vercel and Docs are visible in this session; IFTTT, Zapier, S&P Global and Make are awaiting auth"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/.claude/mcp-needs-auth-cache.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-mcp-plugins",
+   "label": "Plugin-bundled connectors",
+   "kind": "mcp-server",
+   "parent": "cc-mcp",
+   "summary": "About 68 MCP connectors declared by synced plugins (Slack, Atlassian, Notion, Linear, DocuSign, HubSpot, Shopify, QuickBooks, ...); almost all need OAuth and are not authorized.",
+   "details": [
+    "The session's auth notice lists plugin:*:* servers needing auth; the cache file names 11 of them",
+    "Only the Shopify (small-business) and pdf-viewer plugin tools are loaded in this session"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/mcp-needs-auth-cache.json",
+    "session MCP auth notice"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "cc-mcp-chrome",
+   "label": "Claude in Chrome",
+   "kind": "mcp-server",
+   "parent": "cc-mcp",
+   "summary": "Chrome-extension MCP (mcp__claude-in-chrome__*) enabled by default; Brais's global rule says not to use it and to browse through gstack /browse.",
+   "details": [
+    "claudeInChromeDefaultEnabled and extension-installed flags are true in ~/.claude.json",
+    "The workspace gstack rule allows it only as a fallback when gstack is not loaded"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude.json",
+    "/Users/brais/.claude/CLAUDE.md",
+    "/Users/brais/VSCODE/.claude/rules/gstack.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-mcp-desktop-builtin",
+   "label": "Desktop app built-in MCP servers",
+   "kind": "mcp-server",
+   "parent": "cc-mcp",
+   "summary": "Servers provided by the Claude desktop app: session/sidebar/window/PR management, Browser pane, Terminal, iOS Simulator control, visualize widgets and the scheduled-tasks manager.",
+   "details": [
+    "Seen only as tool names in this session, not in a config file"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "session tool listing"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "id": "ws-vscode-config",
+   "label": "VS Code config (.vscode)",
+   "kind": "config",
+   "parent": "vscode-workspace",
+   "summary": "Workspace VS Code settings, tasks and MCP registrations, plus the user-level VS Code mcp.json.",
+   "details": [
+    "tasks.json: 'Git: Sync all repos on open (safe)' and 'Start mcp-hub on open' run on folderOpen",
+    "scripts/sync-repos-on-open.sh: for each listed repo, skip dirty or upstream-less ones, else fetch --prune and pull --ff-only",
+    "Workspace .vscode/mcp.json: mcp-hub and stitch; user mcp.json: perplexity and hf-hub"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.vscode/tasks.json",
+    "/Users/brais/VSCODE/.vscode/mcp.json",
+    "/Users/brais/VSCODE/.vscode/settings.json",
+    "/Users/brais/VSCODE/scripts/sync-repos-on-open.sh",
+    "/Users/brais/Library/Application Support/Code/User/mcp.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-mcp-perplexity",
+   "label": "perplexity MCP (VS Code)",
+   "kind": "mcp-server",
+   "parent": "ws-vscode-config",
+   "summary": "Perplexity's MCP server launched via npx, registered only in VS Code's user mcp.json.",
+   "details": [
+    "Command: npx -y @perplexity-ai/mcp-server; needs PERPLEXITY_API_KEY (value not recorded)"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "/Users/brais/Library/Application Support/Code/User/mcp.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-mcp-stitch",
+   "label": "stitch MCP (VS Code)",
+   "kind": "mcp-server",
+   "parent": "ws-vscode-config",
+   "summary": "Google Stitch UI-generation MCP proxy (npx @_davideast/stitch-mcp proxy) registered in the workspace .vscode/mcp.json.",
+   "details": [
+    "Env keys present: STITCH_PROJECT_ID, OPENROUTER_API_KEY (values not recorded)",
+    "mcp-hub docs call Stitch a separate server for UI generation"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/.vscode/mcp.json",
+    "/Users/brais/VSCODE/mcp-hub/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-tool-zeabur-cli",
+   "label": "zeabur CLI",
+   "kind": "tool",
+   "parent": "claude-code",
+   "summary": "Zeabur command line used by Claude Code (and its Zeabur skills) to list, inspect, exec into, retag and read logs of services.",
+   "details": [
+    "Typical commands in docs and tasks: service get/metric/exec/list/update tag, deployment log",
+    "Hermes deploys by moving the image tag; `service exec` is used to read /opt/data and run cron jobs",
+    "Allow list has 8 zeabur entries; destructive verbs are blocked by hook and deny rules",
+    "service exec cannot move bulk data (over about 5MB); service delete half-completes (per hermes-sandbox docs)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md",
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/reference_zeabur_live_status.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-tool-gh",
+   "label": "git and gh CLI",
+   "kind": "tool",
+   "parent": "claude-code",
+   "summary": "git (65 allow rules) and the GitHub CLI used for PRs, code-scanning alerts and deployments across br41s repos.",
+   "details": [
+    "Auto-memory notes GitHub Actions are never used; CI is Cloud Build plus Hermes cron",
+    "Scheduled tasks use `gh api` for code-scanning alerts and deployments"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/.claude/scheduled-tasks/hermes-http-cache-semantics-recheck/SKILL.md",
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/MEMORY.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-tool-gcloud",
+   "label": "gcloud CLI",
+   "kind": "tool",
+   "parent": "claude-code",
+   "summary": "Google Cloud CLI used for FinView Cloud Run, Cloud Scheduler and logging checks.",
+   "details": [
+    "6 gcloud allow rules in settings.json plus gcloud auth/config/projects in the workspace local rules",
+    "Used read-only in the finview-learning-loops-check scheduled task"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/VSCODE/.claude/settings.local.json",
+    "/Users/brais/.claude/scheduled-tasks/finview-learning-loops-check/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-scheduled",
+   "label": "Scheduled tasks",
+   "kind": "tool",
+   "parent": "claude-code",
+   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 8 tasks, 3 currently enabled.",
+   "details": [
+    "Schedules are held by the scheduler (listed via the scheduled-tasks MCP), not in the SKILL.md files",
+    "One daily task plus one-time reminders and recheck jobs"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks",
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-sched-buzz-retro",
+   "label": "buzz-retro-diaria",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "Daily retro of the Buzz bot fleet: reads channels, logs and files, compares with yesterday, writes a retro file and proposes 3 fixes plus 1 experiment.",
+   "details": [
+    "Cron 30 22 * * * (shown as 10:41 PM with jitter); enabled",
+    "Uses buzz MCP read tools and 2 parallel subagents; read-only except the retro file in ~/fizz/salida/operaciones/retro",
+    "Hard rules: no docker exec, no buzz binary in Bash, never print .env, never post in Buzz"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md",
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-sched-fizz-volume",
+   "label": "fizz-old-volume-check",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "One-time check on 2026-10-12 of whether the leftover Docker volume fizz_fizz-work was used, then tell Brais if it is safe to remove.",
+   "details": [
+    "Enabled; read-only; gives Brais the volume-removal command rather than running it"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/fizz-old-volume-check/SKILL.md",
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-sched-http-cache",
+   "label": "hermes-http-cache-semantics-recheck",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "One-time check on 2026-10-19 of an open dependency alert in hermes-sandbox; opens a bump PR only if version 4.3.0 is eligible.",
+   "details": [
+    "Enabled; never merges or deploys; uses gh api, OSV and npm 12 in a git worktree"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/hermes-http-cache-semantics-recheck/SKILL.md",
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-sched-completed",
+   "label": "Completed one-time checks (5)",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "Five one-time scheduled tasks that already fired between 2026-09-01 and 2026-10-02 and are now disabled.",
+   "details": [
+    "deploy-automation-plan-reminder (2026-09-06), shoroban-seo-legacy-scan-retrigger (09-01), shoroban-cdx-recheck (09-08), biglobster-v41-pilot-review (09-20), finview-learning-loops-check (10-02)",
+    "Several ran `zeabur service exec` against the Hermes production service; the FinView one used gcloud and gh read-only"
+   ],
+   "status": "retired",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks",
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-memory",
+   "label": "memories/ (decisions, errors, lessons)",
+   "kind": "doc",
+   "parent": "vscode-workspace",
+   "summary": "Git-tracked workspace memory: a decisions index with per-topic detail files, an errors log and a lessons log.",
+   "details": [
+    "decisions.md (132 lines) is an index; detail in decisions/{biglobster, bl-site-package, chatmemo, facturas, finview, flywell, hermes, infografias-workflow-approval, socialagenda, workspace}.md",
+    "errors.md (228 lines): approaches that took more than 2 attempts; lessons.md (96 lines) from user corrections; lessons-daily.md (42 lines) daily consolidation; protocols/infografias-pipeline.md",
+    "Read at session start; committed as `docs(memories): ...` in the workspace repo"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories",
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-tasks",
+   "label": "tasks/ (plans)",
+   "kind": "doc",
+   "parent": "vscode-workspace",
+   "summary": "Workspace tasks folder: todo.md for plans plus three Hermes plans (incident watcher, multitenancy, self-repair loop).",
+   "details": [
+    "Planning rule: write a checkable plan to tasks/todo.md before non-trivial work",
+    "todo.md currently still reads as the older BigLobster checklist"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/tasks",
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ws-auto-memory",
+   "label": "Auto-memory (Claude Code)",
+   "kind": "doc",
+   "parent": "vscode-workspace",
+   "summary": "Per-working-directory auto-memory at ~/.claude/projects/-Users-brais-VSCODE/memory: MEMORY.md index plus 10 topic files, loaded into every session in this workspace.",
+   "details": [
+    "feedback: browser_visible, cloud_run_env_vars, cross_project_home",
+    "project: biglobster, biglobster_staging, finview_stack, github_no_actions, zeabur_guardrail",
+    "reference: finview_deployment, zeabur_live_status",
+    "Records e.g. the Zeabur guardrail rationale and how to check live Hermes status"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory"
+   ],
+   "confidence": "verified"
+  }
+ ],
+ "edges": [
+  {
+   "source": "vscode-workspace",
+   "target": "github",
+   "kind": "stores-in",
+   "label": "origin remote br41s/VSCode",
+   "sources": [
+    "git remote -v (workspace toplevel)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "brais",
+   "target": "claude-code",
+   "kind": "controls",
+   "label": "gives orders via CLI, desktop app or VS Code chat",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md",
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "claude-code",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "runs on Claude models",
+   "sources": [
+    "/Users/brais/.claude/settings.json",
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-models",
+   "target": "ext-anthropic",
+   "kind": "uses-model",
+   "label": "Claude model family (Opus/Sonnet/Haiku/Fable)",
+   "sources": [
+    "/Users/brais/VSCODE/.claude/agents",
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-global-settings",
+   "target": "ext-langfuse",
+   "kind": "configures",
+   "label": "sets LANGFUSE_* env (cloud.langfuse.com)",
+   "note": "Only the env block was seen; whether a tracing hook consumes it was not verified.",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "ws-local-settings",
+   "target": "claude-code",
+   "kind": "configures",
+   "label": "extra local allow rules",
+   "sources": [
+    "/Users/brais/VSCODE/.claude/settings.local.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-user-state",
+   "target": "cc-mcp-buzz",
+   "kind": "configures",
+   "label": "user-scope registration of the buzz server",
+   "sources": [
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "claude-code",
+   "target": "ws-workspace-claude-md",
+   "kind": "reads",
+   "label": "loaded for sessions under VSCODE",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-claude-md",
+   "target": "ws-workspace-claude-md",
+   "kind": "configures",
+   "label": "workspace file extends and tightens the global rules",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "ws-workspace-claude-md",
+   "target": "cc-project-claude-mds",
+   "kind": "configures",
+   "label": "project file takes precedence",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "ws-rule-gstack",
+   "target": "cc-gstack",
+   "kind": "configures",
+   "label": "limits gstack to office-hours/review/qa/browse",
+   "sources": [
+    "/Users/brais/VSCODE/.claude/rules/gstack.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-claude-md",
+   "target": "cc-gstack",
+   "kind": "configures",
+   "label": "lean-mode policy and /browse-only rule",
+   "sources": [
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "proj-finview",
+   "kind": "configures",
+   "label": "FinView/CLAUDE.md",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "proj-socialagenda",
+   "kind": "configures",
+   "label": "SocialAgenda/CLAUDE.md",
+   "sources": [
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "proj-biglobster",
+   "kind": "configures",
+   "label": "biglobster/CLAUDE.md",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "proj-bl-site-package",
+   "kind": "configures",
+   "label": "bl-site-package/CLAUDE.md",
+   "sources": [
+    "/Users/brais/VSCODE/bl-site-package/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "proj-chatmemo",
+   "kind": "configures",
+   "label": "chatmemo/CLAUDE.md",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "proj-heclient",
+   "kind": "configures",
+   "label": "heclient/CLAUDE.md",
+   "sources": [
+    "/Users/brais/VSCODE/heclient/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "proj-grow-shop",
+   "kind": "configures",
+   "label": "grow-shop-api and grow-shop-landing CLAUDE.md",
+   "sources": [
+    "/Users/brais/VSCODE/grow-shop"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "hermes",
+   "kind": "configures",
+   "label": "hermes-sandbox/CLAUDE.md (operating manual)",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "hf-hub",
+   "kind": "configures",
+   "label": "ai-infra/hf-hub/claude.md",
+   "sources": [
+    "/Users/brais/VSCODE/ai-infra/hf-hub/claude.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-claude-mds",
+   "target": "mcp-hub",
+   "kind": "configures",
+   "label": "mcp-hub/CLAUDE.md",
+   "sources": [
+    "/Users/brais/VSCODE/mcp-hub/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-settings",
+   "target": "proj-finview",
+   "kind": "configures",
+   "label": "7 path-scoped rule files",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.claude/rules"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-project-settings",
+   "target": "proj-biglobster",
+   "kind": "configures",
+   "label": "settings.json, Zeabur guard copy, graphify hooks",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "ws-workspace-claude-md",
+   "target": "ws-skill-codebase-topology",
+   "kind": "configures",
+   "label": "invoke for large or vague work",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-skills-langfuse",
+   "target": "ext-langfuse",
+   "kind": "calls",
+   "label": "queries Langfuse and its docs",
+   "sources": [
+    "/Users/brais/.claude/plugins/synced/langfuse"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-skill-graphify",
+   "target": "proj-biglobster",
+   "kind": "configures",
+   "label": "code-graph navigation for biglobster",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.claude/skills/graphify/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-settings",
+   "target": "cc-skills-official",
+   "kind": "configures",
+   "label": "enabledPlugins",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-settings",
+   "target": "cc-skills-zeabur",
+   "kind": "configures",
+   "label": "enabledPlugins + extraKnownMarketplaces",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-settings",
+   "target": "cc-skills-typesafe",
+   "kind": "configures",
+   "label": "enabledPlugins + extraKnownMarketplaces",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-skills-zeabur",
+   "target": "cc-tool-zeabur-cli",
+   "kind": "depends-on",
+   "label": "skills drive the zeabur CLI",
+   "sources": [
+    "/Users/brais/.claude/plugins/cache/zeabur/zeabur/1.19.0/skills"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-skills-zeabur",
+   "target": "zeabur",
+   "kind": "manages",
+   "label": "deploy, logs, exec, variables, restart",
+   "sources": [
+    "/Users/brais/.claude/plugins/cache/zeabur/zeabur/1.19.0/skills"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-settings",
+   "target": "cc-hook-zeabur-guard",
+   "kind": "configures",
+   "label": "registers PreToolUse hook",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-settings",
+   "target": "cc-deny-zeabur",
+   "kind": "configures",
+   "label": "permissions.deny",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-settings",
+   "target": "cc-hook-chatmemo-stop",
+   "kind": "configures",
+   "label": "registers Stop hook",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-settings",
+   "target": "cc-hook-chatmemo-sessionend",
+   "kind": "configures",
+   "label": "registers SessionEnd hook",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-zeabur-guard",
+   "target": "zeabur",
+   "kind": "controls",
+   "label": "blocks delete / rent / purchase / renew / add-balance verbs",
+   "sources": [
+    "/Users/brais/.claude/hooks/block-zeabur-destructive.sh"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-zeabur-guard",
+   "target": "cc-tool-zeabur-cli",
+   "kind": "controls",
+   "label": "exit 2 on destructive Bash commands",
+   "sources": [
+    "/Users/brais/.claude/hooks/block-zeabur-destructive.sh"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-deny-zeabur",
+   "target": "zeabur",
+   "kind": "controls",
+   "label": "denies the same six verbs",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-biglobster-zeabur",
+   "target": "zeabur",
+   "kind": "controls",
+   "label": "project-level copy of the guard",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-biglobster-zeabur",
+   "target": "proj-biglobster",
+   "kind": "configures",
+   "label": "defense-in-depth for biglobster sessions",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.claude/zeabur-safety-checklist.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-graphify",
+   "target": "proj-biglobster",
+   "kind": "configures",
+   "label": "forces graph queries before grep/read",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-chatmemo-stop",
+   "target": "cc-session-store",
+   "kind": "reads",
+   "label": "reads transcript_path from the hook payload",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/scripts/sync-to-chatmemo.mjs"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-chatmemo-stop",
+   "target": "proj-chatmemo",
+   "kind": "writes",
+   "label": "posts a session summary to ChatMemo",
+   "note": "Import token and deployment URL come from ~/.chatmemo/config.json (not read).",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/scripts/sync-to-chatmemo.mjs"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-chatmemo-sessionend",
+   "target": "cc-session-store",
+   "kind": "reads",
+   "label": "reads transcript_path from the hook payload",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/scripts/sync-to-chatmemo.mjs"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-hook-chatmemo-sessionend",
+   "target": "proj-chatmemo",
+   "kind": "writes",
+   "label": "posts the final session summary to ChatMemo",
+   "sources": [
+    "/Users/brais/VSCODE/chatmemo/scripts/sync-to-chatmemo.mjs"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-mcp-buzz",
+   "target": "buzz",
+   "kind": "calls",
+   "label": "buzz_read/buzz_write via the buzz CLI as ClaudeCode",
+   "sources": [
+    "/Users/brais/fizz/mcp/src/index.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-mcp-buzz",
+   "target": "fizz",
+   "kind": "controls",
+   "label": "fleet status, logs, power, channels and persona edits for ~/fizz bots",
+   "sources": [
+    "/Users/brais/fizz/mcp/src/index.js",
+    "/Users/brais/fizz/mcp/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "buzz-identity-claudecode",
+   "target": "fizz",
+   "kind": "notifies",
+   "label": "each message in a channel wakes listening bots",
+   "sources": [
+    "/Users/brais/fizz/mcp/src/index.js"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hf-hub",
+   "target": "ext-huggingface",
+   "kind": "calls",
+   "label": "HF Hub API, Gradio Spaces and Inference API",
+   "sources": [
+    "/Users/brais/VSCODE/ai-infra/hf-hub/src/index.js",
+    "/Users/brais/VSCODE/ai-infra/hf-hub/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hf-hub",
+   "target": "github",
+   "kind": "stores-in",
+   "label": "own repo br41s/hf-hub",
+   "sources": [
+    "git remote -v in /Users/brais/VSCODE/ai-infra/hf-hub"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hf-hub",
+   "target": "proj-finview",
+   "kind": "serves",
+   "label": "registered in FinView/.mcp.json",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/.mcp.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hf-hub",
+   "target": "proj-offlinepics",
+   "kind": "serves",
+   "label": "registered in OfflinePics/.mcp.json",
+   "sources": [
+    "/Users/brais/VSCODE/OfflinePics/.mcp.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-global-claude-md",
+   "target": "hf-hub",
+   "kind": "configures",
+   "label": "tool registry and 'add to every .mcp.json' instruction",
+   "sources": [
+    "/Users/brais/.claude/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "mcp-hub",
+   "target": "ext-openrouter",
+   "kind": "calls",
+   "label": "ask_openrouter tool",
+   "sources": [
+    "/Users/brais/VSCODE/mcp-hub/CLAUDE.md",
+    "/Users/brais/VSCODE/mcp-hub/server.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-mcp-claudeai",
+   "target": "vercel",
+   "kind": "calls",
+   "label": "Vercel connector (projects, deployments, logs)",
+   "sources": [
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-mcp-claudeai",
+   "target": "ext-google-drive",
+   "kind": "calls",
+   "label": "Drive connector (file search, read, create)",
+   "sources": [
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-mcp-claudeai",
+   "target": "ext-huggingface",
+   "kind": "calls",
+   "label": "Hugging Face connector",
+   "sources": [
+    "/Users/brais/.claude.json"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "cc-mcp-desktop-builtin",
+   "target": "cc-surface-desktop",
+   "kind": "serves",
+   "label": "panes and session management",
+   "sources": [
+    "session tool listing"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "ws-vscode-config",
+   "target": "mcp-hub",
+   "kind": "manages",
+   "label": "registers it and starts server.py on folder open",
+   "sources": [
+    "/Users/brais/VSCODE/.vscode/mcp.json",
+    "/Users/brais/VSCODE/.vscode/tasks.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "ws-vscode-config",
+   "target": "hf-hub",
+   "kind": "configures",
+   "label": "user-level VS Code mcp.json registration",
+   "sources": [
+    "/Users/brais/Library/Application Support/Code/User/mcp.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "ws-vscode-config",
+   "target": "github",
+   "kind": "reads",
+   "label": "fetch and pull of origin for each listed repo",
+   "sources": [
+    "/Users/brais/VSCODE/scripts/sync-repos-on-open.sh"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "ws-mcp-stitch",
+   "target": "ext-openrouter",
+   "kind": "calls",
+   "label": "OPENROUTER_API_KEY configured in its env",
+   "sources": [
+    "/Users/brais/VSCODE/.vscode/mcp.json"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "cc-tool-zeabur-cli",
+   "target": "zeabur",
+   "kind": "manages",
+   "label": "service/project/domain operations",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-tool-zeabur-cli",
+   "target": "hermes",
+   "kind": "manages",
+   "label": "service exec, tag-move deploys, log reads on the Hermes service",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-tool-gh",
+   "target": "github",
+   "kind": "manages",
+   "label": "PRs, branches, alerts, deployments via gh",
+   "sources": [
+    "/Users/brais/.claude/settings.json"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-tool-gcloud",
+   "target": "gcp",
+   "kind": "manages",
+   "label": "Cloud Run, Scheduler and log queries",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/finview-learning-loops-check/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-tool-gcloud",
+   "target": "proj-finview",
+   "kind": "monitors",
+   "label": "reads Cloud Run and Scheduler state",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/finview-learning-loops-check/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-surface-desktop",
+   "target": "cc-scheduled",
+   "kind": "manages",
+   "label": "scheduler lives in the desktop app",
+   "sources": [
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "cc-sched-buzz-retro",
+   "target": "cc-mcp-buzz",
+   "kind": "calls",
+   "label": "reads channels, fleet status and logs",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-buzz-retro",
+   "target": "fizz",
+   "kind": "monitors",
+   "label": "daily fleet review",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-buzz-retro",
+   "target": "fizz",
+   "kind": "writes",
+   "label": "retro markdown under ~/fizz/salida/operaciones/retro",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-fizz-volume",
+   "target": "fizz",
+   "kind": "monitors",
+   "label": "checks leftover Docker volume of the retired single-bot setup",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/fizz-old-volume-check/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-http-cache",
+   "target": "hermes",
+   "kind": "monitors",
+   "label": "security alert on hermes-sandbox dependencies",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/hermes-http-cache-semantics-recheck/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-http-cache",
+   "target": "github",
+   "kind": "reads",
+   "label": "code-scanning alerts via gh api; may open a PR",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/hermes-http-cache-semantics-recheck/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-completed",
+   "target": "hermes",
+   "kind": "monitors",
+   "label": "exec checks on Hermes cron jobs and profiles",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/shoroban-cdx-recheck/SKILL.md",
+    "/Users/brais/.claude/scheduled-tasks/biglobster-v41-pilot-review/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-completed",
+   "target": "proj-finview",
+   "kind": "monitors",
+   "label": "geo audit and Zonas Clave verification",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/finview-learning-loops-check/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-completed",
+   "target": "proj-biglobster",
+   "kind": "monitors",
+   "label": "model pilot review",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/biglobster-v41-pilot-review/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-completed",
+   "target": "proj-bl-site-package",
+   "kind": "monitors",
+   "label": "Shoroban scan_legacy verification",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/shoroban-seo-legacy-scan-retrigger/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "claude-code",
+   "target": "ws-memory",
+   "kind": "reads",
+   "label": "decisions and lessons at session start",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "claude-code",
+   "target": "ws-memory",
+   "kind": "writes",
+   "label": "logs decisions, errors, lessons after corrections",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "ws-workspace-claude-md",
+   "target": "ws-memory",
+   "kind": "configures",
+   "label": "defines the three memory files and the session-end summary",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "claude-code",
+   "target": "ws-tasks",
+   "kind": "writes",
+   "label": "plans and progress in tasks/todo.md",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "claude-code",
+   "target": "ws-auto-memory",
+   "kind": "reads",
+   "label": "index loaded automatically each session",
+   "sources": [
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/MEMORY.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "claude-code",
+   "target": "ws-auto-memory",
+   "kind": "writes",
+   "label": "saves feedback and project facts",
+   "sources": [
+    "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory"
+   ],
+   "confidence": "verified"
+  }
+ ]
+}

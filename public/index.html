@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stack Map</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="cy" aria-label="Stack map"></div>
+
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>stackmap</div>
+    <div class="search">
+      <input id="search" type="search" placeholder="Find anything…  ( / )" autocomplete="off" spellcheck="false" aria-label="Search the map">
+      <ul id="search-results" role="listbox" hidden></ul>
+    </div>
+    <nav class="tools">
+      <button id="btn-expand" title="Expand every group">Expand all</button>
+      <button id="btn-collapse" title="Back to the overview">Collapse</button>
+      <button id="btn-fit" title="Fit the map to the screen">Fit</button>
+      <label class="toggle" title="Hide relations that don't touch the selection">
+        <input id="tgl-focus" type="checkbox"> Focus
+      </label>
+      <button id="btn-legend" aria-expanded="false">Legend</button>
+    </nav>
+  </header>
+
+  <aside id="legend" class="card legend" hidden></aside>
+
+  <aside id="details" class="card details" hidden aria-live="polite"></aside>
+
+  <footer id="status" class="status"></footer>
+
+  <button id="chat-fab" class="chat-fab" aria-label="Ask about the stack" title="Ask about the stack">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 3c5 0 9 3.6 9 8s-4 8-9 8c-1 0-2-.1-2.9-.4L4 20l1.3-3.9C3.9 14.8 3 13 3 11c0-4.4 4-8 9-8Zm-4 7.2a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Zm4 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Zm4 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Z"/></svg>
+  </button>
+
+  <section id="chat" class="card chat" hidden aria-label="Chat">
+    <header class="chat-head">
+      <div>
+        <strong>Ask the stack</strong>
+        <span id="chat-model" class="muted"></span>
+      </div>
+      <div class="chat-head-actions">
+        <button id="chat-new" class="ghost" title="Start over">New</button>
+        <button id="chat-close" class="ghost" aria-label="Close chat">✕</button>
+      </div>
+    </header>
+    <div id="chat-log" class="chat-log"></div>
+    <div id="chat-focus" class="chat-focus" hidden></div>
+    <form id="chat-form" class="chat-form">
+      <textarea id="chat-input" rows="2" placeholder="What breaks if the Frankfurt server goes down?" aria-label="Your question"></textarea>
+      <button id="chat-send" type="submit">Send</button>
+    </form>
+  </section>
+
+  <script src="/vendor/cytoscape.min.js"></script>
+  <script src="/vendor/layout-base.js"></script>
+  <script src="/vendor/cose-base.js"></script>
+  <script src="/vendor/cytoscape-fcose.js"></script>
+  <script src="/vendor/marked.umd.js"></script>
+  <script src="/vendor/purify.min.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

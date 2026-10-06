@@ -1,0 +1,2741 @@
+{
+ "nodes": [
+  {
+   "id": "hermes",
+   "label": "Hermes",
+   "kind": "platform",
+   "parent": "layer-agents",
+   "summary": "Brais's production fork of NousResearch/hermes-agent, run as the COO/control plane for BigLobster and its customers: one multiplexed gateway, a profile per customer, cron-driven content agents, a PR auditor and an incident watcher.",
+   "details": [
+    "Fork of NousResearch/hermes-agent (MIT); UPSTREAM_VERSION v2026.9.24; repo br41s/hermes-sandbox",
+    "A customer or project is a Hermes profile (native profiles; no custom namespacing layer)",
+    "One container, project hermes-eu on the Zeabur Frankfurt dedicated server (EU residency for GDPR; clears a Spanish Plesk geo-block); migrated from Jakarta 2026-07-22",
+    "Panel at blhermes.zeabur.app; Telegram forum supergroup with one topic per profile; CEO-only access",
+    "Control plane for the other projects: changes here can affect FinView, biglobster, grow-shop and every repo Hermes touches",
+    "Two invariants: per-conversation prompt caching is sacred; core is a narrow waist (capability goes in plugins/skills)",
+    "Deploy as rarely as possible (owner's rule 2026-10-01): every deploy restarts the gateway"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Panel",
+     "url": "https://blhermes.zeabur.app"
+    },
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/hermes-sandbox"
+    }
+   ],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/UPSTREAM_VERSION",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-repo",
+   "label": "hermes-sandbox repo",
+   "kind": "repo",
+   "parent": "hermes",
+   "summary": "The fork's GitHub repo: upstream code plus fork-only dirs (fork_ext, auditor, incidents, remediation, merge_on_green, agent prompts, ops, docker).",
+   "details": [
+    "br41s/hermes-sandbox; the repo is public (2026-09-18 decision: Actions minutes are free); BIGLOBSTER_SETUP.md still says private",
+    "Fork-only code: hermes_cli/fork_ext, cron/fork_ext, auditor/, incidents/, remediation/, merge_on_green/, gap-hunter/, onsite-seo/, infographic/, shorts/, offsite-geo/, content-updater/, maintenance/, ops/, scripts/provision_bl_client.py",
+    "AGENTS.md is upstream's dev guide (read per section); CLAUDE.md is fork-specific and inert to the Hermes runtime",
+    "Fork workflows: ghcr-publish.yml, shorts-studio.yml, infographic-check.yml, osv-scanner.yml, upstream-drift.yml (most others are upstream's)",
+    "Dependency alerts triaged to zero crit/high on 2026-09-18 (242 -> 22); osv-scanner.toml is a decision log"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Repo",
+     "url": "https://github.com/br41s/hermes-sandbox"
+    }
+   ],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/AGENTS.md",
+    "hermes-sandbox/.github/workflows/",
+    "memories/decisions/hermes.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-nousresearch-hermes-agent",
+   "label": "NousResearch/hermes-agent",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Upstream open-source agent framework (MIT) that hermes-sandbox forks.",
+   "details": [
+    "Fork merges upstream release tags only, one reviewed PR per week; currently on v2026.9.24",
+    "Workspace rule: check it before building any agent, tool or skill from scratch"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Upstream",
+     "url": "https://github.com/nousresearch/hermes-agent"
+    }
+   ],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/UPSTREAM_VERSION",
+    "hermes-sandbox/ops/upstream-merge/weekly-sync-routine.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-ci-build",
+   "label": "Image build (GitHub Actions)",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "ghcr-publish.yml builds the Hermes image on every push to main and publishes it to GHCR as :latest and :sha-<commit>.",
+   "details": [
+    "Image ghcr.io/br41s/hermes-sandbox, ~2.7 GB (Playwright + Chromium + Python + Node), s6-overlay as PID 1",
+    "Tag contract: git rev-parse --short=9 on both the workflow and deploy.sh (a shallow clone gives 7 and breaks the pull)",
+    "Concurrency group cancels superseded builds, so intermediate merge commits are never deployable",
+    "Since 2026-09-18 (PR #271/#280). Older docs (BIGLOBSTER_SETUP.md, ops/deploy-zeabur.md) describe Cloud Build as primary and say Actions is not enabled; newer decision log wins",
+    "Cloud Build (cloudbuild.yaml) remains as the deploy.sh --build fallback",
+    "The auto-memory note 'GitHub Actions never run' (2026-09-10) is stale for this repo; deploy-automation-plan.md records the correction",
+    "Auto-deploy from CI was rejected 2026-09-22: it would put a Zeabur credential in CI and let the auditor's auto-merge ship to prod unattended"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/tasks/deploy-automation-plan.md",
+    "hermes-sandbox/.github/workflows/ghcr-publish.yml",
+    "~/.claude/projects/-Users-brais-VSCODE/memory/project_github_no_actions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-deploy-script",
+   "label": "deploy.sh",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "scripts/deploy.sh moves the Zeabur service's image tag to sha-<commit>, verifies the pod runs that commit, and refuses unsafe deploys.",
+   "details": [
+    "Run by the owner after pulling main; --status, --dry-run, --verify-file, --yes, --build, --force-in-flight",
+    "Refuses a non-main branch, an unpublished image, and (under --yes) a deploy while any cron run is claimed/running in any store",
+    "Moving the tag is the only thing that makes Zeabur roll out; restart, redeploy and env-var bumps are no-ops (2026-10-06: a moved tag was once saved but never rolled out until a manual Restart)",
+    "'Pod is serving' is not 'Telegram is listening': wait for 'Cold boot: dropping Telegram updates' then 'Gateway running'",
+    "Gateway stop grace is S6_KILL_GRACETIME 20s; SIGKILL leads to a PRAGMA quick_check on the 2.2 GB state.db at next boot (up to ~4 min)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/scripts/deploy.sh",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "zb-hermes-eu-hermes",
+   "label": "Hermes service (Zeabur)",
+   "kind": "service",
+   "parent": "zb-hermes-eu",
+   "summary": "The single running Hermes container: Zeabur prebuilt-image service `hermes` in project hermes-eu on the Frankfurt dedicated server.",
+   "details": [
+    "Image pulled from GHCR; pod pinned by tag sha-<commit>; env vars (provider keys, Telegram, Langfuse) live only in Zeabur env",
+    "Static egress IP (value in CLAUDE.md, deliberately not recorded here); clients on their own servers whitelist it on 443",
+    "No liveness probes: pod restarts every 1-2h are benign Zeabur rollouts, not crashes",
+    "Live state: use `zeabur service get/metric`, not `deployment list`; logs via service exec into /opt/data/logs/",
+    "Hermes volume was too large for Zeabur's S3 backup limit, so the 2026-07-22 migration used root SSH rsync of /opt/data",
+    "Frankfurt server SSH is key-only since 2026-10-06 (zeabur server ssh/ssh-info and the dashboard terminal no longer log in)",
+    "Zeabur service-data migration to the server completed 2026-10-06 (hermes-eu last)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Panel",
+     "url": "https://blhermes.zeabur.app"
+    }
+   ],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/README.md",
+    "memories/decisions/hermes.md",
+    "~/.claude/projects/-Users-brais-VSCODE/memory/reference_zeabur_live_status.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-gateway",
+   "label": "Gateway (multiplex)",
+   "kind": "service",
+   "parent": "hermes",
+   "summary": "The single gateway process (s6 slot gateway-default) that serves Telegram and the cron ticker for every profile.",
+   "details": [
+    "gateway.multiplex_profiles is on (upstream default; the fork's opt-out was removed in stage 3 step 4); rollback is a code revert and redeploy",
+    "boot_reconcile writes one gateway.profile_routes entry per bound Telegram topic; a bound topic with no route is dropped, never answered by the default profile",
+    "Never bring up a gateway-<profile> slot for a secondary profile (double-serves it) and never copy TELEGRAM_BOT_TOKEN into a profile",
+    "HERMES_FORK_SCOPE_PROCESS_ENV=1 lets the launch profile's secret scope fall back to the service env; health probe: hermes_cli.fork_ext.process_env_scope --check must say VERDICT: OK",
+    "First multiplex rollout 2026-09-28 silenced Telegram; re-enabled after the process-env scope fix",
+    "Logs: /opt/data/logs/agent.log (infrastructure only; use Langfuse for what an agent did), profiles/<p>/logs/agent.log for moved jobs"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-cron-scheduler",
+   "label": "Cron scheduler",
+   "kind": "service",
+   "parent": "hermes-gateway",
+   "summary": "The cron ticker inside the gateway: one store per profile (plus the default store), per-profile serial pools, agent and no-agent script jobs.",
+   "details": [
+    "Default store /opt/data/cron/jobs.json; every named profile has its own profiles/<p>/cron/jobs.json (all fork `profile` jobs moved into profile stores, cohorts 2026-10-02..04)",
+    "cron.max_parallel_jobs: 1 per named profile; main (default) store unbounded; profiles run side by side",
+    "agent.max_turns 90; HERMES_CRON_MAX_RUNTIME 1800s wall clock; provider request_timeout_seconds 600 (auditor 420)",
+    "A store's cron expressions run in that profile's own config.yaml timezone (unset = UTC); bl-shoroban set to Asia/Bangkok",
+    "Each job holds a frozen copy of its prompt; repo .prompt files reach it only via `hermes cron sync-prompt` (deploy first)",
+    "Panel 'Run now' only queues the job; the ticker starts it within 60s",
+    "`hermes cron move <id> --to-profile <p>` moves a job between stores keeping id, phase and history; afterwards use `hermes -p <p> cron ...`"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-dashboard",
+   "label": "Web panel + API",
+   "kind": "service",
+   "parent": "hermes",
+   "summary": "The Hermes dashboard on port 9119 (FastAPI server plus React SPA) at blhermes.zeabur.app, also exposing the delegation API and the rental provisioning webhook.",
+   "details": [
+    "Login is gated by Nous Portal OAuth (GitHub); the gate was enforced after the 2026-06-05 XMRig cryptominer incident (unauthenticated write access via MCP-server injection)",
+    "POST /api/delegate: async task delegation from the BigLobster COO (shared secret header), result posted back to BigLobster's /api/hermes-callback; internal URL hermes-sandbox.zeabur.internal:9119",
+    "POST /api/bl/rental/provision: HMAC-signed payment-confirmed webhook (see Rental provisioner)",
+    "/health and /api/status for probes; fork route makes 'Run now' queue instead of running inside the request",
+    "2026-09-06 logout loop: Portal WAF blocked token-endpoint calls with no User-Agent; fixed, with no retry on refresh by design"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Panel",
+     "url": "https://blhermes.zeabur.app"
+    }
+   ],
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/ops/security/dashboard-auth-lockdown.md",
+    "hermes-sandbox/ops/security/cryptominer-incident-2026-06-05.md",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "zb-hermes-eu-hermes-data",
+   "label": "Data volume (/opt/data)",
+   "kind": "database",
+   "parent": "zb-hermes-eu",
+   "summary": "The persistent Zeabur volume holding every profile's state: state.db, sessions, memory, skills, cron stores, workspaces, checkouts and logs.",
+   "details": [
+    "HERMES_HOME=/opt/data; ~15 GB volume; state.db (SQLite, FTS5 session search) ~2.2 GB",
+    "profiles/<p>/ each hold config.yaml, .env, memories, skills, workspace, cron store, executions.db; checkouts/ holds isolated BigLobster site clones",
+    "Rotated secrets reach profile .env files only through the boot reconciler (a main-only rotation once left grow-shop on a revoked key)",
+    "Nightly zip to Google Drive; other projects' volumes are dumped separately (see backups)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/CLAUDE.md",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-cli",
+   "label": "hermes CLI",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "The `hermes` command-line (cron, profile, backup, doctor, gateway, remediate) used on the pod via zeabur service exec and locally.",
+   "details": [
+    "Fork subcommands: cron move, cron sync-prompt, cron runs; remediation CLI is python -m remediation.cli",
+    "Run as the hermes user (never root: root flips file ownership)",
+    "`hermes gateway start/stop/restart` is not the known-good path on Zeabur; /command/s6-svc is"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-cont-init",
+   "label": "Boot reconciler (cont-init)",
+   "kind": "hook",
+   "parent": "hermes",
+   "summary": "s6 cont-init hooks run on every container boot; 03-biglobster-config calls boot_reconcile to sync env, pin config, seed profiles and clone repos.",
+   "details": [
+    "Hooks: 01-hermes-setup, 015-supervise-perms, 02-reconcile-profiles, 03-biglobster-config",
+    "Syncs Zeabur env into main and per-profile .env (INJECT list); TENANT_EXCLUDE keeps OPENROUTER/EXA/HF/PEXELS/Langfuse keys out of rented tenants",
+    "Pins config: web backend exa, image_gen provider openrouter (skipped for profiles with their own FAL_KEY), video_gen provider huggingface, agent.max_turns 90, cron.max_parallel_jobs 1, request_timeout_seconds",
+    "Seeds per-profile SOUL/repos.txt/routing.env from docker/profiles and generates gateway.profile_routes per bound topic",
+    "Clones/pulls profile repos and isolated BigLobster checkouts (biglobster-seo, -gaphunter, -infographic, -translation) with timeouts so a git stall cannot hang boot",
+    "Pins the auditor's dedicated GitHub identity and token; registers the gsc MCP server on the biglobster profile only"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-git-guard",
+   "label": "Agent git commit guard",
+   "kind": "hook",
+   "parent": "hermes",
+   "summary": "Client-side git hooks installed into every agent clone that block mass-deletion commits and direct agent pushes to main.",
+   "details": [
+    "Pre-commit blocks commits deleting more than 10 tracked files (override HERMES_ALLOW_MASS_DELETION=1); chains each repo's own .githooks/pre-commit",
+    "`git commit --no-verify` is hard-blocked; pre-push layer blocks agent identities pushing directly to main",
+    "Origin: 2026-06-22 blind git add -A deleted 48 cover images and 404'd the blog for ~22h",
+    "Installed through core.hooksPath in cont-init section 6c; blocked commits append to blocked-commits.jsonl, surfaced by the incident watcher"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/ops/security/git-commit-guard.md",
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-bl-site-tools",
+   "label": "bl_site_* tools (client-site write path)",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "bl_site_publish / bl_site_product / bl_site_health / bl_site_redirect: the single audited HTTP path rented agents use to write to a client's bl-site-package site.",
+   "details": [
+    "Authenticated with that profile's own panel password (X-Automation-Key header where Turnstile blocks a bare login); never a database, never a repo",
+    "Facts are the site's, prose is the agent's: identifiers, change fingerprints and publish eligibility are decided server-side",
+    "Blog posts go live immediately (status hardcoded to published) but every PUT snapshots the replaced body (bl-site-package >= 1.8.0, restorable from Blog -> Historial); agents pass author and base_hash",
+    "Product sheets save as drafts unless publication is explicit; redirects stay pending unless the match tier is gtin/mpn (gate reads the tier back from the site)",
+    "Toolsets are declared per job (restrictive allowlist) so a prompt and its real capabilities cannot drift silently"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md",
+    "hermes-sandbox/scripts/provision_bl_client.py",
+    "hermes-sandbox/tools/bl_site_publish_tool.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-rental-provisioner",
+   "label": "Rental provisioner",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "scripts/provision_bl_client.py creates a rented bl-site-package client as a Hermes profile with its own key, config and daily agent jobs; triggered by the CEO via Telegram or by a Stripe-confirmed webhook from BigLobster.",
+   "details": [
+    "Creates profile bl-<client>, writes .env (client's own OpenRouter key, optional FAL_KEY/Pexels key, site URL, panel password), config.yaml (model default deepseek/deepseek-v4.1-flash, web.search_backend ddgs), SOUL and the cron jobs",
+    "AGENT_SOURCES: gap-hunter, seo, onboarding-content (one-shot), product-articles, product-sheets, infographic, maintenance, site-setup (one-shot), content-updater, shorts; daily schedules hashed into a 02:00-06:00 window; deliver is always `local`",
+    "Webhook: POST /api/bl/rental/provision with HMAC-SHA256 over timestamp + raw body, 300 s replay window, secret BL_RENTAL_WEBHOOK_SECRET; refuses all requests if the secret is unset",
+    "Removal is manual: remove each job, then `hermes profile delete <slug>`",
+    "BYOK: rented profiles bill their own OpenRouter key; the boot reconciler never overwrites it with ours"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md",
+    "hermes-sandbox/scripts/provision_bl_client.py",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-model-routing",
+   "label": "Model routing",
+   "kind": "config",
+   "parent": "hermes",
+   "summary": "How Hermes picks models: everything goes through OpenRouter with explicit provider pins, per-role defaults, and BYOK for tenants.",
+   "details": [
+    "Main default deepseek/deepseek-v4.1-flash (CEO 2026-09-20, replacing openai/gpt-5.6-luna; before that tencent/hy3); fallback tencent/hy3; set by env vars HERMES_DEFAULT_MODEL / HERMES_FALLBACK_MODEL, reconciled each boot",
+    "Auditor profile exempt: orchestrator deepseek/deepseek-v4-flash-0731; system/content reviewer and judge deepseek/deepseek-v4.1-flash; separate HERMES_AUDITOR_OPENROUTER_API_KEY keeps spend off the shared weekly cap",
+    "Job pins: Translation Engineer and Website Maintenance (Shoroban) on tencent/hy3 (2026-08-17); a 2026-09-22 decision pinned the two infographic jobs to xiaomi/mimo-v2.6-pro but the A/B was blocked, current state unconfirmed",
+    "Images: openrouter bytedance-seed/seedream-4.5 (~$0.04 per art plate) for BigLobster; tenants with their own FAL_KEY use fal (flux-2 klein, or seedream via fal)",
+    "Web research: Exa for BigLobster profiles; rented tenants use the free ddgs backend. video_gen provider pinned to huggingface at boot",
+    "Always name the dated OpenRouter slug and pass --provider openrouter on interactive switches (vendor segment like tencent/ or openai/ would auto-detect a direct provider with no key)",
+    "The OpenRouter account refuses providers that train on paid prompts, so DeepSeek's own provider is dropped by routing (0 of 3,993 calls); lifting that setting was rejected"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/docker/config.yaml"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-langfuse-main",
+   "label": "Langfuse tracing (BigLobster project)",
+   "kind": "config",
+   "parent": "hermes",
+   "summary": "Langfuse project holding traces for the default profile and BigLobster-owned profiles; the source of truth for what an agent actually did.",
+   "details": [
+    "Plugin plugins/observability/langfuse; keys HERMES_LANGFUSE_PUBLIC_KEY/SECRET_KEY, base URL unprefixed HERMES_LANGFUSE_BASE_URL/LANGFUSE_BASE_URL",
+    "Query /api/public/v2/observations with fields=core,basic,io (never /traces; v1 endpoints removed 2026-11-16); a 401 can still return {\"data\": []}, always print the HTTP status",
+    "Session id is cron_<job_id>_<YYYYMMDD>_<HHMMSS>; a killed run has no root span but its finished tool calls are findable by sessionId",
+    "Known gap: GENERATION observations carry no usage/cost, so LLM cost per run is not observable"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-langfuse-rentals",
+   "label": "Langfuse tracing (rentals project)",
+   "kind": "config",
+   "parent": "hermes",
+   "summary": "A separate Langfuse project, with its own key pair, that all rented-client profiles trace into.",
+   "details": [
+    "Keys HERMES_RENTAL_LANGFUSE_PUBLIC_KEY/_SECRET_KEY set in Zeabur 2026-09-29; pinned into rental .env on every boot (rental_langfuse_pin)",
+    "If unset, both key names are pinned empty (never stripped), which disables tracing instead of failing open onto BigLobster's keys",
+    "Rationale: a client agent can read its own .env, and a key pair reads every trace in its project",
+    "A rental run is only findable with the rental keys; BigLobster's project returns an honest empty result"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-mcp-gsc",
+   "label": "GSC MCP server",
+   "kind": "mcp-server",
+   "parent": "hermes-profile-biglobster",
+   "summary": "Read-only Google Search Console MCP server (optional-mcps/gsc) registered on the biglobster profile only.",
+   "details": [
+    "stdio server /opt/hermes/optional-mcps/gsc/server.py with a read-only service-account key in GSC_SERVICE_ACCOUNT_B64",
+    "Boot removes it from the main profile if present; feeds the BigLobster content-decay scanner and SEO work"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "hermes-sandbox/docker/config.yaml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-telegram-bot",
+   "label": "Telegram bot + forum group",
+   "kind": "channel",
+   "parent": "hermes",
+   "summary": "The one Telegram bot (@b_l_hermes_bot) and its forum supergroup: one topic per profile plus General and Incidents.",
+   "details": [
+    "CEO-only allowlists; privacy mode disabled in BotFather (2026-06-06); group_topics lives at top-level telegram.extra",
+    "Under multiplex, bound topics run in-process through gateway.profile_routes; cold boot drops updates received while the gateway starts",
+    "Rented client profiles have no Telegram route: their jobs deliver `local` only",
+    "Topic thread ids are in docker/profiles/*/routing.env (not recorded here)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-topic-general",
+   "label": "General",
+   "kind": "channel",
+   "parent": "hermes-telegram-bot",
+   "summary": "General topic: CEO's direct chat with the default (COO) profile and delivery target for default-profile jobs.",
+   "details": [
+    "Home channel for the default profile; General-posting jobs must be retargeted to a profile's own topic when moved into a profile store (2026-09-29 decision)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-topic-biglobster",
+   "label": "BigLobster topic",
+   "kind": "channel",
+   "parent": "hermes-telegram-bot",
+   "summary": "Topic bound to the biglobster profile.",
+   "details": [
+    "Bound to profile biglobster via routing.env / profile_routes"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-topic-grow-shop",
+   "label": "grow-shop topic",
+   "kind": "channel",
+   "parent": "hermes-telegram-bot",
+   "summary": "Topic bound to the grow-shop profile (first client; routing fixed 2026-06-06).",
+   "details": [
+    "Bound to profile grow-shop via routing.env / profile_routes"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-topic-finview",
+   "label": "FinView topic",
+   "kind": "channel",
+   "parent": "hermes-telegram-bot",
+   "summary": "Topic bound to the finview profile.",
+   "details": [
+    "Bound to profile finview via routing.env / profile_routes"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-topic-socialagenda",
+   "label": "SocialAgenda topic",
+   "kind": "channel",
+   "parent": "hermes-telegram-bot",
+   "summary": "Topic bound to the socialagenda profile.",
+   "details": [
+    "Bound to profile socialagenda via routing.env / profile_routes"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-topic-bl-site-package",
+   "label": "bl-site-package topic",
+   "kind": "channel",
+   "parent": "hermes-telegram-bot",
+   "summary": "Topic bound to the bl-site-package profile.",
+   "details": [
+    "Bound to profile bl-site-package via routing.env / profile_routes"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-topic-incidents",
+   "label": "Incidents topic",
+   "kind": "channel",
+   "parent": "hermes-telegram-bot",
+   "summary": "Shared 'things that need my attention' topic used by the incident watcher and the auditor.",
+   "details": [
+    "Bound to profile auditor via routing.env / profile_routes"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-whatsapp-lead-bot",
+   "label": "WhatsApp lead chatbot (Chatwoot AgentBot)",
+   "kind": "bot",
+   "parent": "hermes",
+   "summary": "Planned rented WhatsApp lead-qualification chatbot for bl-site-package customers: Chatwoot CE inbox plus a Node AgentBot service using OpenRouter.",
+   "details": [
+    "Plan: customer owns the WABA and Meta billing; BigLobster charges EUR 49/month excluding Meta fees; Chatwoot CE self-hosted on Zeabur EU",
+    "Code exists in scripts/whatsapp-lead-bot (commits 2026-08-14) with GET /api/knowledge on the customer's bl-site-package; the plan doc still says implementation not started",
+    "Pilot on customer-created Meta Apps; Meta Tech Provider registration targeted from 2026-09-03 (4-6 weeks); Chatwoot self-hosted Embedded Signup is broken upstream",
+    "Chatwoot volumes (Postgres+pgvector, Redis) appear in the host backup script, so a Chatwoot instance exists on the server",
+    "Separate from upstream's own scripts/whatsapp-bridge"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/WHATSAPP-BOT-PLAN.md",
+    "hermes-sandbox/scripts/whatsapp-lead-bot",
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-profile-default",
+   "label": "Profile: default (main)",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "The owner/main profile at /opt/data: COO chat, backups, incident watcher, infographic and shorts jobs; carries the Zeabur service-env keys.",
+   "details": [
+    "Jobs in the default store: Hermes full backup (nightly), incident watcher, BigLobster Infographic Engineer, Shorts Producer, Shorts Publisher",
+    "Main store pool is unbounded; web server is pinned to this profile",
+    "CLAUDE.md also mentions hermes-* role profiles; other docs say those profiles were deleted. Current list unconfirmed"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/ops/zeabur-isolate-hermes-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-profile-biglobster",
+   "label": "Profile: biglobster",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "BigLobster's own content-agent profile: gap hunter, SEO/GEO, GEO scout, content updater and translation engineer work on br41s/biglobster.",
+   "details": [
+    "Repos: br41s/biglobster; isolated checkouts per job under /opt/data/checkouts",
+    "Carries the gsc MCP server; Telegram topic: BigLobster",
+    "Pilot 2026-09-13 to switch its model to deepseek-v4.1-flash (rollback: one line in profile config.yaml)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/tasks/biglobster-v41-pilot.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-profile-finview",
+   "label": "Profile: finview",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "Profile for FinView: runs the FinView Content Gap Hunter and answers the FinView topic.",
+   "details": [
+    "Repo br41s/FinView; its one named job 3988cc0c189f (daily 06:00 Asia/Bangkok) is presumed to be the FinView Gap Hunter (the doc names the job id and the prompt file separately)",
+    "Needed `timezone` set in its config after the move into its own store: 06:00 ran at 13:00 on 2026-10-04"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-profile-grow-shop",
+   "label": "Profile: grow-shop",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "First customer profile (a real client): Grow Shop e-commerce repos with their own isolated memory, workspace and git credentials.",
+   "details": [
+    "Repos br41s/grow-shop-api and br41s/grow-shop-landing cloned under the profile workspace",
+    "Created 2026-06-02 as the multi-tenancy pilot; topic routing verified 2026-06-06; jobs not enumerated in the docs read"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/docker/profiles/grow-shop/repos.txt"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-profile-socialagenda",
+   "label": "Profile: socialagenda",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "Profile for SocialAgenda with its own topic and workspace clone of br41s/SocialAgenda.",
+   "details": [
+    "Template shipped in docker/profiles; cron jobs not enumerated in the docs read"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/docker/profiles/socialagenda/repos.txt",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-profile-bl-site-package",
+   "label": "Profile: bl-site-package",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "Profile for the bl-site-package product repo with its own topic.",
+   "details": [
+    "Template shipped in docker/profiles (repo br41s/bl-site-package); its jobs, if any, are not named in the docs read"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/docker/profiles/bl-site-package/repos.txt",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-profile-auditor",
+   "label": "Profile: auditor",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "Dedicated identity-critical profile for the PR auditor and merge-on-green; holds only the hermes-auditor GitHub bot token.",
+   "details": [
+    "Exempt from the main model/fallback reconciliation and from the generic GITHUB_TOKEN injection",
+    "Webhook route auditor-pr-trigger lives in the default config but runs the job in this profile (/p/auditor/webhooks/...)",
+    "Escalations go to the Incidents topic"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-profile-bl-shoroban",
+   "label": "Profile: bl-shoroban (rental)",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "The one known rented client profile (Shoroban): six daily/frequent agents writing to the client's bl-site-package site on its own server, billed to the client's own OpenRouter key.",
+   "details": [
+    "Jobs named in docs: Product Sheet Writer (~every 2h), Infographic Engineer (moved from daily to `45 */3 * * *` for a backlog), Website Maintenance (5e971f9f3bf6), Gap Hunter, SEO/GEO On-Site; the sixth is not named",
+    "All jobs deliver `local`; timezone Asia/Bangkok; jobs moved into this profile's own store 2026-10-04",
+    "Client site is on the client's own host (Plesk); the Hermes egress IP had to be whitelisted on 443 to clear a Spanish geo-block",
+    "Traces go to the separate rentals Langfuse project; its OpenRouter key had a $5 cap (sat at $4.69 on 2026-09-22), unmonitored",
+    "2026-09-23 incident: five raster infographics 404'd since July, root-caused to the client site's own uploads sweeper (fixed in bl-site-package 1.8.8)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/tasks/unified-infographic-engineer.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-auditor",
+   "label": "Auditor (PR reviewer)",
+   "kind": "agent",
+   "parent": "hermes-profile-auditor",
+   "summary": "Agent cron job auditor-review (c19bb95c0a62) that reviews every open PR across the Hermes repo and all profile repos as the hermes-auditor GitHub bot.",
+   "details": [
+    "Triggers: GitHub webhook /p/auditor/webhooks/auditor-pr-trigger on each audited repo plus a 6-hourly poll",
+    "`python -m auditor.pending` lists unreviewed PRs (cap 10/run, ~90 tool-call budget); each PR is tiered system or content (fail-safe: unknown paths = system)",
+    "Content-tier PRs are merged by the auditor itself after the judge; system-tier PRs get an APPROVE with a head-SHA marker and the CEO merges (or labels auto-merge)",
+    "Repo set = engine + union of docker/profiles/*/repos.txt: hermes-sandbox, biglobster, FinView, grow-shop-api, grow-shop-landing, SocialAgenda, bl-site-package",
+    "Orchestrator deepseek/deepseek-v4-flash-0731 via OpenRouter; own OpenRouter key; request deadline 420s",
+    "Bot account created 2026-06-24; live and merging content-tier PRs account-wide since 2026-06-26; 2026-09-12 runaway fixed (budget burned re-running pending 47 times); dead-cron handling still unbuilt"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/auditor/auditor.prompt",
+    "hermes-sandbox/auditor/pending.py",
+    "hermes-sandbox/auditor/tiers.py",
+    "hermes-sandbox/tasks/todo.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-auditor-judge",
+   "label": "Auditor judge (second LLM)",
+   "kind": "agent",
+   "parent": "hermes-profile-auditor",
+   "summary": "auditor/llm.py: an LLM-as-judge call that returns the per-tier review verdict and fails closed if it cannot run.",
+   "details": [
+    "Raw urllib call to OpenRouter chat/completions; reasoning off (reasoning: {enabled: false}), 8000-token cap, 420 s deadline",
+    "Exit 4 = judge could not run: auditor emits JUDGE UNAVAILABLE and withholds the approve marker (2026-09-16 decision)",
+    "The judge never executed in production from 2026-06-24 to 2026-09-16 (~12 weeks); a 48h liveness check now lives in the incident watcher",
+    "Reads HERMES_AUDITOR_OPENROUTER_API_KEY first (OPENROUTER_API_KEY is stripped from subprocess env by design)",
+    "2026-10-01: DeepSeek provider pin removed; sends ignore: [open-inference] after trickling-stream hangs"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/auditor/llm.py",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-merge-on-green",
+   "label": "merge-on-green",
+   "kind": "cron-job",
+   "parent": "hermes-profile-auditor",
+   "summary": "No-agent hourly watcher (job 44c8e8977cd6, at :40) that merges auditor-approved system-tier PRs once the CEO labels them auto-merge.",
+   "details": [
+    "Merges only if: CEO label auto-merge, hermes-auditor approval marker names the current head SHA, GitHub reports MERGEABLE with no new failing checks, no protected path, mass-deletion floor passes, remediation gates allow",
+    "Uses gh's on-disk hermes-auditor identity; GITHUB_TOKEN is deliberately not used",
+    "Live code that had never been scheduled until 2026-09-18; hourly at :40 because the single-thread pool made 8-13 min waits routine",
+    "Moved into the auditor's own store 2026-10-04 (cohort 4)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/merge_on_green/watcher.py",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-incident-watcher",
+   "label": "Incident watcher",
+   "kind": "cron-job",
+   "parent": "hermes-profile-default",
+   "summary": "Hourly no-agent sweep (job f0d670b8e3b7) that detects failures across cron stores, Langfuse, git guard, deploy drift and dependency alerts and posts briefs to the Incidents topic.",
+   "details": [
+    "python -m incidents.sweep; silent when clean, one 'all clean' heartbeat per 24h; dedup state in $HERMES_HOME/incidents/state.json",
+    "Signals: failed and silently stalled cron jobs (every served store), prompt drift, errored Langfuse traces, blocked agent commits, runaway runs, judge liveness (48h), site-checkout drift, unclean gateway exits, deploy drift vs main (reads /opt/hermes/.hermes_build_sha), new critical/high osv dependency alerts",
+    "Fails loud: a signal that is blind (no token, unstamped image, 401/403/404) raises its own incident instead of returning empty",
+    "Attaches gated remediation proposals; known gap: does not cover failures of no-agent script jobs such as the nightly backup",
+    "Dedicated tokens: HERMES_DEP_ALERT_GITHUB_TOKEN; no-agent cron scripts never see GITHUB_TOKEN/GH_TOKEN"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/ops/security/dependency-alert-triage.md",
+    "hermes-sandbox/tasks/self-remediation-loop.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-remediation",
+   "label": "Self-remediation framework",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "remediation/ package: ledger, guards, registry and CLI that let the incident watcher propose (gated) fixes for known reversible failure classes.",
+   "details": [
+    "Guards: HERMES_AUTONOMY kill switch, per-signature debounce, per-class rate limit, may_auto_act gate; append-only JSONL ledger on the volume",
+    "Modes per class: gated (CEO approves each via `python -m remediation.cli apply <id>`) then auto after K=5 clean runs",
+    "Phases 0-2 shipped (PRs #83-#86); Phase 3 (auto execution) not built; the only production caller of the guards is merge-on-green",
+    "Related PoC: evals/ self-repair loop (trace -> LLM judge -> diagnose proposes a diff -> human approves -> regression lock), seeded 2026-06-15 with the fallback-model notice case"
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/tasks/self-remediation-loop.md",
+    "hermes-sandbox/remediation/registry.py",
+    "tasks/hermes-self-repair-loop-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-backup-nightly",
+   "label": "Hermes full backup (nightly)",
+   "kind": "cron-job",
+   "parent": "hermes-profile-default",
+   "summary": "No-agent nightly job (3f6f866ce1af) that zips /opt/data with `hermes backup`, keeps the newest zips, and mirrors the newest to Google Drive via rclone.",
+   "details": [
+    "Script /opt/data/scripts/backup-full.sh (versioned copy ops/backup-full.sh); zip ~3 GB excluding backups/; Drive folder hermesdrive:/HermesBackups",
+    "2026-10-06 fix: a zip that exists, says 'Archive kept' and passes zipfile.testzip() counts as success; before that 7 of 10 nights (Sep 28-Oct 3, Oct 6) had no backup",
+    "Drive OAuth consent screen was in Testing mode (7-day refresh-token expiry, recurred Aug 7 and Aug 17); published to production 2026-08-18, not yet proven beyond 7 days then; a service account cannot upload to a personal Drive",
+    "Exact nightly time not in the docs read"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/README.md",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/ops/backup-full.sh"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "backup-volumes-host",
+   "label": "Host volume dumps",
+   "kind": "tool",
+   "parent": "zeabur-frankfurt",
+   "summary": "ops/backup-volumes.sh, run by hand as root on the Frankfurt host: dumps other projects' volumes and uploads them to Google Drive.",
+   "details": [
+    "Dumps three Postgres volumes via pg_dumpall (social-agenda, flywell, chatwoot+pgvector), the chatwoot Redis RDB, the BigLobster sentinel SQLite via the online backup API, and idle Chrome/CDP volumes as tars",
+    "Stages root-only under /var/backups/volumes/<stamp>/, uploads with the host's own rclone to hermesdrive:/VolumeBackups/<stamp>, fails unless rclone check confirms every file",
+    "First run 2026-10-06 (192 MB). NOT scheduled: scheduling it is a new host-level cron pattern and Brais's call",
+    "Accepted trade-off: dumps are unencrypted in Drive and readable with the token the container holds (rclone crypt declined)",
+    "The OAuth stanza now lives in two configs; re-authorizing or revoking must touch both"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/README.md",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/ops/backup-volumes.sh"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-weekly-upstream-sync",
+   "label": "Weekly upstream sync + drift check",
+   "kind": "cron-job",
+   "parent": "hermes",
+   "summary": "A claude.ai Routine every Monday afternoon (Bangkok) that prepares one upstream-merge PR, plus a Monday GitHub workflow and Tuesday Hermes fallback cron that report upstream drift to Telegram.",
+   "details": [
+    "Routine merges the newest upstream release tag into a branch (merge commit, never rebase) and never merges, deploys or adds the ci-reviewed label",
+    "upstream-drift.yml runs Mondays 07:17 UTC; fallback Hermes no-agent cron `0 9 * * 2` (upstream_drift.sh, --defer-to-actions); no message on a Tuesday means both paths are down",
+    "Whether the Tuesday fallback cron has been registered is not confirmed in the docs read",
+    "Drift hid silently until 2026-09-25 (14 releases, 109 conflicted files) because the threshold was measured against upstream's newest tag"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/upstream-merge/weekly-sync-routine.md",
+    "hermes-sandbox/ops/upstream-merge/upstream-merge-hygiene.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-gap-hunter",
+   "label": "Content Gap Hunter",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Daily agent that finds a content gap and writes at most one blog article, via PR on BigLobster and FinView and directly through bl_site_publish on rented sites.",
+   "details": [
+    "BigLobster: job ce583d11dedd, workdir /opt/data/checkouts/biglobster-gaphunter, PR reviewed by the auditor; also consumes agent-mailbox requests (expand_thin_content)",
+    "FinView: job 3988cc0c189f (presumed; docs name the id and the prompt file separately), daily 06:00 Asia/Bangkok, ephemeral clone, MDX blog posts in Spanish",
+    "Rentals: create_blog_post goes live immediately with no review step; images via the client's own FAL key if any",
+    "Internal links are discovered at run time from the site's own routes, never from an allowlist (2026-09-17)",
+    "2026-09-12: a 38-min auditor run held the old single lane and the Gap Hunter sat silent 20+ min"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/gap-hunter/",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-seo-geo",
+   "label": "SEO/GEO On-Site agent",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Daily on-site SEO and GEO agent for biglobster.top and rented sites: audits coverage, repairs link destinations, publishes same-site 301s.",
+   "details": [
+    "BigLobster: job 20ec3607f2c6, DRY_RUN=false, workdir checkouts/biglobster-seo, coverage ledger and CATCH-UP mode, seo-rules.json, emits agent-mailbox requests",
+    "Rentals: update_page_text, update_blog_post (link repairs only), bl_site_redirect (scan, find_target via Wayback, propose/publish only for gtin/mpn-verified matches, max 3/run)",
+    "Third job added 2026-09-17: audit published posts and repair link destinations (reads up to 5, fixes up to 3 per run)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/onsite-seo/",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-geo-scout",
+   "label": "Off-Site GEO Scout",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Daily agent (job be8a4add42b0) that finds one off-site mention opportunity for BigLobster and drafts a ready-to-post asset for a human to publish.",
+   "details": [
+    "Never publishes; a human reviews the brief and posts it; worldwide English-language audience since 2026-08-12",
+    "Canary for the stage 3 job moves (moved to the biglobster store 2026-10-02; first run 03:00 +07:00 lost its start ping, fixed in #388)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/offsite-geo/geo-scout.prompt",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-content-updater",
+   "label": "Content Updater",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Agent that refreshes one already-published article per run, as a PR on BigLobster and (rental variant) straight to client sites with undo.",
+   "details": [
+    "BigLobster: job 4a0ebe8779ca, `0 8 * * *`, DRY_RUN pushes a branch and opens no PR; decay scanner scripts/content-decay/scan.mjs (GSC-aware) lives in the biglobster repo; first live edit merged 2026-09-16",
+    "Rule: when unsure, leave the page alone; every figure needs an official source; each article reviewed at most once a year",
+    "Rental variant built (PRs #293/#294, 2026-09-19): publishes directly, refuses sites without revision history (bl-site-package < 1.8.0); provisioning on the client profile was still open as of 2026-09-29"
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/tasks/content-updater.md",
+    "hermes-sandbox/tasks/content-updater-rental.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-translation",
+   "label": "Translation Engineer",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Agent (job e197e33b0f00) that creates the other-language version of BigLobster articles as a new file via PR.",
+   "details": [
+    "Pinned to tencent/hy3 at job level; workdir checkouts/biglobster-translation; unpinned job was once blocked by the model-drift guard (2026-08-17)",
+    "Schedule not in the docs read"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/translation/translation-engineer.prompt",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/tasks/biglobster-v41-pilot.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-infographic",
+   "label": "Infographic Engineer",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "One agent for every site: adds one inline-SVG infographic (with optional generated art plate) to one existing article per run.",
+   "details": [
+    "BigLobster job 2988bba27c73 runs under the default profile with workdir checkouts/biglobster-infographic; rentals run it daily; lane chosen at runtime from BL_SITE_URL (set = HTTP lane live on save, unset = git lane with PR)",
+    "Hybrid poster format (2026-09-23): artwork carries zero text, all labels/numbers are inline SVG over a fixed-palette plate; seedream-4.5 via OpenRouter ~$0.04/plate; a failing plate downgrades to a plain SVG and says so",
+    "Canvas is always viewBox 0 0 800 H; done-marker is class=\"article-infographic\"; validate_infographic.py is a mandatory pre-publish gate",
+    "Toolset must include image_gen (it silently went missing once and a run shipped a plain SVG as a normal success)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/infographic/",
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/scripts/provision_bl_client.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-infographic-validator",
+   "label": "Infographic validator",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "infographic/validate_infographic.py: the hard pre-publish gate that measures text with real Inter advance widths and checks spelling, palette and canvas.",
+   "details": [
+    "Needs hunspell + hunspell-es (installed in the image); exits non-zero with a list of fixes; CI check in infographic-check.yml",
+    "Replaced 'do the layout arithmetic in your head' after 16 of 82 published graphics had overflow"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-shorts",
+   "label": "Shorts Producer + Publisher",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~60s vertical video and publish it, rendering in GitHub Actions.",
+   "details": [
+    "Producer `30 8 * * *`: one short per language (EN, ES) from the newest post without one; writes a JSON package and submits it. Publisher `20 9,13 * * *`: collects finished renders and publishes",
+    "Publish targets: YouTube Shorts, Instagram Reels and Stories, Facebook; X is handed to Brais on Telegram",
+    "Nothing is published unless SHORTS_PUBLISH_MODE=live (shadow by default); live uploads were still unproven in the docs read",
+    "Keys (SHORTS_STUDIO_GITHUB_TOKEN, YOUTUBE_*, META_*) live only in the service env and are deliberately not in INJECT",
+    "The tool, not the prompt, enforces facts: submit re-reads the article and rejects unsourced figures"
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md",
+    "hermes-sandbox/scripts/setup_shorts_jobs.py",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-shorts-studio",
+   "label": "Shorts Studio (Remotion render)",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "plugins/shorts studio: package contract, ledger and publishers on the Hermes side; Remotion + Edge TTS rendering runs in GitHub Actions (shorts-studio.yml).",
+   "details": [
+    "Render never runs in the pod (~1,800 browser frames/min would starve the fleet); workflow_dispatch carries the package inline",
+    "Footage from Pexels/Mixkit, Edge TTS WordBoundary karaoke timing, loudness/freeze/black/silence QA",
+    "Separate rental SKU Social Shorts (shorts_render, in-container ffmpeg, client's own Pexels key) is unchanged"
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md",
+    "hermes-sandbox/.github/workflows/shorts-studio.yml"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-product-sheets",
+   "label": "Product Sheet Writer",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Rental agent that writes product sheets from a distributor feed's own specs; only useful to clients whose catalogue comes from a feed.",
+   "details": [
+    "Daily and open-ended (about ten products per run); toolsets bl_site_product + web",
+    "Saves drafts unless publication is explicit and the site checklist passes",
+    "Went quiet on a client without a feed; once ran five days without its tool in schema"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py",
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-product-articles",
+   "label": "Product Article Agent",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Rental agent that crawls a client's old distributor catalogue and writes up to three product articles per run.",
+   "details": [
+    "Needs --old-site-url; create_blog_post goes live with a CTA",
+    "Its prompt still tells the agent articles are saved as drafts (fix left open 2026-09-17)",
+    "Whether any client has it provisioned is not stated"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-website-maintenance",
+   "label": "Website Maintenance",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Rental subscription agent: daily health crawl via bl_site_health, repairs, and a monthly client report.",
+   "details": [
+    "Shoroban job 5e971f9f3bf6 pinned to tencent/hy3",
+    "Own bl_site_health toolset kept apart from the publish path",
+    "Monthly report comes from report_due on the same daily run"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-site-launch",
+   "label": "Site Launch / Onboarding Content (one-shot)",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "One-shot rental agents that fill a new client site: Site Launch (copy for five pages after the deterministic setup wizard) or Onboarding Content (migrate an old site).",
+   "details": [
+    "Run once, 5 minutes after provisioning; mutually exclusive",
+    "Site Launch is the Stripe-checkout product; the setup wizard runs in-process via scripts/bl_site_setup.py before the job is scheduled"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-skill-prospeccion-local",
+   "label": "Skill: prospeccion-local",
+   "kind": "skill",
+   "parent": "hermes",
+   "summary": "Skill for geographic lead prospecting (BigLobster ICP): searches local businesses, extracts contacts and POSTs them to BigLobster's leads API.",
+   "details": [
+    "Lives in /opt/data/skills/research/prospeccion-local on the volume",
+    "Current use not confirmed in the docs read"
+   ],
+   "status": "unknown",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-mailbox",
+   "label": "Agent mailbox",
+   "kind": "tool",
+   "parent": "hermes",
+   "summary": "Per-profile agent-mailbox.json plus onsite-seo/mailbox.py: lets one agent file a work request for another (SEO asks Gap Hunter to expand thin content).",
+   "details": [
+    "Shipped 2026-06-28 (PRs #92/#93); consumer always takes its fallback (waits for its next scheduled run) because cron agents lack the cronjob toolset",
+    "All work still ends in a PR reviewed by the auditor"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/ops/design/agent-mailbox-design.md",
+    "hermes-sandbox/tasks/agent-mailbox-wiring.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-doc-claude-md",
+   "label": "hermes-sandbox CLAUDE.md",
+   "kind": "doc",
+   "parent": "hermes",
+   "summary": "Fork-specific instructions for Claude Code: multiplex, cron rules, deploy gotchas, Langfuse diagnosis, rented-agent write path.",
+   "details": [
+    "Read by Claude Code only; inert to the Hermes runtime because AGENTS.md outranks it",
+    "Related runbooks: BIGLOBSTER_SETUP.md, AGENT_RENTAL_SETUP.md, ops/ (multiplex stage 3 plan, backups, security)"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "CLAUDE.md",
+     "url": "https://github.com/br41s/hermes-sandbox/blob/main/CLAUDE.md"
+    }
+   ],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "hermes-doc-decisions-log",
+   "label": "Hermes decision log",
+   "kind": "doc",
+   "parent": "hermes",
+   "summary": "Dated decisions for Hermes (infra migration, multi-tenancy, auditor, deploys, backups) kept in the workspace memories.",
+   "details": [
+    "memories/decisions/hermes.md holds the detail; the index line list is in memories/decisions.md; newest entry wins on conflict"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "memories/decisions/hermes.md",
+    "memories/decisions.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "ext-nous-portal",
+   "label": "Nous Portal",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Nous Research's Portal: OAuth provider behind the Hermes dashboard login and session refresh.",
+   "details": [
+    "2026-09-06 incident: Portal's WAF blocked token-endpoint requests lacking a User-Agent",
+    "Hermes shares one static egress IP, which makes bot-shaped calls easy to rate-limit"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/ops/security/dashboard-auth-lockdown.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-exa",
+   "label": "Exa",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Web search and extraction API used by BigLobster profiles (rented tenants use free ddgs instead).",
+   "details": [
+    "EXA_API_KEY is excluded from rented tenants; a 503 once killed a Content Updater run via the same-tool-failure halt"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-fal",
+   "label": "fal",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Image-generation host used by tenants with their own FAL_KEY (BYOK).",
+   "details": [
+    "Tenants with FAL_KEY keep the in-tree fal path; set image_gen.model, not provider, to keep seedream house style"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-youtube",
+   "label": "YouTube",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "YouTube Data API target for published Shorts.",
+   "details": [
+    "Refresh token minted once with scripts/youtube_oauth.py"
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-meta",
+   "label": "Meta (Instagram, Facebook, WhatsApp)",
+   "kind": "external",
+   "parent": "layer-external",
+   "summary": "Meta Graph API targets for Reels/Stories/Facebook posts, and the WhatsApp Cloud API for the planned lead chatbot.",
+   "details": [
+    "Meta Tech Provider registration pending for the WhatsApp product"
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md",
+    "hermes-sandbox/WHATSAPP-BOT-PLAN.md"
+   ],
+   "confidence": "from-docs"
+  }
+ ],
+ "edges": [
+  {
+   "source": "hermes-topic-general",
+   "target": "hermes-profile-default",
+   "kind": "routes-to",
+   "label": "inbound messages and bare `deliver: telegram` resolve to this profile",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-topic-biglobster",
+   "target": "hermes-profile-biglobster",
+   "kind": "routes-to",
+   "label": "inbound messages and bare `deliver: telegram` resolve to this profile",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-topic-grow-shop",
+   "target": "hermes-profile-grow-shop",
+   "kind": "routes-to",
+   "label": "inbound messages and bare `deliver: telegram` resolve to this profile",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-topic-finview",
+   "target": "hermes-profile-finview",
+   "kind": "routes-to",
+   "label": "inbound messages and bare `deliver: telegram` resolve to this profile",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-topic-socialagenda",
+   "target": "hermes-profile-socialagenda",
+   "kind": "routes-to",
+   "label": "inbound messages and bare `deliver: telegram` resolve to this profile",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-topic-bl-site-package",
+   "target": "hermes-profile-bl-site-package",
+   "kind": "routes-to",
+   "label": "inbound messages and bare `deliver: telegram` resolve to this profile",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-topic-incidents",
+   "target": "hermes-profile-auditor",
+   "kind": "routes-to",
+   "label": "inbound messages and bare `deliver: telegram` resolve to this profile",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "zb-hermes-eu-hermes",
+   "target": "zeabur-frankfurt",
+   "kind": "deployed-on",
+   "label": "pod runs on the Frankfurt dedicated server (EU region)",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "zb-hermes-eu-hermes",
+   "target": "hermes-ci-build",
+   "kind": "depends-on",
+   "label": "pulls ghcr.io/br41s/hermes-sandbox:sha-<commit>",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-ci-build",
+   "target": "github",
+   "kind": "deployed-on",
+   "label": "GitHub Actions workflow ghcr-publish.yml; image stored in GHCR",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/.github/workflows/ghcr-publish.yml"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-deploy-script",
+   "target": "zb-hermes-eu-hermes",
+   "kind": "deploys",
+   "label": "moves the image tag to sha-<commit> and verifies the pod",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/scripts/deploy.sh"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-deploy-script",
+   "target": "zeabur",
+   "kind": "calls",
+   "label": "zeabur service update tag via the Zeabur CLI",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-deploy-script",
+   "target": "gcp",
+   "kind": "calls",
+   "label": "--build fallback builds the image with Cloud Build",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/cloudbuild.yaml"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "brais",
+   "target": "hermes-deploy-script",
+   "kind": "deploys",
+   "label": "owner runs deploy.sh after batching merges",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-repo",
+   "target": "github",
+   "kind": "deployed-on",
+   "label": "hosted at br41s/hermes-sandbox",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-repo",
+   "target": "ext-nousresearch-hermes-agent",
+   "kind": "depends-on",
+   "label": "fork; merges upstream release tags weekly",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/UPSTREAM_VERSION"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-weekly-upstream-sync",
+   "target": "hermes-repo",
+   "kind": "manages",
+   "label": "opens one upstream-merge PR per week",
+   "sources": [
+    "hermes-sandbox/ops/upstream-merge/weekly-sync-routine.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-weekly-upstream-sync",
+   "target": "ext-anthropic",
+   "kind": "depends-on",
+   "label": "runs as a claude.ai Routine (Claude session)",
+   "sources": [
+    "hermes-sandbox/ops/upstream-merge/weekly-sync-routine.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-weekly-upstream-sync",
+   "target": "ext-telegram",
+   "kind": "notifies",
+   "label": "reports upstream drift to Telegram",
+   "sources": [
+    "hermes-sandbox/ops/upstream-merge/upstream-merge-hygiene.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "claude-code",
+   "target": "hermes-repo",
+   "kind": "manages",
+   "label": "develops the fork; CLAUDE.md is read only by Claude Code",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-doc-decisions-log",
+   "target": "vscode-workspace",
+   "kind": "stores-in",
+   "label": "kept under memories/decisions/ in the workspace repo",
+   "sources": [
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "brais",
+   "target": "hermes-telegram-bot",
+   "kind": "controls",
+   "label": "CEO-only chat: orders, approvals, auto-merge labels",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-gateway",
+   "target": "hermes-telegram-bot",
+   "kind": "serves",
+   "label": "one gateway serves every bound topic in-process",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-telegram-bot",
+   "target": "ext-telegram",
+   "kind": "depends-on",
+   "label": "bot @b_l_hermes_bot on the Telegram Bot API",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-gateway",
+   "target": "zb-hermes-eu-hermes-data",
+   "kind": "stores-in",
+   "label": "state.db sessions, memory, FTS search",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-cron-scheduler",
+   "target": "zb-hermes-eu-hermes-data",
+   "kind": "stores-in",
+   "label": "jobs.json, executions.db and outputs per store",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-dashboard",
+   "target": "zb-hermes-eu-hermes-data",
+   "kind": "reads",
+   "label": "status and session data",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-cont-init",
+   "target": "hermes-gateway",
+   "kind": "configures",
+   "label": "reconciles config, env and profile routes on every boot",
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-cont-init",
+   "target": "zb-hermes-eu-hermes-data",
+   "kind": "writes",
+   "label": "profile .env/config.yaml, SOUL, checkouts",
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-cont-init",
+   "target": "github",
+   "kind": "reads",
+   "label": "clones/pulls profile repos and BigLobster site checkouts",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-cont-init",
+   "target": "hermes-git-guard",
+   "kind": "configures",
+   "label": "installs hooks via core.hooksPath (section 6c)",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "hermes-git-guard",
+   "kind": "reads",
+   "label": "blocked-commits.jsonl",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-gateway",
+   "target": "hermes-model-routing",
+   "kind": "depends-on",
+   "label": "model and provider config per profile",
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-dashboard",
+   "target": "ext-nous-portal",
+   "kind": "depends-on",
+   "label": "OAuth gate for panel login and session refresh",
+   "sources": [
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/ops/security/dashboard-auth-lockdown.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-dashboard",
+   "target": "hermes-rental-provisioner",
+   "kind": "serves",
+   "label": "hosts POST /api/bl/rental/provision",
+   "sources": [
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "proj-biglobster",
+   "target": "hermes-dashboard",
+   "kind": "calls",
+   "label": "COO delegates tasks to /api/delegate (internal URL, shared secret)",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-dashboard",
+   "target": "proj-biglobster",
+   "kind": "calls",
+   "label": "async result callback to /api/hermes-callback",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-biglobster",
+   "target": "hermes-rental-provisioner",
+   "kind": "calls",
+   "label": "HMAC-signed webhook after Stripe confirms an order",
+   "sources": [
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-rental-provisioner",
+   "target": "hermes-profile-bl-shoroban",
+   "kind": "manages",
+   "label": "creates the rented profile, .env, config and cron jobs",
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-rental-provisioner",
+   "target": "proj-bl-site-package",
+   "kind": "writes",
+   "label": "Site Launch applies the setup wizard via the site's panel API",
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-model-routing",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "all LLM calls go through OpenRouter (deepseek-v4.1-flash default, tencent/hy3 fallback)",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-model-routing",
+   "target": "ext-fal",
+   "kind": "uses-model",
+   "label": "BYOK image generation for tenants with their own FAL_KEY",
+   "sources": [
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-model-routing",
+   "target": "ext-exa",
+   "kind": "calls",
+   "label": "web search for BigLobster profiles",
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-model-routing",
+   "target": "ext-huggingface",
+   "kind": "calls",
+   "label": "video_gen provider pinned to huggingface (HUGGINGFACE_API_KEY)",
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs",
+   "note": "Docs conflict on whether router.huggingface.co is reachable from Zeabur (confirmed 2026-06-05, later called blocked)."
+  },
+  {
+   "source": "hermes-auditor-judge",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "deepseek-v4.1-flash, reasoning off, own API key",
+   "sources": [
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/auditor/llm.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "orchestrator deepseek-v4-flash-0731",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-infographic",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "seedream-4.5 art plates (~$0.04 each)",
+   "sources": [
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-gateway",
+   "target": "hermes-langfuse-main",
+   "kind": "writes",
+   "label": "agent traces for default and BigLobster profiles",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-langfuse-main",
+   "target": "ext-langfuse",
+   "kind": "writes",
+   "label": "BigLobster's Langfuse project",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-profile-bl-shoroban",
+   "target": "hermes-langfuse-rentals",
+   "kind": "writes",
+   "label": "rental traces go to a separate project",
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-langfuse-rentals",
+   "target": "ext-langfuse",
+   "kind": "writes",
+   "label": "separate rentals Langfuse project",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "ext-langfuse",
+   "kind": "reads",
+   "label": "errored observations (best-effort)",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "hermes-topic-incidents",
+   "kind": "notifies",
+   "label": "one brief per new incident, 24h heartbeat",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "hermes-topic-incidents",
+   "kind": "notifies",
+   "label": "escalations and daily heartbeat",
+   "sources": [
+    "hermes-sandbox/docker/profiles/auditor/routing.env"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "hermes-cron-scheduler",
+   "kind": "monitors",
+   "label": "failed and silently stalled jobs, prompt drift, runaway runs",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "hermes-gateway",
+   "kind": "monitors",
+   "label": "unclean exits (SIGKILL/OOM) from the exit-diag log",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "zb-hermes-eu-hermes",
+   "kind": "monitors",
+   "label": "deploy drift: running commit vs main",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "hermes-auditor-judge",
+   "kind": "monitors",
+   "label": "48h judge liveness check",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "github",
+   "kind": "reads",
+   "label": "compare API for deploy drift; code-scanning alerts for osv findings",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "hermes-remediation",
+   "kind": "calls",
+   "label": "attaches gated remediation proposals to briefs",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-merge-on-green",
+   "target": "hermes-remediation",
+   "kind": "depends-on",
+   "label": "kill switch, debounce and rate limit guards",
+   "sources": [
+    "hermes-sandbox/merge_on_green/watcher.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-merge-on-green",
+   "target": "hermes-auditor",
+   "kind": "depends-on",
+   "label": "requires the auditor's head-SHA approve marker",
+   "sources": [
+    "hermes-sandbox/merge_on_green/watcher.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-merge-on-green",
+   "target": "github",
+   "kind": "manages",
+   "label": "merges PRs labelled auto-merge",
+   "sources": [
+    "hermes-sandbox/merge_on_green/watcher.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "hermes-auditor-judge",
+   "kind": "calls",
+   "label": "second-LLM verdict per PR tier",
+   "sources": [
+    "hermes-sandbox/auditor/auditor.prompt"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "github",
+   "kind": "manages",
+   "label": "reviews PRs, comments, merges content-tier PRs as hermes-auditor",
+   "sources": [
+    "hermes-sandbox/auditor/auditor.prompt"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "github",
+   "target": "hermes-gateway",
+   "kind": "calls",
+   "label": "PR webhooks to /p/auditor/webhooks/auditor-pr-trigger",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "hermes-repo",
+   "kind": "monitors",
+   "label": "reviews open PRs on engine repo",
+   "sources": [
+    "hermes-sandbox/auditor/pending.py",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "proj-biglobster",
+   "kind": "monitors",
+   "label": "reviews open PRs on br41s/biglobster",
+   "sources": [
+    "hermes-sandbox/auditor/pending.py",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "proj-finview",
+   "kind": "monitors",
+   "label": "reviews open PRs on br41s/FinView",
+   "sources": [
+    "hermes-sandbox/auditor/pending.py",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "proj-grow-shop",
+   "kind": "monitors",
+   "label": "reviews open PRs on grow-shop-api and grow-shop-landing",
+   "sources": [
+    "hermes-sandbox/auditor/pending.py",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "proj-socialagenda",
+   "kind": "monitors",
+   "label": "reviews open PRs on br41s/SocialAgenda",
+   "sources": [
+    "hermes-sandbox/auditor/pending.py",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-auditor",
+   "target": "proj-bl-site-package",
+   "kind": "monitors",
+   "label": "reviews open PRs on br41s/bl-site-package",
+   "sources": [
+    "hermes-sandbox/auditor/pending.py",
+    "hermes-sandbox/docker/profiles/"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-backup-nightly",
+   "target": "zb-hermes-eu-hermes-data",
+   "kind": "reads",
+   "label": "hermes backup zips /opt/data",
+   "sources": [
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-backup-nightly",
+   "target": "ext-google-drive",
+   "kind": "backs-up-to",
+   "label": "newest zip mirrored to hermesdrive:/HermesBackups via rclone",
+   "sources": [
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "ext-google-drive",
+   "kind": "backs-up-to",
+   "label": "dumps uploaded to hermesdrive:/VolumeBackups/<stamp>",
+   "sources": [
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "zb-social-agenda",
+   "kind": "reads",
+   "label": "pg_dumpall of the SocialAgenda Postgres volume",
+   "sources": [
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "zb-flywell",
+   "kind": "reads",
+   "label": "pg_dumpall of the FlyWell Postgres volume",
+   "sources": [
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "backup-volumes-host",
+   "target": "zb-biglobster",
+   "kind": "reads",
+   "label": "SQLite online backup of the BigLobster sentinel DB",
+   "sources": [
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-cli",
+   "target": "hermes-cron-scheduler",
+   "kind": "manages",
+   "label": "cron list/runs/move/sync-prompt/edit",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-doc-claude-md",
+   "target": "hermes-repo",
+   "kind": "stores-in",
+   "label": "lives at the repo root",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-gap-hunter",
+   "target": "hermes-profile-biglobster",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile biglobster",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-gap-hunter",
+   "target": "hermes-profile-finview",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile finview",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-gap-hunter",
+   "target": "hermes-profile-bl-shoroban",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile bl-shoroban",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-seo-geo",
+   "target": "hermes-profile-biglobster",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile biglobster",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-seo-geo",
+   "target": "hermes-profile-bl-shoroban",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile bl-shoroban",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-geo-scout",
+   "target": "hermes-profile-biglobster",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile biglobster",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-content-updater",
+   "target": "hermes-profile-biglobster",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile biglobster",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-translation",
+   "target": "hermes-profile-biglobster",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile biglobster",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-infographic",
+   "target": "hermes-profile-default",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile default",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-infographic",
+   "target": "hermes-profile-bl-shoroban",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile bl-shoroban",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-shorts",
+   "target": "hermes-profile-default",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile default",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-product-sheets",
+   "target": "hermes-profile-bl-shoroban",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile bl-shoroban",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-website-maintenance",
+   "target": "hermes-profile-bl-shoroban",
+   "kind": "deployed-on",
+   "label": "runs as a cron job in profile bl-shoroban",
+   "sources": [
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "memories/decisions/hermes.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-gap-hunter",
+   "target": "proj-biglobster",
+   "kind": "writes",
+   "label": "opens PRs with new blog articles (auditor-reviewed)",
+   "sources": [
+    "hermes-sandbox/gap-hunter/biglobster-gap-hunter.prompt"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-gap-hunter",
+   "target": "proj-finview",
+   "kind": "writes",
+   "label": "opens PRs with new MDX blog posts",
+   "sources": [
+    "hermes-sandbox/gap-hunter/finview-gap-hunter.prompt"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-gap-hunter",
+   "target": "hermes-bl-site-tools",
+   "kind": "calls",
+   "label": "rentals: create_blog_post (live immediately)",
+   "sources": [
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-seo-geo",
+   "target": "proj-biglobster",
+   "kind": "writes",
+   "label": "SEO/GEO fixes on biglobster.top via PR",
+   "sources": [
+    "hermes-sandbox/onsite-seo/seo-agent.prompt"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-seo-geo",
+   "target": "hermes-bl-site-tools",
+   "kind": "calls",
+   "label": "rentals: page text, link repairs, 301 redirects",
+   "sources": [
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-seo-geo",
+   "target": "hermes-agent-mailbox",
+   "kind": "writes",
+   "label": "files work requests for the Gap Hunter",
+   "sources": [
+    "hermes-sandbox/ops/design/agent-mailbox-design.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-gap-hunter",
+   "target": "hermes-agent-mailbox",
+   "kind": "reads",
+   "label": "consumes expand_thin_content requests",
+   "sources": [
+    "hermes-sandbox/gap-hunter/biglobster-gap-hunter.prompt"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-geo-scout",
+   "target": "proj-biglobster",
+   "kind": "reads",
+   "label": "drafts off-site posts about BigLobster",
+   "sources": [
+    "hermes-sandbox/offsite-geo/geo-scout.prompt"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-geo-scout",
+   "target": "hermes-topic-biglobster",
+   "kind": "notifies",
+   "label": "brief with a ready-to-post draft for a human",
+   "sources": [
+    "hermes-sandbox/offsite-geo/geo-scout.prompt"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-content-updater",
+   "target": "proj-biglobster",
+   "kind": "writes",
+   "label": "refreshes one article per run (DRY_RUN pushes a branch only)",
+   "sources": [
+    "hermes-sandbox/content-updater/biglobster-content-updater.prompt",
+    "hermes-sandbox/tasks/content-updater.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-content-updater",
+   "target": "hermes-bl-site-tools",
+   "kind": "calls",
+   "label": "rental variant: update_blog_post with revision history",
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-translation",
+   "target": "proj-biglobster",
+   "kind": "writes",
+   "label": "adds translated article files via PR",
+   "sources": [
+    "hermes-sandbox/translation/translation-engineer.prompt",
+    "hermes-sandbox/tasks/biglobster-v41-pilot.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-infographic",
+   "target": "proj-biglobster",
+   "kind": "writes",
+   "label": "git lane: inserts one infographic via PR",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-infographic",
+   "target": "hermes-bl-site-tools",
+   "kind": "calls",
+   "label": "HTTP lane on rented sites (live on save)",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-infographic",
+   "target": "hermes-infographic-validator",
+   "kind": "calls",
+   "label": "mandatory pre-publish gate",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-product-sheets",
+   "target": "hermes-bl-site-tools",
+   "kind": "calls",
+   "label": "bl_site_product",
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-product-articles",
+   "target": "hermes-bl-site-tools",
+   "kind": "calls",
+   "label": "create_blog_post with CTA",
+   "sources": [
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-website-maintenance",
+   "target": "hermes-bl-site-tools",
+   "kind": "calls",
+   "label": "bl_site_health crawl and repairs",
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-site-launch",
+   "target": "hermes-bl-site-tools",
+   "kind": "calls",
+   "label": "writes the five-page copy",
+   "sources": [
+    "hermes-sandbox/scripts/provision_bl_client.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-bl-site-tools",
+   "target": "proj-bl-site-package",
+   "kind": "writes",
+   "label": "HTTP panel API of each rented client site",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-profile-bl-shoroban",
+   "target": "plesk",
+   "kind": "writes",
+   "label": "client site (shoroban.com) is hosted on Plesk; agents write over HTTPS",
+   "sources": [
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-shorts",
+   "target": "hermes-shorts-studio",
+   "kind": "calls",
+   "label": "shorts_studio tool: submit, status, publish",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-shorts",
+   "target": "proj-biglobster",
+   "kind": "reads",
+   "label": "newest blog posts without a short",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-agent-shorts",
+   "target": "hermes-topic-general",
+   "kind": "notifies",
+   "label": "hands the X post and video to Brais",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-shorts-studio",
+   "target": "github",
+   "kind": "calls",
+   "label": "workflow_dispatch of shorts-studio.yml renders in Actions",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-shorts-studio",
+   "target": "ext-youtube",
+   "kind": "writes",
+   "label": "YouTube Shorts upload (live mode only)",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-shorts-studio",
+   "target": "ext-meta",
+   "kind": "writes",
+   "label": "Instagram Reels/Stories and Facebook (live mode only)",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-mcp-gsc",
+   "target": "proj-biglobster",
+   "kind": "reads",
+   "label": "Search Console data for biglobster.top",
+   "sources": [
+    "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-skill-prospeccion-local",
+   "target": "proj-biglobster",
+   "kind": "writes",
+   "label": "POSTs prospected leads to /api/hermes-leads",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-whatsapp-lead-bot",
+   "target": "ext-meta",
+   "kind": "calls",
+   "label": "WhatsApp Cloud API via Chatwoot (planned)",
+   "sources": [
+    "hermes-sandbox/WHATSAPP-BOT-PLAN.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-whatsapp-lead-bot",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "AgentBot replies via OpenRouter",
+   "sources": [
+    "hermes-sandbox/WHATSAPP-BOT-PLAN.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-whatsapp-lead-bot",
+   "target": "proj-bl-site-package",
+   "kind": "reads",
+   "label": "GET /api/knowledge for site content",
+   "sources": [
+    "hermes-sandbox/WHATSAPP-BOT-PLAN.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-profile-biglobster",
+   "target": "proj-biglobster",
+   "kind": "manages",
+   "label": "profile workspace holds the repo; agents and the topic operate on it",
+   "sources": [
+    "hermes-sandbox/docker/profiles/biglobster/repos.txt",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-profile-finview",
+   "target": "proj-finview",
+   "kind": "manages",
+   "label": "profile workspace holds the repo; agents and the topic operate on it",
+   "sources": [
+    "hermes-sandbox/docker/profiles/finview/repos.txt",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-profile-grow-shop",
+   "target": "proj-grow-shop",
+   "kind": "manages",
+   "label": "profile workspace holds the repo; agents and the topic operate on it",
+   "sources": [
+    "hermes-sandbox/docker/profiles/grow-shop/repos.txt",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-profile-socialagenda",
+   "target": "proj-socialagenda",
+   "kind": "manages",
+   "label": "profile workspace holds the repo; agents and the topic operate on it",
+   "sources": [
+    "hermes-sandbox/docker/profiles/socialagenda/repos.txt",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-profile-bl-site-package",
+   "target": "proj-bl-site-package",
+   "kind": "manages",
+   "label": "profile workspace holds the repo; agents and the topic operate on it",
+   "sources": [
+    "hermes-sandbox/docker/profiles/bl-site-package/repos.txt",
+    "hermes-sandbox/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
+  }
+ ]
+}
