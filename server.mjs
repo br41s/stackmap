@@ -8,7 +8,7 @@ import { extname, join, normalize, sep, dirname } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { loadStack } from "./lib/stack.mjs";
-import { systemPrompt, userPrompt } from "./lib/prompt.mjs";
+import { systemPrompt, userPrompt, turnContext } from "./lib/prompt.mjs";
 import { runChat } from "./lib/chat.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -19,7 +19,9 @@ const HOST = "127.0.0.1";
 const WORKSPACE = process.env.STACKMAP_WORKSPACE ?? dirname(ROOT);
 const READ_DIRS = [WORKSPACE, join(homedir(), "fizz"), join(homedir(), ".buzz")].filter(existsSync);
 const MODEL = process.env.STACKMAP_MODEL ?? "sonnet";
-const EFFORT = process.env.STACKMAP_EFFORT ?? "medium";
+// Map-only answers read from context already in the prompt: low effort halves output and time.
+// Deep mode decides what to look up, so it thinks more. STACKMAP_EFFORT overrides both.
+const effortFor = (deep) => process.env.STACKMAP_EFFORT ?? (deep ? "medium" : "low");
 const MAX_CHATS = 3;
 const ALLOWED_HOSTS = new Set([`${HOST}:${PORT}`, `localhost:${PORT}`]);
 const ALLOWED_ORIGINS = new Set([...ALLOWED_HOSTS].map((h) => `http://${h}`));
@@ -103,18 +105,22 @@ async function handleChat(req, res) {
 
   activeChats++;
   const started = Date.now();
+  const deep = body.deep === true;
+  const { ids, details } = turnContext(stack, body.messages, focus);
   const stop = runChat({
-    prompt: userPrompt(body.messages, focus),
-    system: systemPrompt(stack, { workspace: WORKSPACE, readDirs: READ_DIRS, asOf }),
+    prompt: userPrompt(body.messages, focus, details),
+    system: systemPrompt(stack, { workspace: WORKSPACE, readDirs: READ_DIRS, asOf, deep }),
+    deep,
     model: MODEL,
-    effort: EFFORT,
+    effort: effortFor(deep),
     readDirs: READ_DIRS,
     cwd: ROOT,
     timeoutMs: 240_000,
     onEvent: (ev) => {
       emit(ev);
       if (ev.type === "done" || ev.type === "error") {
-        console.log(`[chat] ${ev.type} in ${Date.now() - started}ms${ev.costUsd ? ` $${ev.costUsd.toFixed(4)}` : ""}${ev.message ? ` — ${ev.message}` : ""}`);
+        const tokens = ev.tokensIn ? ` ${ev.tokensIn} in (${ev.tokensCached} cached) / ${ev.tokensOut} out` : "";
+        console.log(`[chat] ${ev.type} in ${Date.now() - started}ms${tokens}${ev.costUsd ? ` $${ev.costUsd.toFixed(4)}` : ""} · ${deep ? "deep" : "map only"} · details for ${ids.length} nodes${ev.message ? ` — ${ev.message}` : ""}`);
         res.end();
       }
     },
@@ -158,5 +164,5 @@ async function route(req, res) {
 server.listen(PORT, HOST, () => {
   const { nodes, edges, issues } = loadStack(DATA);
   console.log(`stackmap on http://${HOST}:${PORT} — ${nodes.length} nodes, ${edges.length} edges, ${issues.length} issues`);
-  console.log(`chat: claude -p --model ${MODEL} --effort ${EFFORT}, read-only in ${READ_DIRS.join(", ")}`);
+  console.log(`chat: claude -p --model ${MODEL}; map only (no tools, effort ${effortFor(false)}) or deep (Read/Grep/Glob in ${READ_DIRS.join(", ")}, effort ${effortFor(true)})`);
 });

@@ -11,8 +11,15 @@ product — with a floating chat that answers questions about it.
   left, light runs along each relation in its direction, the rest of the map recedes, and the
   HUD types out a briefing ("Hermes runs on Zeabur, thinks with OpenRouter…"). Click a
   neighbour to travel; Esc flies back out with every node returning to its place.
-- **Chat:** the local `claude` CLI, using your Claude Code login (no API key). It answers
-  from the map first and reads the real repo files (read-only) when it needs more.
+- **Chat:** the local `claude` CLI, using your Claude Code login (no API key). Two modes,
+  switched in the chat header:
+  - **map only** (default): no tools, one model call. The cached prompt is an index of every
+    node and relation by name (~19k tokens, a cache read after the first question of the
+    hour); each question adds details only for the nodes it is about — the selection, what it
+    names, what is inside it, its neighbours (~1–5k). ~20–25k tokens in, ~0.6–1.7k out.
+  - **Deep**: may also read the real repo files (read-only). Each lookup re-sends the prompt,
+    so expect ~3× the tokens; use it for exact schedules, config, live state.
+  Every answer shows its mode, time and tokens (in / cached / out).
 - **Local only:** the server binds to `127.0.0.1`.
 
 ## Run
@@ -36,7 +43,8 @@ npm start          # http://127.0.0.1:4317
 Motion follows the OS "reduce motion" setting: with it on, every move is instant.
 
 Env vars (all optional): `PORT` (4317), `STACKMAP_MODEL` (`sonnet`), `STACKMAP_EFFORT`
-(`medium`), `STACKMAP_WORKSPACE` (parent folder of this repo), `STACKMAP_AS_OF`.
+(default `low` for map only, `medium` for Deep), `STACKMAP_WORKSPACE` (parent folder of this
+repo), `STACKMAP_AS_OF`.
 
 ## Data
 
@@ -66,11 +74,11 @@ npm test           # merge, edge lifting, prompt, server request guards
 
 ## Chat safety
 
-Each question runs `claude -p` with: `--tools Read,Grep,Glob`, `--strict-mcp-config` (no MCP
-servers, so it cannot post to Buzz or touch Zeabur), `--setting-sources ""` (no settings,
+Each question runs `claude -p` with: `--tools ""` (map only) or `--tools Read,Grep,Glob`
+(Deep), `--strict-mcp-config` (no MCP servers, so it cannot post to Buzz or touch Zeabur), `--setting-sources ""` (no settings,
 hooks or CLAUDE.md), `--permission-mode dontAsk`, `--no-session-persistence` (keeps these
 chats out of `~/.claude/projects` and ChatMemo), and read denials for `.env*`, keys, `nsec`,
-`*secret*`, `credentials*`. It can read the workspace, `~/fizz` and `~/.buzz`.
+`*secret*`, `credentials*`. In Deep mode it can read the workspace, `~/fizz` and `~/.buzz`.
 
 The server only answers requests whose `Host` is `127.0.0.1:<port>` / `localhost:<port>`
 (DNS rebinding), and chat POSTs must carry this page's `Origin` and a JSON body (no

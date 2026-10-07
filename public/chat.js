@@ -11,6 +11,25 @@ const SUGGESTIONS = [
 ];
 
 let opts;
+const DEEP_KEY = "stackmap.deep";
+let deep = false;
+try {
+  deep = localStorage.getItem(DEEP_KEY) === "1";
+} catch {}
+
+// "6.2s · 14.1k tokens in, 12.8k cached · 420 out"
+const k = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+function meta(ev, started, mode) {
+  const secs = `${((performance.now() - started) / 1000).toFixed(1)}s`;
+  if (!ev.tokensIn) return `${secs} · ${mode}`;
+  return `${secs} · ${mode} · ${k(ev.tokensIn)} tokens in, ${k(ev.tokensCached)} cached · ${k(ev.tokensOut)} out`;
+}
+
+function paintDeep() {
+  const btn = $("#chat-deep");
+  btn.setAttribute("aria-pressed", String(deep));
+  btn.textContent = deep ? "Deep: on" : "Deep: off";
+}
 let messages = [];
 let controller = null;
 
@@ -85,7 +104,7 @@ function renderLog() {
   if (!messages.length) {
     const empty = document.createElement("div");
     empty.className = "chat-empty";
-    empty.textContent = "Ask anything about the stack. Answers come from the map first, then from the real repo files (read-only).";
+    empty.textContent = "Ask anything about the stack. Answers come from the map — turn on Deep when a question needs the real repo files (read-only, several times the tokens).";
     const chips = document.createElement("div");
     chips.className = "chips";
     for (const s of SUGGESTIONS) {
@@ -156,6 +175,7 @@ async function ask(text) {
   setBusy(true);
   controller = new AbortController();
   const started = performance.now();
+  const mode = deep ? "deep" : "map only";
   let frame = 0;
   const repaint = () => {
     if (!frame) frame = requestAnimationFrame(() => { frame = 0; renderLog(); });
@@ -167,6 +187,7 @@ async function ask(text) {
       body: JSON.stringify({
         messages: messages.filter((m) => m !== answer && !m.error).map(({ role, content }) => ({ role, content })),
         focus: opts.getFocus(),
+        deep,
       }),
       signal: controller.signal,
     });
@@ -174,7 +195,7 @@ async function ask(text) {
     for await (const ev of sse(res)) {
       if (ev.type === "delta") answer.content += ev.text;
       else if (ev.type === "tool") answer.tools.push(ev);
-      else if (ev.type === "done") answer.meta = `${((performance.now() - started) / 1000).toFixed(1)}s`;
+      else if (ev.type === "done") answer.meta = meta(ev, started, mode);
       else if (ev.type === "error") throw new Error(ev.message);
       repaint();
     }
@@ -212,6 +233,14 @@ export function initChat(options) {
   opts = options;
   load();
   $("#chat-model").textContent = `claude · ${opts.model}`;
+  paintDeep();
+  $("#chat-deep").addEventListener("click", () => {
+    deep = !deep;
+    try {
+      localStorage.setItem(DEEP_KEY, deep ? "1" : "0");
+    } catch {}
+    paintDeep();
+  });
   $("#chat-fab").addEventListener("click", () => ($("#chat").hidden ? openChat() : closeChat()));
   $("#chat-close").addEventListener("click", closeChat);
   $("#chat-new").addEventListener("click", () => {

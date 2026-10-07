@@ -60,3 +60,17 @@ reorganises the relations, and summarises them. Chose cinematic 2D over a 3D gal
 - [x] Tests: 5 new (narrate, orbit); 17/17. Browser QA: intro, focus, travel, back, fly-out,
       group framing, phone bottom sheet, no console errors.
 
+## Chat token use — 2026-10-07
+
+Before: every question carried the whole map (~72k tokens; $0.50 notional on a cold cache,
+$0.06 warm). Measured after, same questions:
+
+- [x] Cached index instead of the full map: every node (indented tree) and relation by name,
+      ~19k tokens; per-question DETAILS for the selection / named nodes / inside / neighbours
+      in the user prompt (1–5k), so the cache holds across questions.
+- [x] Map-only mode by default (`--tools ""`: one call, CLI overhead 650 vs 4.6k tokens) and a
+      Deep toggle for file reads; effort low for map only, medium for Deep.
+- [x] Token footer on every answer; server log line with in/cached/out and mode.
+- Frankfurt question: 72k → 19.9k in. Hermes cron question: 118.7k (3 lookups) → 25.1k map
+  only; with Deep 65k and exact schedules.
+

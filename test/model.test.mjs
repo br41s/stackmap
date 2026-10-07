@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mergeSlices } from "../lib/stack.mjs";
 import { buildIndex, representative, visibleNodeIds, liftEdges, descendantCount } from "../public/graph-model.js";
-import { userPrompt, compactStack } from "../lib/prompt.mjs";
+import { userPrompt, mapIndex, relevantIds, contextFor, systemPrompt } from "../lib/prompt.mjs";
+import { loadStack } from "../lib/stack.mjs";
 
 const n = (id, parent = null, kind = "service") => ({ id, label: id.toUpperCase(), kind, parent });
 
@@ -113,5 +114,67 @@ test("chat prompt carries history, focus and the question", () => {
   assert.match(p, /You: an agent/);
   assert.match(p, /\[\[hermes\]\] selected/);
   assert.match(p, /Question: where does it run\?$/);
-  assert.match(compactStack(tree), /gateway -deployed-on-> server: runs on/);
+  assert.doesNotMatch(p, /DETAILS/, "no details block when none are passed");
+  assert.match(userPrompt([{ role: "user", content: "q" }], null, "[x] X"), /DETAILS for this question:\n\[x\] X/);
 });
+
+test("the index names every node and groups relations by source, with no prose", () => {
+  const idx = mapIndex(tree);
+  assert.match(idx, /^ {2}gateway\|GATEWAY\|service$/m, "a grandchild of the layer, indented twice");
+  assert.match(idx, /^layer\|LAYER\|layer$/m);
+  assert.match(idx, /^gateway: deployed-on server; notifies telegram$/m);
+  assert.match(idx, /^cron: deployed-on server; calls gateway$/m);
+  assert.doesNotMatch(idx, /runs on|posts through/, "relation labels stay out of the cached index");
+});
+
+test("a question pulls in the selection, [[mentions]] and named nodes — not common words", () => {
+  const stack = {
+    nodes: [n("zeabur-frankfurt"), n("hermes", null, "platform"), n("hermes-gateway", "hermes"), n("finview"), n("x-server")],
+    edges: [],
+  };
+  stack.nodes[0].label = "Tencent Frankfurt server";
+  stack.nodes[1].label = "Hermes";
+  stack.nodes[2].label = "Gateway (multiplex)";
+  stack.nodes[3].label = "FinView";
+  stack.nodes[4].label = "Some server";
+  assert.deepEqual(relevantIds(stack, { text: "what breaks if the Frankfurt server goes down?" }), ["zeabur-frankfurt"]);
+  assert.deepEqual(relevantIds(stack, { text: "explain this", focus: "finview" }), ["finview"]);
+  assert.deepEqual(relevantIds(stack, { text: "compare [[hermes-gateway]] and Hermes" }), ["hermes-gateway", "hermes"]);
+  assert.deepEqual(relevantIds(stack, { text: "which server is it on?" }), [], "'server' alone names nothing");
+});
+
+test("details carry relation notes and neighbour one-liners, and stay under the cap", () => {
+  const stack = { ...tree, nodes: tree.nodes.map((x) => ({ ...x, summary: `${x.id} does things` })) };
+  stack.edges = [...tree.edges, { source: "gateway", target: "telegram", kind: "notifies", label: "sends", note: "topic per tenant" }];
+  const d = contextFor(stack, ["gateway"]);
+  assert.match(d, /^\[gateway\] GATEWAY — service/m);
+  assert.match(d, /gateway -notifies-> telegram: sends \(topic per tenant\)/);
+  assert.match(d, /NEIGHBOURS[\s\S]*\[server\] SERVER \(service\): server does things/);
+  assert.ok(contextFor(stack, ["gateway"], { maxChars: 60 }).length < 120);
+});
+
+test("the cached prompt for the real map stays a fraction of the full data", () => {
+  const stack = loadStack(new URL("../data", import.meta.url).pathname);
+  const sys = systemPrompt(stack, { workspace: "/w", readDirs: ["/w"], asOf: "x" });
+  // The whole map with details was ~262k chars; the index must stay well under that.
+  assert.ok(sys.length < 60_000, `system prompt ${sys.length} chars`);
+  for (const n of stack.nodes) assert.match(sys, new RegExp(`\\n *${n.id.replace(/[.]/g, "\\.")}\\|`), `index misses ${n.id}`);
+});
+
+test("map-only chat has no tools at all; deep mode gets the read-only tools and deny rules", async () => {
+  const { cliArgs } = await import("../lib/chat.mjs");
+  const map = cliArgs({ model: "m", effort: "low", readDirs: ["/w"], system: "S" });
+  assert.deepEqual(map.slice(map.indexOf("--tools"), map.indexOf("--tools") + 2), ["--tools", ""]);
+  assert.ok(!map.includes("--add-dir") && !map.includes("--disallowedTools"));
+  const deep = cliArgs({ model: "m", effort: "low", readDirs: ["/w"], system: "S", deep: true });
+  assert.ok(deep.includes("Read,Grep,Glob") && deep.includes("--add-dir") && deep.includes("Read(//**/.env)"));
+  // Both still lock the CLI down.
+  for (const args of [map, deep]) {
+    for (const flag of ["--strict-mcp-config", "--no-session-persistence"]) assert.ok(args.includes(flag), flag);
+    assert.equal(args[args.indexOf("--setting-sources") + 1], "");
+  }
+  const sys = (d) => systemPrompt({ nodes: [], edges: [] }, { workspace: "/w", readDirs: ["/w"], asOf: "x", deep: d });
+  assert.match(sys(false), /MAP-ONLY MODE/);
+  assert.match(sys(true), /DEEP MODE/);
+});
+

@@ -236,7 +236,9 @@ a { color: var(--accent); }
 .chat:not([hidden]) { animation: rise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .chat-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 10px 14px; border-bottom: 1px solid var(--border); }
 .chat-head .muted { font: 11px var(--mono); margin-left: 6px; }
-.chat-head-actions { display: flex; gap: 2px; }
+.chat-head-actions { display: flex; gap: 4px; align-items: center; }
+.deep-toggle { font: 11px var(--mono); padding: 4px 9px; color: var(--muted); background: transparent; }
+.deep-toggle[aria-pressed="true"] { color: #ffc04d; border-color: rgba(255, 192, 77, 0.5); box-shadow: 0 0 12px rgba(255, 192, 77, 0.25); }
 .chat-log { flex: 1; overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .chat-empty { color: var(--muted); font-size: 13px; }
 .chat-empty .chips { margin-top: 10px; }
