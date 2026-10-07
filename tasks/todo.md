@@ -39,6 +39,6 @@ localhost only (127.0.0.1).
 ## Next
 
 - [x] `mergeLiftedEdges`: one line per direction of a pair, most common kind, label lists all kinds (2026-10-07, delegated by Brais)
-- [ ] GitHub remote (`br41s/stackmap`, private) once Brais says so
+- [x] GitHub remote: https://github.com/br41s/stackmap (private), pushed 2026-10-07
 - [ ] If the ~72k-token chat prompt bites on limits: send summaries + edges only, let it Read `data/`
 - [ ] Map refresh: rerun the slice mappers, or a scanner, when the stack drifts
