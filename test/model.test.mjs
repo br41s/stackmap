@@ -178,3 +178,20 @@ test("map-only chat has no tools at all; deep mode gets the read-only tools and 
   assert.match(sys(true), /DEEP MODE/);
 });
 
+
+test("the refresh diff names what was added, removed, retired and rewired", async () => {
+  const { diffStacks, diffMarkdown } = await import("../lib/data-diff.mjs");
+  const before = { nodes: [n("a"), n("b"), { ...n("c"), status: "live" }], edges: [{ source: "a", target: "b", kind: "calls" }] };
+  const after = {
+    nodes: [n("a"), { ...n("c"), status: "retired" }, n("d")],
+    edges: [{ source: "a", target: "d", kind: "calls" }],
+  };
+  const d = diffStacks(before, after);
+  assert.deepEqual([d.added, d.removed, d.changed], [["d"], ["b"], ["c"]]);
+  assert.deepEqual(d.statusChanged, [{ id: "c", from: "live", to: "retired" }]);
+  assert.deepEqual([d.edgesAdded, d.edgesRemoved], [["a -calls-> d"], ["a -calls-> b"]]);
+  const md = diffMarkdown(d);
+  assert.match(md, /\*\*Status changed \(1\)\*\*\n- `c` live → retired/);
+  assert.doesNotMatch(md, /Facts updated/, "a status-only change is not listed twice");
+  assert.equal(diffMarkdown(diffStacks(before, before)), "No changes to the map.");
+});

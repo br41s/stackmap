@@ -74,3 +74,19 @@ $0.06 warm). Measured after, same questions:
 - Frankfurt question: 72k → 19.9k in. Hermes cron question: 118.7k (3 lookups) → 25.1k map
   only; with Deep 65k and exact schedules.
 
+## GPT-OSS for map-only, weekly refresh — 2026-10-07
+
+Brais chose gpt-oss-120b over DeepSeek V4 Flash (reasoning can't be capped; trickling fallback
+providers in Hermes) and over Haiku (still subscription), and a weekly refresh PR.
+
+- [x] `lib/openrouter.mjs`: streamed, `data_collection: "deny"`, reasoning low, usage + real
+      cost; map-only uses it when `OPENROUTER_API_KEY` is in `.env`, Claude otherwise. Tests
+      with a fake stream (keep-alives, usage chunk, HTTP and mid-stream errors).
+- [x] Chat header names the model per mode; billed cost shown on OpenRouter answers.
+- [x] Refresh: `refresh/slices.json`, `refresh/brief.md`, `refresh/state.json` (seeded with the
+      2026-10-06 mapping time), `scripts/refresh-plan.mjs` (first real run: all 5 slices
+      changed — e.g. hermes #415–#417, chatmemo #71–#74, fizz #16–#19), `lib/data-diff.mjs`.
+- [x] Scheduled task `stackmap-weekly-refresh`, Mondays 09:01, PR only, never merges.
+- [ ] Brais: OPENROUTER_API_KEY in stackmap/.env, then a quality check vs Sonnet.
+- [ ] Brais: one "Run now" of the refresh task to approve its tools.
+

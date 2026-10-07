@@ -19,16 +19,21 @@ try {
 
 // "6.2s · 14.1k tokens in, 12.8k cached · 420 out"
 const k = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+// Real money only when OpenRouter billed it; the CLI's figure is notional (subscription).
 function meta(ev, started, mode) {
   const secs = `${((performance.now() - started) / 1000).toFixed(1)}s`;
   if (!ev.tokensIn) return `${secs} · ${mode}`;
-  return `${secs} · ${mode} · ${k(ev.tokensIn)} tokens in, ${k(ev.tokensCached)} cached · ${k(ev.tokensOut)} out`;
+  const cost = ev.billed && ev.costUsd != null ? ` · $${ev.costUsd.toFixed(4)}` : "";
+  return `${secs} · ${mode} · ${k(ev.tokensIn)} tokens in, ${k(ev.tokensCached)} cached · ${k(ev.tokensOut)} out${cost}`;
 }
+
+const modelOf = () => (deep ? opts.models?.deep : opts.models?.map) ?? "";
 
 function paintDeep() {
   const btn = $("#chat-deep");
   btn.setAttribute("aria-pressed", String(deep));
   btn.textContent = deep ? "Deep: on" : "Deep: off";
+  $("#chat-model").textContent = modelOf();
 }
 let messages = [];
 let controller = null;
@@ -175,7 +180,7 @@ async function ask(text) {
   setBusy(true);
   controller = new AbortController();
   const started = performance.now();
-  const mode = deep ? "deep" : "map only";
+  const mode = `${deep ? "deep" : "map only"} · ${modelOf()}`;
   let frame = 0;
   const repaint = () => {
     if (!frame) frame = requestAnimationFrame(() => { frame = 0; renderLog(); });
@@ -232,7 +237,6 @@ function closeChat() {
 export function initChat(options) {
   opts = options;
   load();
-  $("#chat-model").textContent = `claude · ${opts.model}`;
   paintDeep();
   $("#chat-deep").addEventListener("click", () => {
     deep = !deep;

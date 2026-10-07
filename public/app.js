@@ -624,7 +624,7 @@ async function main() {
   setupTooltip();
   setupParallax();
   initChat({
-    model: state.stack.meta.model,
+    models: state.stack.meta.models,
     getFocus: () => state.selected,
     labelOf: (id) => node(id)?.label,
     onNodeLink: (id) => reveal(id),

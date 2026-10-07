@@ -1,0 +1,39 @@
+{
+  "_doc": "What feeds each slice of the map. Paths: relative to the workspace (parent of stackmap), or ~/… . refresh-plan.mjs reports a slice as changed when a repo has commits since the last refresh, a file or a folder entry was modified since then, or (hosting) the Zeabur project/service names differ. `scope` is what the re-mapping agent owns; it is pasted into its brief.",
+  "hermes": {
+    "file": "data/hermes.json",
+    "repos": ["hermes-sandbox"],
+    "files": ["memories/decisions/hermes.md"],
+    "dirs": [],
+    "scope": "Hermes: you own `hermes` and every node under it (ids `hermes-*`). Read hermes-sandbox CLAUDE.md, docs/, tasks/, cron/, auditor/, incidents/ as the changes point to, plus memories/decisions/hermes.md."
+  },
+  "hosting": {
+    "file": "data/hosting.json",
+    "repos": [],
+    "files": ["memories/decisions/workspace.md", "memories/decisions/hermes.md", "FinView/docs/deployment.md", "~/.claude/projects/-Users-brais-VSCODE/memory/MEMORY.md"],
+    "dirs": [],
+    "zeabur": true,
+    "scope": "Hosting: you own zeabur, zeabur-frankfurt, every zb-* Zeabur project/service/database, vercel*, gcp*, neon*, cloudflare, namecheap, github*, plesk*, supabase, domain-*, and the backup nodes. Live, read-only: `zeabur project list -i=false`, `zeabur service list --project-id <id> -i=false`; never a mutating zeabur verb."
+  },
+  "claude-code": {
+    "file": "data/claude-code.json",
+    "repos": ["ai-infra/hf-hub"],
+    "files": ["~/.claude/CLAUDE.md", "CLAUDE.md"],
+    "dirs": ["~/.claude/agents", "~/.claude/skills", "~/.claude/scheduled-tasks", ".claude/agents", ".claude/skills", ".claude/rules", "mcp-hub"],
+    "scope": "Claude Code and the workspace: you own claude-code, vscode-workspace, hf-hub, mcp-hub and every cc-*/ws-* node. MCP servers: names and commands only from ~/.claude.json and .mcp.json files — never env values. Never read credential files."
+  },
+  "buzz": {
+    "file": "data/buzz.json",
+    "repos": ["~/fizz"],
+    "files": ["~/.buzz/AGENTS.md"],
+    "dirs": ["~/fizz/agents"],
+    "scope": "Buzz and Fizz: you own buzz, fizz and every buzz-*/fizz-* node. Bots: role from agents/<bot>.prompt.md in one line. Never call buzz_write, fleet_power, fleet_channel_set or persona_set; never read key files."
+  },
+  "products": {
+    "file": "data/products.json",
+    "repos": ["FinView", "SocialAgenda", "FlyWell", "chatmemo", "biglobster", "bl-site-package", "grow-shop/grow-shop-api", "grow-shop/grow-shop-landing", "heclient", "OfflinePics", "experiencianatural-home"],
+    "files": ["memories/decisions/finview.md", "memories/decisions/socialagenda.md", "memories/decisions/flywell.md", "memories/decisions/chatmemo.md", "memories/decisions/biglobster.md", "memories/decisions/bl-site-package.md", "memories/decisions/facturas.md"],
+    "dirs": ["FACTURAS"],
+    "scope": "Products: you own every proj-* node and its parts (proj-<name>-*), and biglobster-llc. Hosting-side nodes (zb-*, vercel-*, gcp-*, neon-*, domain-*) belong to the hosting slice: point edges at them, do not edit them."
+  }
+}

@@ -10,15 +10,25 @@ import { fileURLToPath } from "node:url";
 import { loadStack } from "./lib/stack.mjs";
 import { systemPrompt, userPrompt, turnContext } from "./lib/prompt.mjs";
 import { runChat } from "./lib/chat.mjs";
+import { runOpenRouter } from "./lib/openrouter.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
+// OPENROUTER_API_KEY lives in stackmap/.env (gitignored); never logged, never sent to the page.
+try {
+  process.loadEnvFile(join(ROOT, ".env"));
+} catch {}
 const PUBLIC = join(ROOT, "public");
 const DATA = join(ROOT, "data");
 const PORT = Number(process.env.PORT ?? 4317);
 const HOST = "127.0.0.1";
 const WORKSPACE = process.env.STACKMAP_WORKSPACE ?? dirname(ROOT);
 const READ_DIRS = [WORKSPACE, join(homedir(), "fizz"), join(homedir(), ".buzz")].filter(existsSync);
-const MODEL = process.env.STACKMAP_MODEL ?? "sonnet";
+const MODEL = process.env.STACKMAP_MODEL ?? "sonnet"; // Claude, for Deep (and map only without a key)
+// Map-only answers: OpenRouter when a key is set (STACKMAP_MAP_MODEL=claude forces the CLI).
+const MAP_MODEL = process.env.STACKMAP_MAP_MODEL ?? "openai/gpt-oss-120b";
+const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY ?? "";
+const mapViaOpenRouter = () => Boolean(OPENROUTER_KEY) && MAP_MODEL !== "claude";
+const modelLabels = () => ({ map: mapViaOpenRouter() ? MAP_MODEL.split("/").pop() : `claude ${MODEL}`, deep: `claude ${MODEL}` });
 // Map-only answers read from context already in the prompt: low effort halves output and time.
 // Deep mode decides what to look up, so it thinks more. STACKMAP_EFFORT overrides both.
 const effortFor = (deep) => process.env.STACKMAP_EFFORT ?? (deep ? "medium" : "low");
@@ -60,7 +70,7 @@ async function serveFile(res, file) {
 function stackPayload() {
   const stack = loadStack(DATA);
   for (const i of stack.issues) if (i.level === "error") console.warn(`[stack] ${i.file}: ${i.message}`);
-  return { ...stack, meta: { workspace: WORKSPACE, home: homedir(), model: MODEL } };
+  return { ...stack, meta: { workspace: WORKSPACE, home: homedir(), models: modelLabels() } };
 }
 
 async function readJson(req, limit = 200_000) {
@@ -107,24 +117,21 @@ async function handleChat(req, res) {
   const started = Date.now();
   const deep = body.deep === true;
   const { ids, details } = turnContext(stack, body.messages, focus);
-  const stop = runChat({
-    prompt: userPrompt(body.messages, focus, details),
-    system: systemPrompt(stack, { workspace: WORKSPACE, readDirs: READ_DIRS, asOf, deep }),
-    deep,
-    model: MODEL,
-    effort: effortFor(deep),
-    readDirs: READ_DIRS,
-    cwd: ROOT,
-    timeoutMs: 240_000,
-    onEvent: (ev) => {
-      emit(ev);
-      if (ev.type === "done" || ev.type === "error") {
-        const tokens = ev.tokensIn ? ` ${ev.tokensIn} in (${ev.tokensCached} cached) / ${ev.tokensOut} out` : "";
-        console.log(`[chat] ${ev.type} in ${Date.now() - started}ms${tokens}${ev.costUsd ? ` $${ev.costUsd.toFixed(4)}` : ""} · ${deep ? "deep" : "map only"} · details for ${ids.length} nodes${ev.message ? ` — ${ev.message}` : ""}`);
-        res.end();
-      }
-    },
-  });
+  const system = systemPrompt(stack, { workspace: WORKSPACE, readDirs: READ_DIRS, asOf, deep });
+  const prompt = userPrompt(body.messages, focus, details);
+  const backend = !deep && mapViaOpenRouter() ? "openrouter" : "claude";
+  const onEvent = (ev) => {
+    emit(ev);
+    if (ev.type === "done" || ev.type === "error") {
+      const tokens = ev.tokensIn ? ` ${ev.tokensIn} in (${ev.tokensCached} cached) / ${ev.tokensOut} out` : "";
+      const cost = ev.costUsd ? ` $${ev.costUsd.toFixed(4)}${ev.billed ? " billed" : " notional"}` : "";
+      console.log(`[chat] ${ev.type} in ${Date.now() - started}ms${tokens}${cost} · ${deep ? "deep" : "map only"} via ${backend === "openrouter" ? MAP_MODEL : `claude ${MODEL}`} · details for ${ids.length} nodes${ev.message ? ` — ${ev.message}` : ""}`);
+      res.end();
+    }
+  };
+  const stop = backend === "openrouter"
+    ? runOpenRouter({ apiKey: OPENROUTER_KEY, model: MAP_MODEL, system, prompt, timeoutMs: 120_000, onEvent })
+    : runChat({ prompt, system, deep, model: MODEL, effort: effortFor(deep), readDirs: READ_DIRS, cwd: ROOT, timeoutMs: 240_000, onEvent });
   res.on("close", () => {
     activeChats--;
     stop();
@@ -164,5 +171,6 @@ async function route(req, res) {
 server.listen(PORT, HOST, () => {
   const { nodes, edges, issues } = loadStack(DATA);
   console.log(`stackmap on http://${HOST}:${PORT} — ${nodes.length} nodes, ${edges.length} edges, ${issues.length} issues`);
-  console.log(`chat: claude -p --model ${MODEL}; map only (no tools, effort ${effortFor(false)}) or deep (Read/Grep/Glob in ${READ_DIRS.join(", ")}, effort ${effortFor(true)})`);
+  const map = mapViaOpenRouter() ? `${MAP_MODEL} via OpenRouter` : `claude ${MODEL}, no tools, effort ${effortFor(false)}${OPENROUTER_KEY ? "" : " (no OPENROUTER_API_KEY in .env)"}`;
+  console.log(`chat: map only → ${map}; deep → claude ${MODEL}, Read/Grep/Glob in ${READ_DIRS.join(", ")}, effort ${effortFor(true)}`);
 });

@@ -20,6 +20,12 @@ Read `README.md` for the run commands and the data format.
   light. Fades/resizes go through style classes + Cytoscape `transition-*` (app.js); only
   motion is animated, one `node.animation()` per flight — never `node.stop()`, which would
   also freeze a class transition mid-fade.
+- `lib/openrouter.mjs` — map-only answers via OpenRouter (gpt-oss-120b, no-retention
+  providers, low reasoning); same events as `lib/chat.mjs`. Key from `.env`, never logged.
+- `refresh/` — weekly refresh: `slices.json` (what feeds each slice), `brief.md` (the
+  re-mapping agent's instructions), `state.json` (last refresh). `scripts/refresh-plan.mjs`
+  (what changed — names, dates, commit subjects only), `scripts/data-diff.mjs` (PR summary,
+  logic in `lib/data-diff.mjs`). Refresh PRs come from `.worktrees/refresh-<date>`.
 - `public/app.js` (map, HUD, intro), `public/chat.js` (floating chat), `public/style.css`
   (dark only — the map is meant to be watched in the dark).
 
