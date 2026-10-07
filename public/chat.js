@@ -89,10 +89,11 @@ function renderLog() {
     const chips = document.createElement("div");
     chips.className = "chips";
     for (const s of SUGGESTIONS) {
-      const a = document.createElement("a");
-      a.textContent = s;
-      a.addEventListener("click", () => ask(s));
-      chips.append(a);
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = s;
+      b.addEventListener("click", () => ask(s));
+      chips.append(b);
     }
     empty.append(chips);
     log.replaceChildren(empty);

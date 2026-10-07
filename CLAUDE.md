@@ -11,7 +11,14 @@ Read `README.md` for the run commands and the data format.
   `lib/chat.mjs` — spawns `claude -p` locked down; change its flags only with a re-test.
 - `server.mjs` — static files, `/api/stack`, `/api/chat` (SSE). No framework, no build.
 - `public/graph-model.js` — pure tree/edge-lifting logic, shared by the browser and tests.
-- `public/app.js` (map), `public/chat.js` (floating chat), `public/style.css`.
+- `public/narrate.js` — relations → briefing sentences; `public/orbit.js` — where neighbours
+  go in focus mode. Both pure and tested (`test/cinematic.test.mjs`).
+- `public/focus.js` — focus mode: snapshots the overview, flies nodes and camera, flowing
+  light. Fades/resizes go through style classes + Cytoscape `transition-*` (app.js); only
+  motion is animated, one `node.animation()` per flight — never `node.stop()`, which would
+  also freeze a class transition mid-fade.
+- `public/app.js` (map, HUD, intro), `public/chat.js` (floating chat), `public/style.css`
+  (dark only — the map is meant to be watched in the dark).
 
 ## Rules
 

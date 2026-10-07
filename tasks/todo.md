@@ -42,3 +42,21 @@ localhost only (127.0.0.1).
 - [x] GitHub remote: https://github.com/br41s/stackmap (private), pushed 2026-10-07
 - [ ] If the ~72k-token chat prompt bites on limits: send summaries + edges only, let it Read `data/`
 - [ ] Map refresh: rerun the slice mappers, or a scanner, when the stack drifts
+
+## Cinematic 2D — 2026-10-07
+
+Brais: "plain and static… more like in a movie": each click zooms and magnifies the selection,
+reorganises the relations, and summarises them. Chose cinematic 2D over a 3D galaxy.
+
+- [x] Dark HUD look: star field with parallax, vignette, canvas glow, glass panels.
+- [x] Intro: nodes fly out from the centre, groups and relations fade in, title card.
+- [x] Focus mode (`focus.js`): hero grows and pulses; uses orbit right, used-by left
+      (`orbit.js`); dashed light flows along relations; the rest recedes; travel with history;
+      Esc restores every position and the viewport.
+- [x] HUD briefing typed out (`narrate.js`), relation chips by kind, facts collapsed.
+- [x] Fixes found in QA: group boxes dimmed their contents (compound opacity multiplies);
+      `node.stop()` froze class transitions half-faded; chips/crumbs were `<a>` without href
+      (not keyboard reachable) → buttons.
+- [x] Tests: 5 new (narrate, orbit); 17/17. Browser QA: intro, focus, travel, back, fly-out,
+      group framing, phone bottom sheet, no console errors.
+

@@ -6,6 +6,11 @@ product — with a floating chat that answers questions about it.
 - **Map:** layers → systems → services, collapsible at every level. A collapsed group keeps
   its relations: edges are redrawn to the nearest visible ancestor, so collapsing Hermes
   turns *gateway → Zeabur service* into *Hermes → Zeabur*.
+- **Cinematic focus:** the stack assembles itself on load. Click a node and the camera flies
+  in: it grows and pulses, what it uses swings into orbit on the right, what uses it on the
+  left, light runs along each relation in its direction, the rest of the map recedes, and the
+  HUD types out a briefing ("Hermes runs on Zeabur, thinks with OpenRouter…"). Click a
+  neighbour to travel; Esc flies back out with every node returning to its place.
 - **Chat:** the local `claude` CLI, using your Claude Code login (no API key). It answers
   from the map first and reads the real repo files (read-only) when it needs more.
 - **Local only:** the server binds to `127.0.0.1`.
@@ -19,12 +24,16 @@ npm start          # http://127.0.0.1:4317
 
 | Key / gesture | Does |
 |---|---|
-| click | select, show details, highlight relations |
+| click a node | fly in: orbit + briefing |
+| click a neighbour, or a chip in the HUD | travel there |
+| click an open group | frame it, briefing for the whole group |
 | double-click | open / close a group |
-| `/` | search |
-| `Esc` | clear selection |
-| Focus toggle | hide relations that don't touch the selection |
-| `[[node-id]]` in a chat answer | click to jump to that node |
+| `Backspace` | back to the previous focus |
+| `Esc` / click empty space | fly back out |
+| `/` | search (lands in focus on the result) |
+| `[[node-id]]` in a chat answer | click to fly to that node |
+
+Motion follows the OS "reduce motion" setting: with it on, every move is instant.
 
 Env vars (all optional): `PORT` (4317), `STACKMAP_MODEL` (`sonnet`), `STACKMAP_EFFORT`
 (`medium`), `STACKMAP_WORKSPACE` (parent folder of this repo), `STACKMAP_AS_OF`.

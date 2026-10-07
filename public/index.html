@@ -8,7 +8,14 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <div class="stars" aria-hidden="true"></div>
   <div id="cy" aria-label="Stack map"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <div id="intro" class="intro" aria-hidden="true">
+    <div class="intro-title">STACKMAP</div>
+    <div class="sub"></div>
+  </div>
 
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true"></span>stackmap</div>
@@ -20,9 +27,6 @@
       <button id="btn-expand" title="Expand every group">Expand all</button>
       <button id="btn-collapse" title="Back to the overview">Collapse</button>
       <button id="btn-fit" title="Fit the map to the screen">Fit</button>
-      <label class="toggle" title="Hide relations that don't touch the selection">
-        <input id="tgl-focus" type="checkbox"> Focus
-      </label>
       <button id="btn-legend" aria-expanded="false">Legend</button>
     </nav>
   </header>

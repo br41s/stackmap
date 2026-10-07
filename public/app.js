@@ -1,16 +1,20 @@
-// The map: loads /api/stack, draws the expanded part of the tree with Cytoscape + fcose,
-// and wires search, the details panel and the chat to it.
-import { buildIndex, ancestry, descendantCount, visibleNodeIds, liftEdges } from "./graph-model.js";
+// The map: loads /api/stack, draws the expanded part of the tree with Cytoscape + fcose, and
+// turns every click into a camera move. A node → focus mode (focus.js): it grows, its
+// relations fly into orbit, the HUD types out a briefing. An open group → the camera frames
+// it. Search, chat links and HUD chips all travel the same way.
+import { buildIndex, ancestry, descendantCount, visibleNodeIds, liftEdges, representative } from "./graph-model.js";
 import { initChat, openChat } from "./chat.js";
+import { createFocus } from "./focus.js";
+import { narrate } from "./narrate.js";
 
 const LAYER_COLORS = {
-  "layer-hosting": "#4F8EF7",
-  "layer-agents": "#A66CFF",
-  "layer-dev": "#F2A93B",
-  "layer-products": "#2FBF71",
-  "layer-external": "#8A94A6",
+  "layer-hosting": "#5b9dff",
+  "layer-agents": "#b47cff",
+  "layer-dev": "#ffb547",
+  "layer-products": "#38d989",
+  "layer-external": "#9aa7c2",
 };
-const ROOT_COLOR = "#F25F5C"; // nodes outside the layers (Brais)
+const ROOT_COLOR = "#ff6b6b"; // nodes outside the layers (Brais)
 const SHAPES = {
   layer: "round-rectangle", platform: "round-rectangle", project: "round-rectangle", service: "round-rectangle",
   server: "cut-rectangle", database: "barrel", agent: "round-hexagon", bot: "round-hexagon",
@@ -19,16 +23,19 @@ const SHAPES = {
   domain: "tag", channel: "ellipse", external: "ellipse", person: "star",
 };
 const EDGE_GROUPS = {
-  runtime: { color: "#7d8ca8", label: "runs on / serves / stores in / depends on", kinds: ["deployed-on", "serves", "stores-in", "depends-on"] },
-  data: { color: "#1fb5c9", label: "calls / reads / writes / uses model / routes", kinds: ["calls", "reads", "writes", "uses-model", "routes-to"] },
-  notify: { color: "#e86fa6", label: "notifies", kinds: ["notifies"] },
-  control: { color: "#e0a030", label: "deploys / manages / monitors / configures / backs up", kinds: ["deploys", "manages", "controls", "monitors", "configures", "backs-up-to"] },
+  runtime: { color: "#7f93c4", label: "runs on / serves / stores in / depends on", kinds: ["deployed-on", "serves", "stores-in", "depends-on"] },
+  data: { color: "#2fd4e8", label: "calls / reads / writes / uses model / routes", kinds: ["calls", "reads", "writes", "uses-model", "routes-to"] },
+  notify: { color: "#ff79c6", label: "notifies", kinds: ["notifies"] },
+  control: { color: "#ffc04d", label: "deploys / manages / monitors / configures / backs up", kinds: ["deploys", "manages", "controls", "monitors", "configures", "backs-up-to"] },
 };
 const edgeGroup = (kind) => Object.keys(EDGE_GROUPS).find((g) => EDGE_GROUPS[g].kinds.includes(kind)) ?? "runtime";
+const edgeColor = (kind) => EDGE_GROUPS[edgeGroup(kind)].color;
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const $ = (sel) => document.querySelector(sel);
-const state = { stack: null, index: null, expanded: new Set(), selected: null, focusOnly: false, laidOut: false, lifted: new Map() };
+const state = { stack: null, index: null, expanded: new Set(), selected: null, laidOut: false, lifted: new Map() };
 let cy;
+let focus;
 
 // Tiny DOM builder so data never goes through innerHTML.
 function h(tag, attrs = {}, ...children) {
@@ -50,6 +57,7 @@ const fill = (el, ...children) => el.replaceChildren(...kids(children));
 const node = (id) => state.index.byId.get(id);
 const hasChildren = (id) => (state.index.children.get(id)?.length ?? 0) > 0;
 const colorOf = (id) => LAYER_COLORS[ancestry(state.index, id)[0]] ?? ROOT_COLOR;
+const layerOf = (id) => node(ancestry(state.index, id)[0])?.label ?? "";
 const descendants = (id) => (state.index.children.get(id) ?? []).flatMap((c) => [c, ...descendants(c)]);
 const defaultExpanded = () => new Set(state.stack.nodes.filter((n) => n.kind === "layer" && hasChildren(n.id)).map((n) => n.id));
 
@@ -61,41 +69,66 @@ function cyStyle() {
   const text = cssVar("--text");
   const bg = cssVar("--bg");
   const accent = cssVar("--accent");
+  // Class changes (dim, hero, orbit…) fade and resize on their own through these.
+  const nodeFx = { "transition-property": "opacity, width, height, font-size, underlay-opacity, text-opacity, background-opacity, border-opacity", "transition-duration": REDUCED ? 0 : 650, "transition-timing-function": "ease-in-out-cubic" };
+  const edgeFx = { "transition-property": "opacity, width, line-color", "transition-duration": REDUCED ? 0 : 650 };
   return [
     { selector: "node", style: {
-      "background-color": "data(color)", "background-opacity": 0.92, shape: (el) => SHAPES[el.data("kind")] ?? "round-rectangle",
+      ...nodeFx,
+      "background-color": "data(color)", "background-opacity": 0.95, shape: (el) => SHAPES[el.data("kind")] ?? "round-rectangle",
       width: "data(size)", height: "data(size)",
-      label: "data(label)", color: text, "font-size": 12, "font-weight": 500, "text-valign": "bottom", "text-margin-y": 5,
-      "text-wrap": "wrap", "text-max-width": 130, "text-outline-color": bg, "text-outline-width": 2.5, "min-zoomed-font-size": 6,
+      "underlay-color": "data(color)", "underlay-opacity": 0.18, "underlay-padding": 5, "underlay-shape": "ellipse",
+      label: "data(label)", color: text, "font-size": 12, "font-weight": 500, "text-valign": "bottom", "text-margin-y": 6,
+      "text-wrap": "wrap", "text-max-width": 130, "text-outline-color": bg, "text-outline-width": 3, "min-zoomed-font-size": 6,
     } },
     { selector: "node.collapsed", style: {
-      "outline-width": 4, "outline-offset": 2, "outline-color": "data(color)", "outline-opacity": 0.35,
-      "font-weight": 600, "font-size": 15,
+      "outline-width": 3, "outline-offset": 3, "outline-color": "data(color)", "outline-opacity": 0.45,
+      "underlay-opacity": 0.28, "underlay-padding": 9, "font-weight": 600, "font-size": 15,
     } },
     { selector: "node.group", style: {
-      shape: "round-rectangle", "background-opacity": 0.07, "border-width": 1.5, "border-color": "data(color)", "border-opacity": 0.55,
-      "text-valign": "top", "text-margin-y": -6, "font-size": 15, "font-weight": 600, padding: 18,
+      shape: "round-rectangle", "background-opacity": 0.05, "border-width": 1.2, "border-color": "data(color)", "border-opacity": 0.5,
+      "underlay-opacity": 0, "text-valign": "top", "text-margin-y": -8, "font-size": 15, "font-weight": 600, padding: 18,
+      color: "data(color)",
     } },
-    { selector: "node.layer.group", style: { "border-style": "dashed", "font-size": 22, "text-transform": "uppercase", padding: 30, "background-opacity": 0.035 } },
+    { selector: "node.layer.group", style: { "border-style": "dashed", "font-size": 22, "text-transform": "uppercase", padding: 30, "background-opacity": 0.025 } },
     { selector: "node.retired", style: { opacity: 0.42 } },
     { selector: "node.planned, node.dry-run", style: { "border-width": 2, "border-style": "dashed", "border-color": text, "border-opacity": 0.6 } },
     { selector: "node.inferred", style: { "font-style": "italic" } },
-    { selector: "node.sel", style: { "underlay-color": accent, "underlay-padding": 7, "underlay-opacity": 0.35 } },
-    { selector: "node.sel.group", style: { "underlay-opacity": 0, "border-width": 3, "border-color": accent, "border-opacity": 0.9 } },
+    { selector: "node.sel.group", style: { "border-width": 3, "border-color": accent, "border-opacity": 1, "background-opacity": 0.09 } },
     { selector: "edge", style: {
-      width: "mapData(weight, 1, 12, 1.3, 5)", "line-color": "data(color)", "target-arrow-color": "data(color)",
-      "target-arrow-shape": "triangle", "arrow-scale": 0.8, "curve-style": "bezier", "control-point-step-size": 16, opacity: 0.5,
+      ...edgeFx,
+      width: "mapData(weight, 1, 12, 1.2, 4.5)", "line-color": "data(color)", "target-arrow-color": "data(color)",
+      "target-arrow-shape": "triangle", "arrow-scale": 0.8, "curve-style": "bezier", "control-point-step-size": 16, opacity: 0.42,
     } },
     { selector: 'edge[kind = "deployed-on"]', style: { "line-style": "dashed", "line-dash-pattern": [6, 4] } },
     { selector: "edge.hl", style: { opacity: 0.95, "z-index": 10 } },
-    // Labels only on hover: on a selected hub they would pile up on the short edges.
     { selector: "edge.hover", style: {
       opacity: 1, label: "data(label)", "font-size": 11, color: text, "text-rotation": "autorotate",
       "text-outline-color": bg, "text-outline-width": 3, "z-index": 20, width: 3,
     } },
     { selector: "node.faded", style: { opacity: 0.16 } },
     { selector: "edge.faded", style: { opacity: 0.05 } },
-    { selector: "edge.off", style: { display: "none" } },
+
+    // ---- focus mode (focus.js toggles these classes) ----
+    { selector: ".dim", style: { opacity: 0.07, events: "no" } },
+    { selector: "node.ghost", style: { "background-opacity": 0, "border-opacity": 0, "text-opacity": 0, events: "no" } },
+    { selector: "node.hero", style: {
+      width: 92, height: 92, "font-size": 22, "font-weight": 700, "text-margin-y": 12, "z-index": 30,
+      "underlay-opacity": 0.42, "underlay-color": "data(color)", "outline-width": 0, "text-max-width": 220,
+    } },
+    { selector: "node.orbit", style: {
+      width: (el) => Math.max(34, el.data("size")), height: (el) => Math.max(34, el.data("size")),
+      "font-size": 14, "font-weight": 600, "underlay-opacity": 0.3, "underlay-padding": 7, "z-index": 25,
+      "text-background-color": bg, "text-background-opacity": 0.72, "text-background-padding": 3, "text-background-shape": "round-rectangle",
+    } },
+    { selector: "edge.beam", style: {
+      opacity: 0.95, width: "mapData(weight, 1, 12, 2.4, 6)", "line-style": "dashed", "line-dash-pattern": [16, 8], "z-index": 20,
+      "font-size": 11, "font-weight": 600, color: "data(color)", "text-outline-color": bg, "text-outline-width": 3, "text-rotation": "autorotate",
+    } },
+    // The relation's name sits at the neighbour's end, so it never piles up on the hero.
+    { selector: "edge.beam-out", style: { "target-label": "data(kindLabel)", "target-text-offset": 64 } },
+    { selector: "edge.beam-in", style: { "source-label": "data(kindLabel)", "source-text-offset": 64 } },
+    { selector: ".boot", style: { opacity: 0 } },
   ];
 }
 
@@ -133,15 +166,21 @@ function elementsFor() {
     const id = `e${i}`;
     state.lifted.set(id, e);
     const weight = e.edges?.length ?? 1;
+    const kinds = [...new Set(e.edges.map((x) => x.kind))];
     return {
       group: "edges",
-      data: { id, source: e.source, target: e.target, kind: e.kind, color: EDGE_GROUPS[edgeGroup(e.kind)].color, weight, label: weight > 1 ? `${e.label} (${weight})` : e.label },
+      data: {
+        id, source: e.source, target: e.target, kind: e.kind, color: edgeColor(e.kind), weight,
+        label: weight > 1 ? `${e.label} (${weight})` : e.label,
+        kindLabel: kinds.length > 2 ? `${kinds.slice(0, 2).join(" · ")} +${kinds.length - 2}` : kinds.join(" · "),
+      },
     };
   });
   return [...nodes, ...edges];
 }
 
-function render({ fitTo } = {}) {
+function render({ fitTo, intro = false } = {}) {
+  focus?.exit({ animate: false });
   cy.batch(() => {
     cy.elements().remove();
     cy.add(elementsFor());
@@ -150,43 +189,78 @@ function render({ fitTo } = {}) {
   return new Promise((resolve) => {
     const first = !state.laidOut;
     const layout = cy.layout({
-      name: "fcose", quality: "default", randomize: first, animate: !first, animationDuration: 450, fit: first, padding: 60,
+      name: "fcose", quality: "default", randomize: first, animate: !first && !REDUCED, animationDuration: 600, fit: first, padding: 60,
       nodeDimensionsIncludeLabels: true, nodeRepulsion: 9000, idealEdgeLength: 110, edgeElasticity: 0.25, nestingFactor: 0.5,
       gravity: 0.35, gravityCompound: 1.4, gravityRangeCompound: 1.6, tile: true, tilingPaddingVertical: 24, tilingPaddingHorizontal: 24, numIter: 2500,
     });
     layout.one("layoutstop", () => {
       state.laidOut = true;
-      if (fitTo) frame(fitTo);
+      if (intro) playIntro();
+      else if (fitTo) frame(fitTo);
       resolve();
     });
     layout.run();
   });
 }
 
-// Bring a node and everything inside it into view, without zooming in further than 1.3.
+// The free part of the screen. With a selection the HUD covers the left (a bottom sheet on a
+// phone); its size is fixed in style.css, so the camera can aim before the HUD is drawn.
+const HUD_WIDTH = 400;
+function insets() {
+  if (!state.selected) return { left: 40, right: 40, top: 84, bottom: 56 };
+  if (innerWidth < 760) return { left: 16, right: 16, top: 72, bottom: Math.round(innerHeight * 0.46) + 16 };
+  return { left: Math.min(HUD_WIDTH, innerWidth - 24) + 40, right: 40, top: 84, bottom: 56 };
+}
+
+// Bring a node and everything inside it into view.
 function frame(id) {
   const el = cy.getElementById(id);
   if (el.empty()) return;
-  const eles = el.union(el.descendants());
-  const bb = eles.boundingBox({ includeLabels: true });
-  const pad = 90;
-  const zoom = Math.min(1.3, (cy.width() - 2 * pad) / Math.max(bb.w, 1), (cy.height() - 2 * pad) / Math.max(bb.h, 1));
-  cy.animate({ zoom: Math.max(zoom, cy.minZoom()), center: { eles } }, { duration: 350 });
+  const bb = el.union(el.descendants()).boundingBox({ includeLabels: true });
+  focus.camera({ x1: bb.x1 - 40, y1: bb.y1 - 40, w: bb.w + 80, h: bb.h + 80 });
 }
 
+// Selection highlight for an open group (focus mode has its own classes).
 function highlight() {
-  cy.elements().removeClass("faded hl off sel");
+  cy.elements().removeClass("faded hl sel");
   const el = state.selected && cy.getElementById(state.selected);
-  if (!el || el.empty()) return;
+  if (!el || el.empty() || !el.isParent()) return;
   const group = el.union(el.descendants());
   const edges = group.connectedEdges();
   const ends = edges.connectedNodes().union(group);
-  const keep = ends.union(ends.ancestors()).union(edges);
   el.addClass("sel");
   edges.addClass("hl");
-  const rest = cy.elements().not(keep);
-  rest.addClass("faded");
-  if (state.focusOnly) rest.edges().addClass("off");
+  cy.elements().not(ends.union(ends.ancestors()).union(edges)).addClass("faded");
+}
+
+// The stack assembles itself: every node flies in from the centre, groups and relations fade
+// in behind them, and the camera settles on the whole map.
+function playIntro() {
+  const title = $("#intro");
+  if (REDUCED) {
+    title.hidden = true;
+    return;
+  }
+  const leaves = cy.nodes().filter((n) => !n.isParent());
+  const final = new Map(leaves.map((n) => [n.id(), { ...n.position() }]));
+  const bb = cy.elements().boundingBox();
+  const center = { x: bb.x1 + bb.w / 2, y: bb.y1 + bb.h / 2 };
+  cy.batch(() => {
+    leaves.positions(() => ({ ...center }));
+    cy.elements().addClass("boot");
+  });
+  const order = leaves.sort((a, b) => colorOf(a.id()).localeCompare(colorOf(b.id())) || Math.hypot(final.get(a.id()).x - center.x, final.get(a.id()).y - center.y) - Math.hypot(final.get(b.id()).x - center.x, final.get(b.id()).y - center.y));
+  const step = Math.min(6, 1400 / Math.max(order.length, 1));
+  order.forEach((n, i) => setTimeout(() => {
+    n.removeClass("boot");
+    n.animate({ position: final.get(n.id()) }, { duration: 1300, easing: "ease-out-quint" });
+  }, 350 + i * step));
+  const done = 350 + order.length * step + 900;
+  setTimeout(() => cy.nodes(":parent").removeClass("boot"), 600);
+  setTimeout(() => cy.edges().removeClass("boot"), done);
+  focus.camera({ x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h });
+  setTimeout(() => title.classList.add("gone"), 1700);
+  setTimeout(() => (title.hidden = true), 2600);
 }
 
 // ---------- actions ----------
@@ -203,29 +277,113 @@ function toggle(id) {
   showDetails();
 }
 
+// Every click lands here. A node flies into focus; an open group is framed.
 function select(id) {
+  const el = cy.getElementById(id);
+  if (el.empty()) return reveal(id);
   state.selected = id;
+  if (el.isParent()) {
+    focus.exit();
+    highlight();
+    showDetails();
+    frame(id);
+  } else {
+    highlight();
+    focus.enter(id);
+    showDetails();
+  }
+}
+
+function clearSelection() {
+  state.selected = null;
+  focus.exit();
   highlight();
   showDetails();
 }
 
-// Make a node visible (expand its ancestors), select it and bring it into view.
-async function reveal(id) {
-  if (!node(id)) return;
-  const chain = ancestry(state.index, id).slice(0, -1);
-  const missing = chain.filter((a) => !state.expanded.has(a));
-  state.selected = id;
-  if (missing.length) {
-    missing.forEach((a) => state.expanded.add(a));
-    await render({ fitTo: id });
-  } else {
-    highlight();
-    frame(id);
-  }
+function goBack() {
+  const prev = focus.back();
+  state.selected = prev ?? null;
+  highlight();
   showDetails();
 }
 
-// ---------- details panel ----------
+// Make a node visible (expand its ancestors) and fly to it.
+async function reveal(id) {
+  if (!node(id)) return;
+  const missing = ancestry(state.index, id).slice(0, -1).filter((a) => !state.expanded.has(a));
+  if (missing.length) {
+    missing.forEach((a) => state.expanded.add(a));
+    await render();
+  }
+  select(id);
+}
+
+// ---------- HUD ----------
+
+// Every relation of a node (and what is inside it) to the rest of the map, the other end
+// named by what is on screen — the same nodes the orbit shows.
+function relationsOf(id) {
+  const inside = new Set([id, ...descendants(id)]);
+  const out = [];
+  for (const e of state.stack.edges) {
+    const s = inside.has(e.source);
+    if (s === inside.has(e.target)) continue;
+    const raw = s ? e.target : e.source;
+    out.push({ dir: s ? "out" : "in", kind: e.kind, other: representative(state.index, raw, state.expanded), raw, edge: e });
+  }
+  return out;
+}
+
+let typing = 0;
+// Types each block in turn; a click on the HUD finishes it at once.
+function typeOut(blocks) {
+  const run = ++typing;
+  if (REDUCED) {
+    blocks.forEach(({ el, text }) => (el.textContent = text));
+    return;
+  }
+  const cursor = h("span", { class: "cursor" });
+  let i = 0;
+  let pos = 0;
+  const step = () => {
+    if (run !== typing) return;
+    const block = blocks[i];
+    if (!block) return cursor.remove();
+    pos = Math.min(block.text.length, pos + 3);
+    block.el.textContent = block.text.slice(0, pos);
+    block.el.append(cursor);
+    if (pos >= block.text.length) {
+      i += 1;
+      pos = 0;
+    }
+    requestAnimationFrame(step);
+  };
+  blocks.forEach(({ el }) => (el.textContent = ""));
+  requestAnimationFrame(step);
+  return () => {
+    typing += 1;
+    blocks.forEach(({ el, text }) => (el.textContent = text));
+  };
+}
+
+function relationChips(rels, dir) {
+  const byKind = new Map();
+  for (const r of rels.filter((x) => x.dir === dir)) {
+    if (!byKind.has(r.kind)) byKind.set(r.kind, new Set());
+    byKind.get(r.kind).add(r.other);
+  }
+  if (!byKind.size) return null;
+  const total = new Set(rels.filter((x) => x.dir === dir).map((x) => x.other)).size;
+  return [
+    h("h3", {}, dir === "out" ? `→ Uses (${total})` : `← Used by (${total})`),
+    [...byKind].sort((a, b) => b[1].size - a[1].size).map(([kind, others]) =>
+      h("div", { class: "rel-row" },
+        h("span", { class: "rel-kind", style: `color:${edgeColor(kind)}` }, kind),
+        h("div", { class: "chips" }, [...others].map((o) =>
+          h("button", { type: "button", class: "chip", style: `--chip:${colorOf(o)}`, onclick: () => select(o) }, node(o)?.label ?? o))))),
+  ];
+}
 
 function sourceItem(src) {
   const { workspace, home } = state.stack.meta;
@@ -236,75 +394,68 @@ function sourceItem(src) {
   return h("li", {}, abs ? h("a", { href: `vscode://file${abs.split(/[:#]/)[0]}`, title: "Open in VS Code" }, src) : src);
 }
 
-function relationList(id) {
-  const inside = new Set([id, ...descendants(id)]);
-  const out = [];
-  const inc = [];
-  for (const e of state.stack.edges) {
-    const s = inside.has(e.source);
-    const t = inside.has(e.target);
-    if (s && !t) out.push({ e, other: e.target, via: e.source !== id ? e.source : null });
-    else if (t && !s) inc.push({ e, other: e.source, via: e.target !== id ? e.target : null });
-  }
-  const item = ({ e, other, via }) =>
-    h("li", { title: [e.label, e.note].filter(Boolean).join(" — ") },
-      h("span", { class: "k" }, e.kind),
-      h("span", {},
-        h("a", { onclick: () => reveal(other) }, node(other)?.label ?? other),
-        via ? h("span", { class: "via" }, ` · via ${node(via)?.label ?? via}`) : null));
-  const section = (title, rows) => {
-    if (!rows.length) return null;
-    rows.sort((a, b) => a.e.kind.localeCompare(b.e.kind));
-    const shown = rows.slice(0, 60);
-    return [h("h3", {}, `${title} (${rows.length})`), h("ul", { class: "rel" }, shown.map(item)), rows.length > shown.length ? h("p", { class: "muted" }, `…and ${rows.length - shown.length} more`) : null];
-  };
-  return [section("Uses / points to", out), section("Used by", inc)];
-}
-
 function showDetails() {
   const panel = $("#details");
   const id = state.selected;
   const n = id && node(id);
   if (!n) {
+    typing += 1;
     panel.hidden = true;
     return;
   }
   const chain = ancestry(state.index, id).slice(0, -1);
-  const kids = state.index.children.get(id) ?? [];
+  const kidsOf = state.index.children.get(id) ?? [];
   const open = state.expanded.has(id);
-  fill(panel, 
-    h("button", { class: "ghost close", "aria-label": "Close details", onclick: () => { state.selected = null; highlight(); showDetails(); } }, "✕"),
-    chain.length ? h("div", { class: "crumbs" }, chain.map((a, i) => [i ? "›" : null, h("a", { onclick: () => reveal(a) }, node(a).label)])) : null,
-    h("h2", {}, h("span", { class: "dot", style: `background:${colorOf(id)}` }), n.label),
+  const isGroup = hasChildren(id) && open;
+  const rels = relationsOf(id);
+  const story = narrate(n.label, rels.map((r) => ({ dir: r.dir, kind: r.kind, other: node(r.other)?.label ?? r.other })));
+  const title = h("h2", { class: "hud-title", style: `--glow:${colorOf(id)}` });
+  const prose = h("p", { class: "narrative" });
+  const outCount = new Set(rels.filter((r) => r.dir === "out").map((r) => r.other)).size;
+  const inCount = new Set(rels.filter((r) => r.dir === "in").map((r) => r.other)).size;
+
+  fill(panel,
+    h("button", { class: "ghost close", "aria-label": "Close", onclick: clearSelection }, "✕"),
+    h("div", { class: "kicker" }, [isGroup ? "GROUP" : "FOCUS", n.kind, layerOf(id)].filter(Boolean).join(" · ").toUpperCase()),
+    chain.length > 1 ? h("div", { class: "crumbs" }, chain.slice(1).map((a, i) => [i ? "›" : null, h("button", { type: "button", class: "crumb", onclick: () => reveal(a) }, node(a).label)])) : null,
+    title,
     h("div", { class: "badges" },
-      h("span", { class: "badge" }, n.kind),
       n.status ? h("span", { class: `badge ${n.status}` }, n.status) : null,
       n.confidence ? h("span", { class: `badge ${n.confidence}` }, n.confidence) : null,
-      kids.length ? h("span", { class: "badge" }, `${descendantCount(state.index, id)} inside`) : null),
-    n.summary ? h("p", { class: "summary" }, n.summary) : null,
-    n.details?.length ? h("ul", {}, n.details.map((d) => h("li", {}, d))) : null,
+      h("span", { class: "badge" }, `→ ${outCount}  ← ${inCount}`),
+      kidsOf.length ? h("span", { class: "badge" }, `${descendantCount(state.index, id)} inside`) : null),
+    prose,
     h("div", { class: "actions" },
-      h("button", { class: "primary", onclick: () => openChat({ prefill: `What is ${n.label}, what does it depend on, and what depends on it?` }) }, "Ask about this"),
-      kids.length ? h("button", { onclick: () => toggle(id) }, open ? "Collapse" : `Expand (${kids.length})`) : null,
-      h("button", { onclick: () => reveal(id) }, "Center")),
-    kids.length ? [h("h3", {}, `Contains (${kids.length})`), h("div", { class: "chips" }, kids.map((c) => h("a", { onclick: () => reveal(c) }, node(c).label)))] : null,
-    relationList(id),
-    n.links?.length ? [h("h3", {}, "Links"), h("ul", {}, n.links.map((l) => h("li", {}, h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, l.label || l.url))))] : null,
-    n.sources?.length ? [h("h3", {}, "Sources"), h("ul", { class: "sources" }, n.sources.map(sourceItem))] : null,
-    h("p", { class: "muted", style: "font-size:11px;margin-top:14px" }, `id ${id} · data/${n.files.join(", data/")}`),
+      h("button", { class: "primary", onclick: () => openChat({ prefill: `Brief me on ${n.label}: what it does, what it depends on, what depends on it, and what would break without it.` }) }, "Ask Claude"),
+      kidsOf.length ? h("button", { onclick: () => toggle(id) }, open ? "Collapse" : `Open (${kidsOf.length})`) : null,
+      focus.canGoBack() ? h("button", { onclick: goBack }, "◂ Back") : null),
+    relationChips(rels, "out"),
+    relationChips(rels, "in"),
+    kidsOf.length ? [h("h3", {}, `Inside (${kidsOf.length})`), h("div", { class: "chips" }, kidsOf.map((c) => h("button", { type: "button", class: "chip", style: `--chip:${colorOf(c)}`, onclick: () => reveal(c) }, node(c).label)))] : null,
+    h("details", { class: "facts" },
+      h("summary", {}, "Facts & sources"),
+      n.summary ? h("p", {}, n.summary) : null,
+      n.details?.length ? h("ul", {}, n.details.map((d) => h("li", {}, d))) : null,
+      n.links?.length ? [h("h3", {}, "Links"), h("ul", {}, n.links.map((l) => h("li", {}, h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, l.label || l.url))))] : null,
+      n.sources?.length ? [h("h3", {}, "Sources"), h("ul", { class: "sources" }, n.sources.map(sourceItem))] : null,
+      h("p", { class: "muted", style: "font-size:11px" }, `id ${id} · data/${n.files.join(", data/")}`)),
   );
   if (panel.dataset.id !== id) panel.scrollTop = 0;
   panel.dataset.id = id;
   panel.hidden = false;
+  const finish = typeOut([{ el: title, text: n.label }, { el: prose, text: (n.summary ? [n.summary] : []).concat(story).join(" ") }]);
+  panel.onclick = (ev) => {
+    if (!ev.target.closest("a, button, summary")) finish?.();
+  };
 }
 
 function showIssues() {
-  state.selected = null;
-  highlight();
+  clearSelection();
   const panel = $("#details");
-  fill(panel, 
+  fill(panel,
     h("button", { class: "ghost close", "aria-label": "Close", onclick: () => (panel.hidden = true) }, "✕"),
-    h("h2", {}, "Data issues"),
+    h("div", { class: "kicker" }, "DATA"),
+    h("h2", { class: "hud-title" }, "Data issues"),
     h("p", { class: "muted" }, "From merging data/*.json. Run npm run check for the same list."),
     h("ul", { class: "sources" }, state.stack.issues.map((i) => h("li", {}, `${i.level} · ${i.file}: ${i.message}`))),
   );
@@ -360,25 +511,22 @@ function setupSearch() {
   });
   input.addEventListener("blur", () => setTimeout(() => (list.hidden = true), 100));
   input.addEventListener("focus", () => (list.hidden = !results.length));
-  document.addEventListener("keydown", (ev) => {
-    if (ev.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName)) { ev.preventDefault(); input.focus(); }
-  });
 }
 
-// ---------- legend, status, tooltip ----------
+// ---------- legend, status, tooltip, background ----------
 
 function buildLegend() {
   const legend = $("#legend");
-  const layerRows = Object.entries(LAYER_COLORS).map(([id, c]) => h("div", { class: "row" }, h("span", { class: "sw", style: `background:${c}` }), node(id)?.label ?? id));
+  const layerRows = Object.entries(LAYER_COLORS).map(([id, c]) => h("div", { class: "row" }, h("span", { class: "sw", style: `background:${c};box-shadow:0 0 8px ${c}` }), node(id)?.label ?? id));
   const edgeRows = Object.values(EDGE_GROUPS).map((g) => h("div", { class: "row" }, h("span", { class: "ln", style: `border-color:${g.color}` }), g.label));
-  fill(legend, 
+  fill(legend,
     h("h4", {}, "Colour = layer"), layerRows,
     h("h4", {}, "Lines = relation"), edgeRows,
-    h("div", { class: "row" }, h("span", { class: "ln", style: "border-top-style:dashed;border-color:#7d8ca8" }), "deployed on (dashed)"),
+    h("div", { class: "row" }, h("span", { class: "ln", style: "border-top-style:dashed;border-color:#7f93c4" }), "deployed on (dashed)"),
     h("h4", {}, "Shape = kind"),
     h("p", {}, "▢ platform / project / service · ⬡ agent / bot · ◇ cron job · ⛁ database · ⬠ skill · ▱ config / doc · ◯ external / channel · ★ person"),
-    h("h4", {}, "Marks"),
-    h("p", {}, "Glow ring + “+N” = collapsed group, double-click to open. Faded = retired. Dashed border = planned or dry-run. Italic = inferred, not confirmed in a file."),
+    h("h4", {}, "Moves"),
+    h("p", {}, "Click: fly in — uses orbit right, used-by left, light flows the way the relation points. Click a neighbour or chip: travel. Double-click a group: open/close. Esc: fly out. Backspace: back."),
   );
   const btn = $("#btn-legend");
   btn.addEventListener("click", () => {
@@ -390,31 +538,47 @@ function buildLegend() {
 function buildStatus() {
   const { nodes, edges, issues } = state.stack;
   const errors = issues.filter((i) => i.level === "error").length;
-  fill($("#status"), 
-    `${nodes.length} nodes · ${edges.length} relations · double-click a group to open it`,
+  fill($("#status"),
+    h("span", { class: "live" }), `${nodes.length} systems · ${edges.length} relations · click to fly in · Esc to fly out`,
     issues.length ? h("button", { onclick: showIssues }, `${errors} errors, ${issues.length - errors} warnings`) : null,
   );
+  fill($("#intro .sub"), `${nodes.length} systems · ${edges.length} relations`);
 }
 
 function setupTooltip() {
-  const tip = h("div", { class: "card", style: "position:fixed;pointer-events:none;padding:8px 10px;max-width:280px;font-size:12px;z-index:5", hidden: true });
+  const tip = h("div", { class: "card tip", hidden: true });
   document.body.append(tip);
   cy.on("mouseover", "node", (ev) => {
     const n = node(ev.target.id());
-    if (!n) return;
+    if (!n || ev.target.hasClass("hero")) return;
     const collapsed = ev.target.hasClass("collapsed");
     fill(tip, h("strong", {}, n.label), n.summary ? h("div", {}, n.summary.length > 180 ? `${n.summary.slice(0, 180)}…` : n.summary) : null,
-      collapsed ? h("div", { class: "muted" }, "Double-click to open") : null);
+      h("div", { class: "muted" }, collapsed ? "Click to fly in · double-click to open" : "Click to fly in"));
     const p = ev.renderedPosition;
     tip.style.left = `${Math.min(p.x + 16, innerWidth - 300)}px`;
     tip.style.top = `${p.y + 16}px`;
     tip.hidden = false;
     cy.container().style.cursor = "pointer";
+    ev.target.connectedEdges(".beam").addClass("hover");
   });
-  cy.on("mouseout", "node", () => { tip.hidden = true; cy.container().style.cursor = ""; });
+  cy.on("mouseout", "node", (ev) => {
+    tip.hidden = true;
+    cy.container().style.cursor = "";
+    ev.target.connectedEdges().removeClass("hover");
+  });
   cy.on("mouseover", "edge", (ev) => ev.target.addClass("hover"));
   cy.on("mouseout", "edge", (ev) => ev.target.removeClass("hover"));
   cy.on("viewport", () => (tip.hidden = true));
+}
+
+// The star field drifts a little slower than the map, which reads as depth.
+function setupParallax() {
+  const root = document.documentElement.style;
+  cy.on("viewport", () => {
+    const { x, y } = cy.pan();
+    root.setProperty("--px", `${(x * 0.12).toFixed(1)}px`);
+    root.setProperty("--py", `${(y * 0.12).toFixed(1)}px`);
+  });
 }
 
 // ---------- boot ----------
@@ -426,42 +590,52 @@ async function main() {
   state.expanded = defaultExpanded();
 
   cy = cytoscape({ container: $("#cy"), style: cyStyle(), minZoom: 0.08, maxZoom: 3, boxSelectionEnabled: false, selectionType: "single" });
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => cy.style(cyStyle()));
+  focus = createFocus(cy, { insets });
 
   cy.on("tap", "node", (ev) => select(ev.target.id()));
   cy.on("dbltap", "node", (ev) => toggle(ev.target.id()));
   cy.on("tap", (ev) => {
-    if (ev.target === cy && state.selected) { state.selected = null; highlight(); showDetails(); }
+    if (ev.target === cy && state.selected) clearSelection();
   });
 
   $("#btn-expand").addEventListener("click", () => {
     state.expanded = new Set(state.stack.nodes.filter((n) => hasChildren(n.id)).map((n) => n.id));
-    render().then(() => cy.animate({ fit: { padding: 60 } }, { duration: 300 }));
+    state.selected = null;
+    showDetails();
+    render().then(() => focus.camera(boxAll()));
   });
   $("#btn-collapse").addEventListener("click", () => {
     state.expanded = defaultExpanded();
-    if (state.selected) state.selected = ancestry(state.index, state.selected).find((a) => !state.expanded.has(a)) ?? state.selected;
-    render().then(() => cy.animate({ fit: { padding: 60 } }, { duration: 300 }));
+    state.selected = null;
     showDetails();
+    render().then(() => focus.camera(boxAll()));
   });
-  $("#btn-fit").addEventListener("click", () => cy.animate({ fit: { padding: 60 } }, { duration: 300 }));
-  $("#tgl-focus").addEventListener("change", (ev) => { state.focusOnly = ev.target.checked; highlight(); });
+  $("#btn-fit").addEventListener("click", () => focus.camera(boxAll()));
   document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape" && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName)) { state.selected = null; highlight(); showDetails(); }
+    if (/INPUT|TEXTAREA/.test(document.activeElement?.tagName)) return;
+    if (ev.key === "Escape") clearSelection();
+    else if (ev.key === "Backspace" && focus.active()) { ev.preventDefault(); goBack(); }
+    else if (ev.key === "/") { ev.preventDefault(); $("#search").focus(); }
   });
 
   setupSearch();
   buildLegend();
   buildStatus();
   setupTooltip();
+  setupParallax();
   initChat({
     model: state.stack.meta.model,
     getFocus: () => state.selected,
     labelOf: (id) => node(id)?.label,
     onNodeLink: (id) => reveal(id),
-    clearFocus: () => { state.selected = null; highlight(); showDetails(); },
+    clearFocus: clearSelection,
   });
-  await render();
+  await render({ intro: true });
+}
+
+function boxAll() {
+  const bb = cy.elements().boundingBox();
+  return { x1: bb.x1, y1: bb.y1, w: bb.w, h: bb.h };
 }
 
 main().catch((err) => {
