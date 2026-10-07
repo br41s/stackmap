@@ -61,12 +61,21 @@ export function liftEdges(index, expanded) {
 // Output: the entries to draw. Each output entry must keep `source`, `target`, `kind`,
 // `label` and `edges` (the original edges it stands for — the details panel lists them).
 //
-// TODO(brais): choose the merge policy. Options:
-//   a) one line per (source, target) pair, label like "3 relations", kind of the first;
-//   b) one line per (source, target, kind), so "deploys" and "notifies" stay distinct;
-//   c) as below: no merging, every real edge is its own (bundled) curve.
-// (a) is the calmest map, (b) keeps meaning on hover, (c) shows true volume but gets
-// noisy once a big group like Hermes is collapsed.
+// Policy: one line per direction of a pair (Hermes → Zeabur and Zeabur → Hermes stay apart).
+// The line takes the most common kind (its colour and dash) and its label lists every kind,
+// so the map stays calm and the meaning survives on hover; thickness shows the count.
 export function mergeLiftedEdges(lifted) {
-  return lifted;
+  const pairs = new Map();
+  for (const e of lifted) {
+    const key = `${e.source}|${e.target}`;
+    if (pairs.has(key)) pairs.get(key).edges.push(...e.edges);
+    else pairs.set(key, { source: e.source, target: e.target, edges: [...e.edges] });
+  }
+  return [...pairs.values()].map((p) => {
+    if (p.edges.length === 1) return { ...p, kind: p.edges[0].kind, label: p.edges[0].label };
+    const counts = new Map();
+    for (const e of p.edges) counts.set(e.kind, (counts.get(e.kind) ?? 0) + 1);
+    const kinds = [...counts].sort((a, b) => b[1] - a[1]).map(([k]) => k);
+    return { ...p, kind: kinds[0], label: kinds.join(" · ") };
+  });
 }

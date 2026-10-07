@@ -76,6 +76,26 @@ test("edges are lifted to visible ancestors; internal edges disappear", () => {
   for (const e of lifted) assert.ok(e.source && e.target && e.kind && Array.isArray(e.edges));
 });
 
+test("parallel lifted edges merge into one line per direction", () => {
+  const index = buildIndex({
+    nodes: tree.nodes,
+    edges: [
+      ...tree.edges,
+      { source: "gateway", target: "server", kind: "calls", label: "health check" },
+      { source: "server", target: "cron", kind: "calls", label: "wakes" },
+    ],
+  });
+  const lifted = liftEdges(index, new Set(["layer"]));
+  const out = lifted.find((e) => e.source === "hermes" && e.target === "zeabur");
+  assert.equal(out.edges.length, 3, "two deployed-on + one calls");
+  assert.equal(out.kind, "deployed-on", "most common kind wins");
+  assert.equal(out.label, "deployed-on · calls");
+  assert.ok(lifted.some((e) => e.source === "zeabur" && e.target === "hermes"), "reverse direction stays its own line");
+  assert.equal(lifted.filter((e) => e.source === "hermes" && e.target === "zeabur").length, 1);
+  // A single edge keeps its own label.
+  assert.equal(lifted.find((e) => e.target === "telegram").label, "sends");
+});
+
 test("expanding shows the real endpoints again", () => {
   const index = buildIndex(tree);
   const lifted = liftEdges(index, new Set(["layer", "hermes", "zeabur"]));
