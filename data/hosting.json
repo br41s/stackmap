@@ -1664,18 +1664,21 @@
    "label": "ChatMemo nightly backup (LaunchAgent)",
    "kind": "cron-job",
    "parent": "layer-hosting",
-   "summary": "Mac LaunchAgent that should dump ChatMemo's summaries table from Supabase every night at 03:00; it is failing.",
+   "summary": "Mac LaunchAgent that dumps ChatMemo's summaries and user_lessons from Supabase every night at 03:00, as a read-only role, and reports a heartbeat for Hermes.",
    "details": [
-    "Label com.chatmemo.backup runs /Users/brais/scripts/backup-chatmemo.sh; that path does not exist, and backup.err repeats 'No such file' (latest 2026-10-06 03:00); backup.log is empty since 2026-05-29",
-    "The script in the repo (chatmemo/scripts/backup-chatmemo.sh) carries a placeholder password and writes to ~/backups/chatmemo",
-    "No other Supabase backup is mentioned in the docs"
+    "Fixed 2026-10-07 (chatmemo #71): from 2026-05-28 it ran a script that did not exist (exit 127) and never wrote a dump",
+    "Runs chatmemo/scripts/backup-chatmemo.sh from the repo checkout as role chatmemo_backup (SELECT on summaries + user_lessons only), through the Seoul session pooler with TLS; password only in ~/.pgpass",
+    "Custom-format dump checked with pg_restore before it is kept; ~/backups/chatmemo, mode 600, pruned after 30 days; macOS notification on failure",
+    "First run 2026-10-07: 1,394/1,394 summaries and 1/1 lessons, 3.6 MB",
+    "After each verified dump it rewrites a secret gist (time and size only, chatmemo #73); the Hermes incident sweep alerts after 50h without one (hermes-sandbox #417, ships with the next deploy)"
    ],
-   "status": "unknown",
+   "status": "live",
    "links": [],
    "sources": [
     "~/Library/LaunchAgents/com.chatmemo.backup.plist",
-    "~/Backups/chatmemo/backup.err",
-    "/Users/brais/VSCODE/chatmemo/scripts/backup-chatmemo.sh"
+    "chatmemo/scripts/backup-chatmemo.sh",
+    "chatmemo/docs/ADMIN_GUIDE.md",
+    "memories/decisions/chatmemo.md"
    ],
    "confidence": "verified"
   }
@@ -2737,6 +2740,27 @@
    ],
    "confidence": "from-docs",
    "note": "client id carries this project's number; consent screen in Testing mode as of 2026-08-17"
+  },
+  {
+   "source": "mac-backup-chatmemo",
+   "target": "github",
+   "kind": "writes",
+   "label": "heartbeat gist after each verified dump",
+   "sources": [
+    "chatmemo/scripts/backup-chatmemo.sh"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "hermes-incident-watcher",
+   "target": "mac-backup-chatmemo",
+   "kind": "monitors",
+   "label": "alerts after 50h without a heartbeat",
+   "note": "hermes-sandbox PR #417, live after the next deploy",
+   "sources": [
+    "hermes-sandbox/incidents/sweep.py"
+   ],
+   "confidence": "from-docs"
   }
  ]
 }
