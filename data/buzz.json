@@ -500,13 +500,15 @@
     "North-star metric: qualified conversions per week on biglobster.top (agent-rental form, contact form, WhatsApp clicks, measured in Umami)",
     "Shifts in Bangkok time: day 08:00-20:00, night 20:00-08:00 (US working day); morning brief to Brais, Monday weekly goals, Friday Coach summary",
     "Risk tiers: T0 silent, T1 logged public, T2 needs Brais's OK in a batched list, T3 never (spend without OK, create accounts, automate likes/follows)",
-    "Goals to 2026-11-05 incl. 25 qualified leads/week (Prospector), 500 visitors/28 days, 2 shorts/week, <=20 min/day of Brais's time"
+    "Goals to 2026-11-05 incl. 25 qualified leads/week (Prospector), 500 visitors/28 days, 2 shorts/week, <=20 min/day of Brais's time",
+    "2026-10-08: emerging markets run in parallel with the US; bots must always @mention ClaudeCode when writing to or answering it"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "~/fizz/agents/empresa.md",
-    "~/fizz/tasks/empresa-24-7.md"
+    "~/fizz/tasks/empresa-24-7.md",
+    "git b41d029, 29b8a14"
    ],
    "confidence": "verified"
   },
@@ -682,7 +684,8 @@
     "Publishes: no",
     "Container bot-fizz-agent-1, volume bot-fizz_work",
     "Morning brief to Brais in #general between 07:00 and 11:00 ICT; Monday weekly goals; night handover",
-    "Mentions Retador before new plans, spend or public/irreversible moves"
+    "Mentions Retador before new plans, spend or public/irreversible moves",
+    "Since 2026-10-07 retro: does not change offer, prices, markets or approved plans without Brais (T2); assigns work only in the bot's own channel and not to a stopped bot; checks empty heartbeats of Prospector, SEODesk and SocialBot"
    ],
    "status": "live",
    "links": [],
@@ -690,7 +693,8 @@
     "~/fizz/agents/fizz.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "git b9d4064, fcae3f5"
    ],
    "confidence": "verified"
   },
@@ -763,7 +767,10 @@
     "Publishes: no",
     "Container bot-prospector-agent-1, volume bot-prospector_work",
     "Email only through the correo tool: batches approved by Brais with a signed 'aprobado <lote> <hash>' phrase, max 5 cold/day and 10 total/day",
-    "Leads and promotion lists under salida/growth; asks Brais in #growth to solve captchas"
+    "Leads and promotion lists under salida/growth; asks Brais in #growth to solve captchas",
+    "Since 2026-10-08 correo sends an approved batch spaced out, not at once: random gaps (10 min to 8 h) inside 13:00-19:00 UTC, in a background sender; `correo estado` shows progress",
+    "Copies Search Console emails into seo/avisos-gsc.md for SEODesk; progress goes in estado.md, @Fizz only for a ready batch or a blocker",
+    "Cold-email countries: Canada was dropped by the 2026-10-07 retro fix and restored on 2026-10-08"
    ],
    "status": "live",
    "links": [],
@@ -771,7 +778,8 @@
     "~/fizz/agents/prospector.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "git e1e339c, b9d4064, 00e466d"
    ],
    "confidence": "verified"
   },
@@ -790,7 +798,8 @@
     "Publishes: yes (only bot with publica: si)",
     "Container bot-socialbot-agent-1, volume bot-socialbot_work",
     "Playbooks per network (X, Reddit, Facebook, Instagram, GEO sites) in salida/socialbot/playbooks",
-    "Nightly summary to Fizz around 20:00 ICT; likes/follows/group posts left to Brais in lista-hoy.md"
+    "Nightly summary to Fizz around 20:00 ICT; likes/follows/group posts left to Brais in lista-hoy.md",
+    "2026-10-08 experiment: drafts only on threads asking for help, every biglobster.top link carries UTM parameters"
    ],
    "status": "live",
    "links": [],
@@ -798,7 +807,8 @@
     "~/fizz/agents/socialbot.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "git b9d4064"
    ],
    "confidence": "verified"
   },
@@ -870,7 +880,10 @@
     "Publishes: no",
     "Container bot-seodesk-agent-1, volume bot-seodesk_work",
     "GitHub limits: token sees only br41s/biglobster, push blocked to main/tags/deletes/force/other repos, gh wrapper blocks merge and repo/release changes",
-    "The repo's CLAUDE.md names Hermes as COO; its persona overrides that: its boss is Fizz (no Hermes integration found)"
+    "The repo's CLAUDE.md names Hermes as COO; its persona overrides that: its boss is Fizz (no Hermes integration found)",
+    "Since 2026-10-08: weekly Friday check of BigLobster's listings in AI directories (There's An AI For That, Launch Llama, GenLink) using Brais's session; looks and drafts only, writes status to salida/seo/directorios.md",
+    "Search Console emails reach it as copies written by Prospector to seo/avisos-gsc.md (it does not read the mailbox); progress goes in estado.md, @Fizz only for a ready PR, a blocker or a decision",
+    "The 2026-10-08 website CTA experiment was dropped the same day: Brais keeps changes to the website"
    ],
    "status": "live",
    "links": [],
@@ -878,7 +891,8 @@
     "~/fizz/agents/seodesk.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "git b7bcf49, b9d4064, 25fb216"
    ],
    "confidence": "verified"
   },
@@ -938,18 +952,21 @@
    "label": "Work browser (localhost:3000)",
    "kind": "service",
    "parent": "fizz-navegador",
-   "summary": "Chromium with Brais's real sessions (Google, Gmail, GitHub, Umami) restricted by Chromium policy to a closed list of sites.",
+   "summary": "Chromium with Brais's real sessions (Google, Gmail, GitHub, Umami) restricted by Chromium policy to a closed list of sites, now including Google sign-in hosts, Drive and our AI directory listings.",
    "details": [
     "Allowlist: biglobster.top, search.google.com, accounts.google.com, mail.google.com, cloud.umami.is, github.com/br41s (+login/session), chrome://*, about:blank; all else blocked, including links clicked in Gmail",
     "Container navegador-chromium-1; network fizz-navegador; SEODesk is the bot that uses it",
-    "Not checked: whether embedded Google frames break under the list"
+    "Updated 2026-10-08: allowlist also covers Google sign-in hosts (accounts.youtube.com, regional accounts.google.* and /accounts paths, ogs.google.com), workspace.google.com, drive.google.com and recaptcha/Cloudflare challenge hosts",
+    "Also allowlisted since 2026-10-08: the AI directories where BigLobster is listed (theresanaiforthat.com, launchllama.co, genlink.so) so SEODesk can check the listings weekly with Brais's session",
+    "Embedded Google frames (sign-in, Drive) were the reason for the 2026-10-08 allowlist fix (PR #21); not re-tested live"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "~/fizz/navegador.compose.yml",
     "~/fizz/memories/decisions.md",
-    "docker ps"
+    "docker ps",
+    "git 39f18c6, b7bcf49, dc3da73"
    ],
    "confidence": "verified"
   },
@@ -1022,7 +1039,9 @@
     "Commands: revisar, enviar, leer, estado; eligibility rule es_elegible (solicitado/invitacion/contacto-previo/publicado) with evidence and expiry",
     "Approval = Brais's signature (Schnorr via atestar.py) over the exact batch; another bot's OK or a bare 'yes' does not count",
     "Caps: 10 emails/day total, 5/day cold; CAN-SPAM footer and unsubscribe added; uses a Gmail app password stored only in Prospector's env",
-    "Tests: tests/test_correo.py (23 tests per tasks/todo.md)"
+    "Tests: tests/test_correo.py (23 tests per tasks/todo.md)",
+    "Since 2026-10-08 `enviar` writes a plan (salida/growth/espaciado) and starts a detached background sender with a per-batch lock: random gaps of 10 min to 8 h inside 13:00-19:00 UTC; before each email it re-checks the batch fingerprint, the 7-day approval, the do-not-contact list and the daily cap; `estado` reports progress, rerunning `enviar` resumes a stopped batch",
+    "Not verified upstream: that the background sender survives the end of the bot's Claude session"
    ],
    "status": "live",
    "links": [],
@@ -1030,7 +1049,8 @@
     "~/fizz/herramientas/bin/correo",
     "~/fizz/tasks/correo-saliente.md",
     "~/fizz/tests/test_correo.py",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "git e1e339c"
    ],
    "confidence": "from-docs"
   },
@@ -1107,7 +1127,8 @@
     "Policy (policy.js): READ whitelist for buzz_read, everything else is a write; DENY = agents *, pack *, channels delete, messages delete, moderation ban, moderation timeout; file flags only inside ~/fizz/salida",
     "persona_set backs up the old persona to mcp/backups and restores it if the restart fails; the publica/navegador gate asks persona.py, not a JS parser",
     "Human-only: bot nuevo, retirar, clave, mcp, shell. Dependencies: @modelcontextprotocol/sdk, zod; tests via node --test",
-    "Verified working this session: doctor, fleet_status, fleet_channels, buzz_help, buzz_read"
+    "Verified working this session: doctor, fleet_status, fleet_channels, buzz_help, buzz_read",
+    "2026-10-08: tool description now says only Fizz hears every channel message (Coach and Retador listen to mentions)"
    ],
    "status": "live",
    "links": [],
@@ -1116,7 +1137,8 @@
     "~/fizz/mcp/src/index.js",
     "~/fizz/mcp/src/policy.js",
     "~/.claude.json (mcpServers.buzz)",
-    "mcp__buzz__doctor"
+    "mcp__buzz__doctor",
+    "git fcae3f5"
    ],
    "confidence": "verified"
   },
@@ -1130,7 +1152,8 @@
     "tasks/: empresa-24-7.md (company operating model), correo-saliente.md, latam-correo.md, todo.md",
     "memories/decisions.md logs decisions with rejected alternatives (connector design, persona_set security fix, browser split, Zeabur-to-Colima move, retro fixes)",
     "archive/ holds old exports and zips of earlier bot versions (noted only, not read)",
-    "A Claude memory note flags LEEME.md as possibly stale; CHULETA.md is current"
+    "A Claude memory note flags LEEME.md as possibly stale; CHULETA.md is current",
+    "CHULETA.md also documents the aviso-buzz notifier (install, log, stop)"
    ],
    "status": "live",
    "links": [],
@@ -1138,7 +1161,8 @@
     "~/fizz/LEEME.md",
     "~/fizz/CHULETA.md",
     "~/fizz/tasks/",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git 22abc40"
    ],
    "confidence": "verified"
   },
@@ -1272,6 +1296,30 @@
     "~/fizz/CHULETA.md"
    ],
    "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-aviso-buzz",
+   "label": "aviso-buzz (ClaudeCode mention notifier)",
+   "kind": "cron-job",
+   "parent": "fizz",
+   "summary": "Launchd job on Brais's Mac, every 15 minutes and with no model: counts new mentions and DMs for ClaudeCode and shows a macOS notification with the sender names, never the content.",
+   "details": [
+    "~/fizz/aviso-buzz.py run by launchd as com.fizz.aviso-buzz (StartInterval 900 s); loaded on 2026-10-08 (launchctl list shows it)",
+    "Read-only Buzz CLI calls (feed mentions, dms list, messages get, users get); names stripped of control characters and passed to osascript as argv",
+    "State in mcp/.aviso.json, outside salida/ (the only folder bots can write); a failed check does not move the cursor; after 3 failures in a row it notifies once, at most every 6 h",
+    "Brais then asks Claude Code to read Buzz; no automatic replies, because every ClaudeCode post wakes Fizz and bots could loop",
+    "Tests: tests/test_aviso_buzz.py"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/aviso-buzz.py",
+    "~/fizz/aviso-buzz.plist",
+    "~/fizz/CHULETA.md",
+    "~/fizz/memories/decisions.md",
+    "launchctl list"
+   ],
+   "confidence": "verified"
   }
  ],
  "edges": [
@@ -2665,6 +2713,38 @@
     "~/fizz/archive/"
    ],
    "confidence": "inferred"
+  },
+  {
+   "source": "fizz-tool-aviso-buzz",
+   "target": "buzz-relay",
+   "kind": "reads",
+   "label": "mentions and DMs for ClaudeCode via the buzz CLI",
+   "sources": [
+    "~/fizz/aviso-buzz.py",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-aviso-buzz",
+   "target": "buzz-identity-claudecode",
+   "kind": "depends-on",
+   "label": "reads as the ClaudeCode identity",
+   "sources": [
+    "~/fizz/aviso-buzz.py",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-aviso-buzz",
+   "target": "brais",
+   "kind": "notifies",
+   "label": "macOS notification with count and sender names",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "verified"
   }
  ]
 }

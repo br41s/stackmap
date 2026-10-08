@@ -772,14 +772,15 @@
    "summary": "Hosted Postgres, Auth and Storage for ChatMemo.",
    "details": [
     "Free tier is sufficient per ChatMemo README; Row Level Security scopes data per user",
-    "A Mac LaunchAgent is meant to dump the summaries table nightly with pg_dump (currently failing, see the backup node)",
+    "A Mac LaunchAgent dumps the summaries and user_lessons tables nightly at 03:00 (fixed 2026-10-07, see the backup node)",
     "Not in the canonical platform list; added because ChatMemo's data lives here; not read live"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/VSCODE/chatmemo/README.md",
-    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/chatmemo.md"
    ],
    "confidence": "from-docs"
   },
@@ -1604,21 +1605,22 @@
    "label": "Host-side volume dump (backup-volumes.sh)",
    "kind": "cron-job",
    "parent": "zeabur-frankfurt",
-   "summary": "Root script on the Frankfurt host that dumps every other project's data volume and uploads it to Google Drive.",
+   "summary": "Root script on the Frankfurt host that dumps every other project's data volume nightly and uploads it to Google Drive, pruning old stamps.",
    "details": [
     "Dumps: pg_dumpall for the Chatwoot, SocialAgenda and FlyWell Postgres, Redis SAVE, BigLobster sentinel SQLite via the backup API, tars of the idle Chrome/CDP volumes",
     "Stages root-only in /var/backups/volumes/<stamp>, uploads with the host's own rclone to hermesdrive:/VolumeBackups/<stamp> and fails unless rclone check passes",
     "First run 2026-10-06 (192 MB, all dumps verified); PR hermes-sandbox#415 merged 2026-10-06",
-    "A nightly 02:00 UTC /etc/cron.d entry is committed on branch ops/schedule-volume-backups but not on main in the local clone; install on the host not verified",
-    "No retention yet and nothing pages on failure; the Drive folder is unencrypted by choice and readable with the container's OAuth token"
+    "Scheduled nightly at 02:00 UTC since 2026-10-06 by /etc/cron.d/backup-volumes through backup-volumes-cron.sh, which appends one OK / FAILED line per run to /var/log/backup-volumes.log (hermes-sandbox#416 merged to main; install on the host is per the ops README, not re-verified over SSH)",
+    "Retention (Brais, 2026-10-06): 14 days of stamps on the host, 30 in Drive, pruned by the script only after that night's upload verified; about 0.7 GB on the host and 1.5 GB in Drive at steady state",
+    "Nothing pages on failure: the incident watcher does not see host cron; the Drive folder is unencrypted by choice and readable with the container's OAuth token"
    ],
-   "status": "planned",
+   "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/VSCODE/hermes-sandbox/ops/README.md",
     "/Users/brais/VSCODE/hermes-sandbox/ops/backup-volumes.sh",
     "/Users/brais/VSCODE/hermes-sandbox/ops/backup-volumes-cron.sh",
-    "git log in hermes-sandbox",
+    "git log in hermes-sandbox (commits 0649dfe706, 457d8d1074)",
     "/Users/brais/VSCODE/memories/decisions/hermes.md"
    ],
    "confidence": "from-docs"
@@ -1650,12 +1652,14 @@
    "summary": "Google Drive folder receiving the host-side volume dumps, one stamp per run.",
    "details": [
     "Receives hermesdrive:/VolumeBackups/<stamp> from backup-volumes.sh",
-    "Unencrypted by decision 2026-10-06 (rclone crypt rejected so a restore never depends on a key that can be lost)"
+    "Unencrypted by decision 2026-10-06 (rclone crypt rejected so a restore never depends on a key that can be lost)",
+    "Pruned to the last 30 days of stamps by backup-volumes.sh after each verified upload (retention decided 2026-10-06)"
    ],
    "status": "live",
    "links": [],
    "sources": [
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
    ],
    "confidence": "from-docs"
   },
@@ -2723,12 +2727,13 @@
    "source": "mac-backup-chatmemo",
    "target": "supabase",
    "kind": "reads",
-   "label": "pg_dump of the summaries table",
+   "label": "pg_dump of summaries and user_lessons as a read-only role",
    "sources": [
-    "~/Library/LaunchAgents/com.chatmemo.backup.plist"
+    "~/Library/LaunchAgents/com.chatmemo.backup.plist",
+    "chatmemo/scripts/backup-chatmemo.sh",
+    "memories/decisions/chatmemo.md"
    ],
-   "confidence": "verified",
-   "note": "fails: script path missing"
+   "confidence": "verified"
   },
   {
    "source": "gcp-project-finview-brais-2026",

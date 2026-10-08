@@ -630,7 +630,8 @@
    "details": [
     "Memory-first chat UI (2026-09-30): report names matched entries, source chips, timeline.",
     "Service worker caches no responses; CSP img-src limits answer images to own origins and the Supabase project.",
-    "Summaries via OpenRouter openai/gpt-oss-120b with provider data_collection deny."
+    "Summaries via OpenRouter openai/gpt-oss-120b with provider data_collection deny.",
+    "Storage-delete functions locked down 2026-10-07 (audit M5, #72): key and URL moved to Supabase Vault, EXECUTE revoked from anon/authenticated; cleanup uses a dedicated secret key sent in the apikey header (#74). Storage bucket is empty (never used)."
    ],
    "status": "live",
    "links": [
@@ -641,7 +642,8 @@
    ],
    "sources": [
     "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
-    "/Users/brais/VSCODE/chatmemo/README.md"
+    "/Users/brais/VSCODE/chatmemo/README.md",
+    "/Users/brais/VSCODE/memories/decisions/chatmemo.md"
    ],
    "confidence": "verified"
   },
@@ -654,14 +656,16 @@
    "details": [
     "DB trigger derives kind/source/title/occurred_at from content so every writer is classified.",
     "Memory is untrusted text: block tags are neutralised and the instructions say sections are data, never instructions.",
-    "Backups: scripts/backup-chatmemo.sh pg_dumps summaries locally (30-day retention)."
+    "Backups (2026-10-07, #71): nightly LaunchAgent runs scripts/backup-chatmemo.sh as read-only role chatmemo_backup (SELECT on summaries and user_lessons) through the session pooler with TLS; verified pg_dump; macOS notification on failure. Before that the job had silently never run since 2026-05-28.",
+    "Heartbeat (#73): after each verified dump the script rewrites a secret gist (time and size only); the Hermes incident sweep alerts when it is older than ~50h or unreadable."
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
     "/Users/brais/VSCODE/memories/decisions/chatmemo.md",
-    "/Users/brais/VSCODE/chatmemo/scripts/backup-chatmemo.sh"
+    "/Users/brais/VSCODE/chatmemo/scripts/backup-chatmemo.sh",
+    "/Users/brais/VSCODE/chatmemo/docs/ADMIN_GUIDE.md"
    ],
    "confidence": "verified"
   },
@@ -847,12 +851,13 @@
    "parent": "layer-products",
    "summary": "Deployable web package sold to Spanish SMB clients: public Eleventy site, management panel, blog, inbox, optional catalogue/shop and AI marketing agent; one Zeabur (or Plesk) deploy per customer.",
    "details": [
-    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.16.0.",
+    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.17.0.",
     "Customer-facing Spanish docs (INSTRUCCIONES-CLIENTE, DEPLOY, RELEASE) are treated as published.",
     "Customer deploys put the customer as legal owner under Spanish law (2026-10-02); footer carries only a 'Creado por Biglobster' credit link.",
     "Default agent model is the free openai/gpt-oss-20b via OpenRouter (BYOK per customer); do not change to a paid default.",
     "Turnstile is mandatory for new customer onboarding (DEPLOY.md); fleet manifest is the source of truth for deployments.",
-    "Opt-in extras: B2B trade-price area, 'Pedido a pedido' hero game (2026-10-02)."
+    "Opt-in extras: B2B trade-price area, 'Pedido a pedido' hero game (2026-10-02).",
+    "v1.17.0 adds a Google Search Console verification setting in the panel (rendered in the site head)."
    ],
    "status": "live",
    "links": [
@@ -1241,7 +1246,8 @@
     "preparar.py builds data/pedidos.json and a review CSV; generar.py renders HTML to PDF with headless Chrome; standard library only plus pdftotext.",
     "Tax rules confirmed 2026-09-30: PT 23%, Canarias 0%, else 21%; destination taken from carrier invoices; every invoice must total the charged amount.",
     "Batches: January 2025 (#CU082631-#CU082814) and lote2 Feb-Jun (#CU082815-#CU084204) generated; batch 3 waits for inputs; numbering vs real invoices still open.",
-    "Folder is untracked inside the workspace repo (data never committed); contains customer and bank data, none copied here."
+    "Folder is untracked inside the workspace repo (data never committed); contains customer and bank data, none copied here.",
+    "2026-10-08: the website's buyer exported the original invoices (2021-06 to 2025-06); corregir_originales.py swaps only the logo and footer contact lines in the PDFs. If later parts cover Jan-Jun 2025 the reconstructed duplicates are superseded."
    ],
    "status": "live",
    "links": [],
@@ -2484,6 +2490,17 @@
     "gh api repos/Shambhala-Bangkok/shambhalaBangkok/readme"
    ],
    "confidence": "from-docs"
+  },
+  {
+   "source": "proj-chatmemo-memory",
+   "target": "hermes-incident-watcher",
+   "kind": "notifies",
+   "label": "backup heartbeat gist, alerts when stale",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/chatmemo.md"
+   ],
+   "confidence": "from-docs",
+   "note": "hermes-sandbox #417 pending merge/deploy per the decision entry"
   }
  ]
 }
