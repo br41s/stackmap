@@ -1144,6 +1144,7 @@
    "details": [
     "Account br41s (gh CLI logged in) with 29 repos, mostly private; Zeabur's older deployment records and some docs still use the previous handle braisntext (a rename, inferred)",
     "Org Shambhala-Bangkok owns one public repo, shambhalaBangkok",
+    "Org BiglobsterLLC (free plan, created 2026-10-05) exists with br41s as sole Owner and no repos: a pilot transfer of grow-shop-landing was reverted because Zeabur's auto-deploy did not fire from the org; the second account biglobster-llc was deleted. braisntext is the OLD handle of br41s, not another account",
     "GitHub Actions DOES run: CI workflows succeeded on FinView and biglobster on 2026-10-06 and hermes-sandbox workflows ran; this contradicts the memory note project_github_no_actions.md (2026-09-10) and a comment in hermes-sandbox/cloudbuild.yaml",
     "Branch protection is unavailable on the Free plan, so a red check is a signal, not a barrier",
     "Integrations: Zeabur GitHub app, Vercel, Cloud Build GitHub App (1st gen), GitHub OAuth for the Hermes panel, GitHub webhooks to Hermes' auditor"

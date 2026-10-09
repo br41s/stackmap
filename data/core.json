@@ -98,7 +98,12 @@
    "kind": "external",
    "parent": "layer-external",
    "summary": "Model router; Hermes and several products reach most LLMs through it.",
-   "details": [],
+   "details": [
+    "Since 2026-10-09 every app uses its own key on a NEW account paid by Biglobster LLC (SocialAgenda, FinView, ChatMemo, Hermes, Hermes auditor, WhatsApp bot, local .env files); old-account keys are not revoked yet",
+    "The account is restricted from closed-weight Anthropic, Google and OpenAI models (support ticket open since 2026-10-08)",
+    "Zero Data Retention is on account-wide and is being replaced by per-request data_collection deny (tasks/openrouter-deny-plan.md in the workspace); ZDR currently leaves qwen3.7-flash and meta/muse-image without a provider",
+    "biglobster-osee holds an OpenRouter key but its live code never calls it (the per-role model variables belong to the archived multi-agent design)"
+   ],
    "links": [
     {
      "label": "site",
