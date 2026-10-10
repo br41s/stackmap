@@ -117,7 +117,8 @@
     "settings.json has no `model` key; effortLevel = medium",
     "Workspace subagents: Explore = haiku (effort low), reviewer = sonnet (effort high), docs-writer = sonnet (effort medium)",
     "A scheduled-task prompt mentions commits co-authored by Opus 5.5; this mapping session ran on Sonnet 5.5",
-    "~/.claude.json caches show Fable 5.1 as an extra model option and a notice that Fable 5 was unavailable"
+    "~/.claude.json caches show Fable 5.1 as an extra model option and a notice that Fable 5 was unavailable",
+    "Both CLAUDE.md files now set Haiku (5.5) as the default model for mechanical subagent work, passed explicitly as model haiku on general-purpose; Sonnet for judgment work"
    ],
    "status": "live",
    "links": [],
@@ -125,7 +126,9 @@
     "/Users/brais/.claude/settings.json",
     "/Users/brais/VSCODE/.claude/agents",
     "/Users/brais/.claude.json",
-    "/Users/brais/.claude/scheduled-tasks/hermes-http-cache-semantics-recheck/SKILL.md"
+    "/Users/brais/.claude/scheduled-tasks/hermes-http-cache-semantics-recheck/SKILL.md",
+    "/Users/brais/.claude/CLAUDE.md",
+    "/Users/brais/VSCODE/CLAUDE.md"
    ],
    "confidence": "from-docs"
   },
@@ -137,7 +140,8 @@
    "summary": "How Claude Code is configured: global CLAUDE.md, workspace CLAUDE.md, project CLAUDE.md files, settings, rules and per-user state.",
    "details": [
     "Precedence as documented: project CLAUDE.md > workspace CLAUDE.md > global ~/.claude/CLAUDE.md",
-    "Both global and workspace files demand reading the project's CLAUDE.md at session start"
+    "Both global and workspace files demand reading the project's CLAUDE.md at session start",
+    "Global section 4 and workspace Delegation section carry the same Haiku-by-default subagent policy (workspace file added it 2026-10-08)"
    ],
    "status": "live",
    "links": [],
@@ -152,11 +156,13 @@
    "label": "~/.claude/CLAUDE.md (global)",
    "kind": "config",
    "parent": "cc-config",
-   "summary": "Brais's private global instructions loaded in every project: hf-hub registry, hard limits, 'Work Bible', gstack lean mode, codebase-topology reasoning rules.",
+   "summary": "Brais's private global instructions loaded in every project: hf-hub registry, hard limits, 'Work Bible', Haiku-by-default subagent policy, gstack lean mode, codebase-topology reasoning rules.",
    "details": [
     "Contains the hf-hub tool registry and says to add an hf-hub block to every new project's .mcp.json",
     "Hard rules: never rm/mv/git clean; no push, reset --hard or branch deletion without permission; confirm externally visible actions in the current message",
+    "Section 8: a merged PR's head branch may be deleted (including by GitHub auto-delete) and must not be re-pushed",
     "Section 11: gstack lean mode - default skills /office-hours, /review, /qa; web browsing only through /browse, never mcp__claude-in-chrome__*",
+    "Section 4 (Subagent Strategy): cheapest model that can do the job, Haiku by default (pass model haiku explicitly on general-purpose), Sonnet only for judgment work; Haiku delegations must be named when announced and listed in the closing recap",
     "Section 12: 'Codebase Reasoning Topology' (4 invariables, ambiguity detection, verification gate)",
     "Tool names in its hf-hub list (e.g. gethfrows, searchhfdatasets) differ from the real registered names (get_hf_rows, search_hf_datasets)"
    ],
@@ -173,17 +179,20 @@
    "label": "VSCODE/CLAUDE.md (workspace)",
    "kind": "config",
    "parent": "vscode-workspace",
-   "summary": "Workspace-level instructions: hard limits, session-start ritual, layout, when to act vs ask, delegation, memory files, git conventions.",
+   "summary": "Workspace-level instructions: hard limits, session-start ritual, layout, when to act vs ask, delegation with a Haiku-by-default model choice, memory files, git conventions.",
    "details": [
     "Session start: read the project's CLAUDE.md; at workspace level read memories/decisions.md and memories/lessons.md",
     "decisions.md is an index only; full entries live in memories/decisions/<topic>.md",
     "Names the workspace agents (Explore, reviewer, docs-writer), the codebase-topology skill and the gstack rule",
-    "Docs-travel-with-the-change rule: update stale CLAUDE.md/README/docs in the same PR"
+    "Docs-travel-with-the-change rule: update stale CLAUDE.md/README/docs in the same PR",
+    "Delegation section 'Model choice - Haiku by default': mechanical or fully specified work (search, log reads, running commands, edits given in the brief, verification) goes to Haiku 5.5; Sonnet only for judgment; Haiku runs must be named and listed in the recap (commit 70d678c, 2026-10-08)",
+    "Hard limits now carve out an exception: a merged PR's head branch may be deleted, including by GitHub auto-delete, and must not be re-pushed (uncommitted edit at refresh time)"
    ],
    "status": "live",
    "links": [],
    "sources": [
-    "/Users/brais/VSCODE/CLAUDE.md"
+    "/Users/brais/VSCODE/CLAUDE.md",
+    "git show 70d678c (workspace repo)"
    ],
    "confidence": "verified"
   },
@@ -1170,10 +1179,10 @@
    "label": "Scheduled tasks",
    "kind": "tool",
    "parent": "claude-code",
-   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 8 tasks, 3 currently enabled.",
+   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 9 tasks, 4 currently enabled.",
    "details": [
     "Schedules are held by the scheduler (listed via the scheduled-tasks MCP), not in the SKILL.md files",
-    "One daily task plus one-time reminders and recheck jobs"
+    "Two recurring tasks (buzz-retro-diaria daily, stackmap-weekly-refresh Mondays) plus one-time reminders and recheck jobs"
    ],
    "status": "live",
    "links": [],
@@ -1190,14 +1199,36 @@
    "parent": "cc-scheduled",
    "summary": "Daily retro of the Buzz bot fleet: reads channels, logs and files, compares with yesterday, writes a retro file and proposes 3 fixes plus 1 experiment.",
    "details": [
-    "Cron 30 22 * * * (shown as 10:41 PM with jitter); enabled",
-    "Uses buzz MCP read tools and 2 parallel subagents; read-only except the retro file in ~/fizz/salida/operaciones/retro",
+    "Cron 30 22 * * * (shown as 10:41 PM with jitter); enabled; replies to Brais in Spanish",
+    "Uses buzz MCP read tools and 2 parallel general-purpose subagents (channels; logs and files); read-only except the retro file in ~/fizz/salida/operaciones/retro",
+    "Standing checks reported daily: which model the containers actually use (ANTHROPIC_MODEL set from each persona's modelo: since 2026-10-06), Coach turn count and empty turns, Fizz figures versus files, and whether the day's experiment reached its metric",
+    "Output: a retro file with a numbers table, what failed/worked, 3 proposed fixes and 1 new experiment; fixes are applied only after Brais approves in conversation",
     "Hard rules: no docker exec, no buzz binary in Bash, never print .env, never post in Buzz"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md",
+    "scheduled-tasks MCP list_scheduled_tasks",
+    "scheduled-tasks MCP list_scheduled_tasks (modified 2026-10-06)"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-sched-stackmap-refresh",
+   "label": "stackmap-weekly-refresh",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "Weekly (Mondays 09:01) re-map of the stack: finds what changed, has one Sonnet subagent per changed slice edit data/<slice>.json in a refresh worktree, checks, and opens a PR on br41s/stackmap for Brais to review.",
+   "details": [
+    "Cron 0 9 * * 1; enabled; first run 2026-10-08 (created 2026-10-07); replies in English",
+    "Steps: stop if last week's refresh PR is still open; scripts/refresh-plan.mjs lists changed slices; git worktree .worktrees/refresh-<date>; parallel general-purpose subagents (model sonnet) per slice; npm run check and npm test; scripts/data-diff.mjs summary; commit, push refresh/<date> and gh pr create",
+    "Hard rules: never merge the PR, never push to main, write only in the refresh worktree, no secrets; Brais reviews and merges"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/stackmap-weekly-refresh/SKILL.md",
     "scheduled-tasks MCP list_scheduled_tasks"
    ],
    "confidence": "verified"
@@ -2171,6 +2202,36 @@
     "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory"
    ],
    "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-stackmap-refresh",
+   "target": "github",
+   "kind": "writes",
+   "label": "pushes refresh/<date> branch and opens a PR on br41s/stackmap",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/stackmap-weekly-refresh/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-sched-stackmap-refresh",
+   "target": "vscode-workspace",
+   "kind": "reads",
+   "label": "scans workspace repos and Claude config for changes",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/stackmap-weekly-refresh/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-surface-desktop",
+   "target": "cc-sched-stackmap-refresh",
+   "kind": "manages",
+   "label": "scheduler runs it Mondays",
+   "sources": [
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "inferred"
   }
  ]
 }
