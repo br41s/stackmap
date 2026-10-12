@@ -1179,16 +1179,18 @@
    "label": "Scheduled tasks",
    "kind": "tool",
    "parent": "claude-code",
-   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 9 tasks, 4 currently enabled.",
+   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 10 tasks, 5 currently enabled.",
    "details": [
     "Schedules are held by the scheduler (listed via the scheduled-tasks MCP), not in the SKILL.md files",
-    "Two recurring tasks (buzz-retro-diaria daily, stackmap-weekly-refresh Mondays) plus one-time reminders and recheck jobs"
+    "Two recurring tasks (buzz-retro-diaria daily, stackmap-weekly-refresh Mondays) plus one-time reminders and recheck jobs",
+    "revision-frentes-48h (one-time, 2026-10-13) added 2026-10-11; fizz-old-volume-check fires 2026-10-12 and hermes-http-cache recheck 2026-10-19"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/.claude/scheduled-tasks",
-    "scheduled-tasks MCP list_scheduled_tasks"
+    "scheduled-tasks MCP list_scheduled_tasks",
+    "scheduled-tasks MCP list_scheduled_tasks (2026-10-12)"
    ],
    "confidence": "verified"
   },
@@ -1203,14 +1205,16 @@
     "Uses buzz MCP read tools and 2 parallel general-purpose subagents (channels; logs and files); read-only except the retro file in ~/fizz/salida/operaciones/retro",
     "Standing checks reported daily: which model the containers actually use (ANTHROPIC_MODEL set from each persona's modelo: since 2026-10-06), Coach turn count and empty turns, Fizz figures versus files, and whether the day's experiment reached its metric",
     "Output: a retro file with a numbers table, what failed/worked, 3 proposed fixes and 1 new experiment; fixes are applied only after Brais approves in conversation",
-    "Hard rules: no docker exec, no buzz binary in Bash, never print .env, never post in Buzz"
+    "Hard rules: no docker exec, no buzz binary in Bash, never print .env, never post in Buzz",
+    "Standing git check (added 2026-10-10): reports if ~/fizz is not on main, has uncommitted changes or local branches with unmerged commits, since ~/fizz is the live runtime; approved fixes start from fetched main on branch fix/retro-<date>, go through a PR, and ~/fizz returns to main the same day"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md",
     "scheduled-tasks MCP list_scheduled_tasks",
-    "scheduled-tasks MCP list_scheduled_tasks (modified 2026-10-06)"
+    "scheduled-tasks MCP list_scheduled_tasks (modified 2026-10-06)",
+    "/Users/brais/.claude/scheduled-tasks/buzz-retro-diaria/SKILL.md (modified 2026-10-10)"
    ],
    "confidence": "verified"
   },
@@ -1338,6 +1342,26 @@
    "links": [],
    "sources": [
     "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "cc-sched-revision-frentes",
+   "label": "revision-frentes-48h",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "One-time read-only review (2026-10-13 18:45) of whether SocialBot and Guionista really work 48 h after their 'frentes' (standing missions) started.",
+   "details": [
+    "One-time task, enabled, fires 2026-10-13 18:45 local; replies in Spanish; created 2026-10-11",
+    "Measures with ./bot uso plus the bots' output files (Reddit engagement per day, communities, referents, reach proposals) against the criteria in ~/fizz/tasks/empresa-24-7.md section 9",
+    "Writes ~/fizz/salida/operaciones/revision-frentes-2026-10-13.md with a criteria table, 3 findings and a recommendation (move to phase B with Prospector, SEODesk and OpsBot, adjust, or stop)",
+    "Hard rules: read-only otherwise; no bot restarts, no Buzz posts, no persona or code edits, no commits; never run buzz without a subcommand in a container, never read .env*"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/revision-frentes-48h/SKILL.md",
+    "scheduled-tasks MCP list_scheduled_tasks"
    ],
    "confidence": "verified"
   }
@@ -2228,6 +2252,46 @@
    "target": "cc-sched-stackmap-refresh",
    "kind": "manages",
    "label": "scheduler runs it Mondays",
+   "sources": [
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "cc-sched-revision-frentes",
+   "target": "fizz-bot-socialbot",
+   "kind": "monitors",
+   "label": "measures Reddit engagement and output files 48 h after its frente started",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/revision-frentes-48h/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-revision-frentes",
+   "target": "fizz-bot-guionista",
+   "kind": "monitors",
+   "label": "measures reach analysis output 48 h after its frente started",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/revision-frentes-48h/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-sched-revision-frentes",
+   "target": "fizz",
+   "kind": "writes",
+   "label": "review file under ~/fizz/salida/operaciones",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/revision-frentes-48h/SKILL.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "source": "cc-surface-desktop",
+   "target": "cc-sched-revision-frentes",
+   "kind": "manages",
+   "label": "scheduler fires it once",
    "sources": [
     "scheduled-tasks MCP list_scheduled_tasks"
    ],
