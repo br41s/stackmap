@@ -10,7 +10,8 @@
     "Decision 2026-10-02: all apps and sites belong to Biglobster LLC; each project links to biglobster.top for legal identification (art. 3.2 GDPR, no EU representative designated, Thailand transfer declared, New Mexico governing law, version log).",
     "Exception (2026-10-02): customer deploys of bl-site-package put the customer as legal owner under Spanish law; Biglobster is not named on their legal pages.",
     "Company data lives in biglobster/site/_data/site.json (legalName, address, registration); not copied here.",
-    "Apps that state this owner in code: FinView (frontend/src/lib/legal.ts), SocialAgenda (social_agenda/legal.py), FlyWell (apps/web/src/lib/legal.ts)."
+    "Apps that state this owner in code: FinView (frontend/src/lib/legal.ts), SocialAgenda (social_agenda/legal.py), FlyWell (apps/web/src/lib/legal.ts).",
+    "OpenRouter: since 2026-10-09 FinView, SocialAgenda and ChatMemo each use a dedicated key on Biglobster LLC's OpenRouter account (all sending data_collection=deny)."
    ],
    "status": "live",
    "links": [
@@ -24,7 +25,10 @@
     "/Users/brais/VSCODE/biglobster/site/_data/site.json",
     "/Users/brais/VSCODE/FinView/frontend/src/lib/legal.ts",
     "/Users/brais/VSCODE/SocialAgenda/social_agenda/legal.py",
-    "/Users/brais/VSCODE/FlyWell/apps/web/src/lib/legal.ts"
+    "/Users/brais/VSCODE/FlyWell/apps/web/src/lib/legal.ts",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "/Users/brais/VSCODE/chatmemo/CLAUDE.md"
    ],
    "confidence": "verified"
   },
@@ -41,7 +45,9 @@
     "Open registration with stored terms consent; data-not-advice rule enforced in prompts and UI (2026-10-02). Owner on legal pages: Biglobster LLC.",
     "Tests (2026-10-05): ~1420 backend pytest, 148 frontend vitest.",
     "Absorbed OptionsAI (options agent, fiscal engine, importers) and WorldHawk (geo-intel signal layer, ported to Python 2026-06 onward).",
-    "Latest work (2026-10-05/06): options alert dedup moved to DB, generative answers persisted, reasoning off on LLM calls."
+    "Latest work (2026-10-05/06): options alert dedup moved to DB, generative answers persisted, reasoning off on LLM calls.",
+    "Production LLM (2026-10-10): FINVIEW_OPENROUTER_MODEL=deepseek/deepseek-v4.1-flash set on Cloud Run (code default stays deepseek-v4-flash). Key moved to Biglobster LLC's OpenRouter account 2026-10-09; every OpenRouter call sends provider.data_collection=deny via llm_envelope.chat().",
+    "Watch: first Zonas Clave scorer run on the new model (22:15 UTC Mon-Fri); Artifact Registry keeps only the newest 10 images (cleanup policies since 2026-10-08)."
    ],
    "status": "live",
    "links": [
@@ -102,7 +108,9 @@
     "Schema via create_all + additive-column registry (no Alembic). Neon Postgres in prod, SQLite locally.",
     "Image built and pushed by Cloud Build (trigger finview-api-deploy); smoke test, 0% private revision, promotion, readiness recheck, rollback.",
     "Cron endpoints authenticated with X-Cron-Key; Turnstile verification on login/register.",
-    "Notifications: ntfy.sh, SMTP email, Telegram bot (all optional, env-driven)."
+    "Notifications: ntfy.sh, SMTP email, Telegram bot (all optional, env-driven).",
+    "OpenRouter key rotation: new Cloud Run revision with --no-traffic, diff, then update-traffic --to-latest (docs/deployment.md).",
+    "Artifact Registry repo cloud-run-source-deploy (europe-west1) keeps the newest 10 images (keep-newest-10 + delete-the-rest policies, 2026-10-08); for a manual rollback pick one of the 10 latest revisions."
    ],
    "status": "live",
    "links": [
@@ -340,7 +348,8 @@
     "Served at socialagenda.biglobster.top (DNS at Namecheap pointing straight at Zeabur, no Cloudflare proxy as of 2026-10-03); app answers Alt-Svc: clear because Zeabur HTTP/3 stalled Safari.",
     "agenda.experiencianatural.com (Cloudflare-proxied, 2026-09-27) was detached 2026-10-03 with no redirect.",
     "UI language English, 'Pastel & Stickers' design system, public landing with an animal catch game (2026-10-02), 18+ consent on every sign-up path.",
-    "Legal pages (/about, /legal/*) owned by Biglobster LLC; fonts and FullCalendar self-hosted."
+    "Legal pages (/about, /legal/*) owned by Biglobster LLC; fonts and FullCalendar self-hosted.",
+    "LLM (2026-10-09): dedicated SocialAgenda key on Biglobster LLC's OpenRouter account; production LLM_MODEL=openai/gpt-oss-120b, LLM_FALLBACK_MODEL=xiaomi/mimo-v2.6-flash on the Zeabur web service. Every OpenRouter call sends provider.data_collection=deny. The scheduler service does not call OpenRouter; after a key change the web service needs a restart (client cached per process)."
    ],
    "status": "live",
    "links": [
@@ -358,7 +367,8 @@
     "/Users/brais/VSCODE/SocialAgenda/README.md",
     "/Users/brais/VSCODE/SocialAgenda/requirements.txt",
     "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
-    "/Users/brais/VSCODE/memories/decisions.md"
+    "/Users/brais/VSCODE/memories/decisions.md",
+    "/Users/brais/VSCODE/SocialAgenda/social_agenda/llm.py"
    ],
    "confidence": "verified"
   },
@@ -600,7 +610,10 @@
     "Memory sources (summaries.source): claude (Claude.ai), claude_code, copilot, chatgpt, perplexity, other; Claude Code became its own source 2026-10-01.",
     "Memory block injected into every provider chat route; three layers (baseline blob, relevance search, trigger-gated full transcripts) sized by a context budget.",
     "Chat providers: OpenAI, Anthropic, Google, Mistral, Groq, Perplexity, Azure, OpenRouter, Ollama, custom endpoints.",
-    "Gate is local (husky pre-push: type-check + jest) plus Vercel build; the only workflow in the repo is upstream-watch."
+    "Gate is local (husky pre-push: type-check + jest) plus Vercel build; the only workflow in the repo is upstream-watch.",
+    "OpenRouter key (2026-10-09): dedicated chatmemo key on Biglobster LLC's account, from the OPENROUTER_API_KEY Vercel variable (redeploy after editing); serves summaries and /api/chat/openrouter; no closed-weight Anthropic/Google/OpenAI models on that account yet.",
+    "Security/backup (2026-10-07): nightly backup now dumps as the read-only chatmemo_backup role through the pooler (SELECT on summaries and user_lessons); storage-delete functions locked down (audit M5, key read from Vault, anon/authenticated cannot run it) and the cleanup key sent in the apikey header.",
+    "Backup heartbeat: after each verified dump scripts/backup-chatmemo.sh updates a secret gist (time and size only); Hermes's incident sweep reads it hourly and alerts after ~50h without a beat."
    ],
    "status": "live",
    "links": [
@@ -617,7 +630,9 @@
     "/Users/brais/VSCODE/chatmemo/CLAUDE.md",
     "/Users/brais/VSCODE/chatmemo/README.md",
     "/Users/brais/VSCODE/chatmemo/vercel.json",
-    "/Users/brais/VSCODE/memories/decisions/chatmemo.md"
+    "/Users/brais/VSCODE/memories/decisions/chatmemo.md",
+    "/Users/brais/VSCODE/chatmemo/docs/ADMIN_GUIDE.md",
+    "/Users/brais/VSCODE/chatmemo/scripts/backup-chatmemo.sh"
    ],
    "confidence": "verified"
   },
@@ -700,7 +715,8 @@
     "Stateless Node server (no DB, no bot, no LLM): Dockerfile builds Eleventy then ships _site + src; Zeabur auto-deploys on push to main.",
     "Sells AI automation subscriptions and agent rentals to freelancers and SMBs; apps directory lists SocialAgenda and FlyWell.",
     "Flagship of bl-site-package: a parity rule requires porting improvements to bl-site-package in the same session.",
-    "Stripe code is kept but routes were removed (PR #508, 2026-09-13) while a merchant-of-record application is under review."
+    "Stripe code is kept but routes were removed (PR #508, 2026-09-13) while a merchant-of-record application is under review.",
+    "Oct 2026: IndexNow ping after each deploy (static key file in web/), llms.txt lists most-viewed articles (Umami 28 d), YouTube API Services declared in privacy/terms and YouTube channel link in the footer, pricing/agents-for-rent now sell Product Guide Writer and Product Sheet Writer."
    ],
    "status": "live",
    "links": [
@@ -719,7 +735,9 @@
     "/Users/brais/VSCODE/biglobster/OPS.md",
     "/Users/brais/VSCODE/biglobster/Dockerfile",
     "/Users/brais/VSCODE/biglobster/zbpack.json",
-    "/Users/brais/VSCODE/memories/decisions/biglobster.md"
+    "/Users/brais/VSCODE/memories/decisions/biglobster.md",
+    "/Users/brais/VSCODE/biglobster/src/indexnow.js",
+    "/Users/brais/VSCODE/biglobster/web/llms.txt"
    ],
    "confidence": "verified"
   },
@@ -851,13 +869,14 @@
    "parent": "layer-products",
    "summary": "Deployable web package sold to Spanish SMB clients: public Eleventy site, management panel, blog, inbox, optional catalogue/shop and AI marketing agent; one Zeabur (or Plesk) deploy per customer.",
    "details": [
-    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.17.0.",
+    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.19.2.",
     "Customer-facing Spanish docs (INSTRUCCIONES-CLIENTE, DEPLOY, RELEASE) are treated as published.",
     "Customer deploys put the customer as legal owner under Spanish law (2026-10-02); footer carries only a 'Creado por Biglobster' credit link.",
-    "Default agent model is the free openai/gpt-oss-20b via OpenRouter (BYOK per customer); do not change to a paid default.",
     "Turnstile is mandatory for new customer onboarding (DEPLOY.md); fleet manifest is the source of truth for deployments.",
     "Opt-in extras: B2B trade-price area, 'Pedido a pedido' hero game (2026-10-02).",
-    "v1.17.0 adds a Google Search Console verification setting in the panel (rendered in the site head)."
+    "v1.17.0 adds a Google Search Console verification setting in the panel (rendered in the site head).",
+    "Default agent model is the paid openai/gpt-oss-120b via OpenRouter (BYOK per customer), decided 2026-10-09 so it works under data_collection=deny; free models are only a fallback on 429/402. A customer's saved ai_model wins (Shoroban keeps its own). Do not change the default again without a decision.",
+    "1.18.0-1.19.2: blog posts show catalogue product photos; panel moves Turnstile, site URL/GSC and WhatsApp settings to an Integraciones section; form fields kept at 16px so iOS does not zoom."
    ],
    "status": "live",
    "links": [
@@ -872,7 +891,8 @@
     "/Users/brais/VSCODE/bl-site-package/DEPLOY.md",
     "/Users/brais/VSCODE/bl-site-package/package.json",
     "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
-    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
+    "/Users/brais/VSCODE/bl-site-package/src/api/chat.js"
    ],
    "confidence": "verified"
   },
@@ -919,16 +939,18 @@
    "label": "AI marketing agent",
    "kind": "agent",
    "parent": "proj-bl-site-package",
-   "summary": "Panel assistant that drafts posts and page content through OpenRouter using the customer's own key.",
+   "summary": "Panel assistant that drafts posts and page content through OpenRouter using the customer's own key; default model openai/gpt-oss-120b (paid).",
    "details": [
-    "Chat route rate-limited to protect the customer's BYOK credit; agents can publish posts and product sheets directly (no review gate)."
+    "Chat route rate-limited to protect the customer's BYOK credit; agents can publish posts and product sheets directly (no review gate).",
+    "Default model is paid openai/gpt-oss-120b since 2026-10-09 (was free gpt-oss-20b); free models are a fallback on 429/402. Model is chosen in the panel (ai_model row); CONTENT_AGENT_MODEL is not read."
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
     "/Users/brais/VSCODE/bl-site-package/README.md",
-    "/Users/brais/VSCODE/bl-site-package/src/api/chat.js"
+    "/Users/brais/VSCODE/bl-site-package/src/api/chat.js",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
    ],
    "confidence": "verified"
   },
@@ -1042,7 +1064,8 @@
    "summary": "Domain-sale landing page for grow-shop.com plus a micro-API that emails purchase offers.",
    "details": [
     "Two repos (grow-shop-landing, grow-shop-api), both on one Zeabur project (grow-shop), auto-deploy from main.",
-    "Also the first Hermes customer profile ('grow-shop') with its own Telegram forum topic (2026-06-06 multi-tenancy)."
+    "Also the first Hermes customer profile ('grow-shop') with its own Telegram forum topic (2026-06-06 multi-tenancy).",
+    "README notes ownership by Biglobster LLC (GitHub organization BiglobsterLLC) after repo transfer (grow-shop-landing 44fd898)."
    ],
    "status": "live",
    "links": [
@@ -1063,7 +1086,8 @@
     "/Users/brais/VSCODE/grow-shop/grow-shop-landing/claude.md",
     "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md",
     "/Users/brais/VSCODE/memories/decisions/hermes.md",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/README.md"
    ],
    "confidence": "verified"
   },
@@ -2500,7 +2524,7 @@
     "/Users/brais/VSCODE/memories/decisions/chatmemo.md"
    ],
    "confidence": "from-docs",
-   "note": "hermes-sandbox #417 pending merge/deploy per the decision entry"
+   "note": "hermes-sandbox #417 merged 2026-10-07 (gh pr view); deploy not verified"
   }
  ]
 }

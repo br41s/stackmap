@@ -377,15 +377,16 @@
    "label": "Model routing",
    "kind": "config",
    "parent": "hermes",
-   "summary": "How Hermes picks models: everything goes through OpenRouter with explicit provider pins, per-role defaults, and BYOK for tenants.",
+   "summary": "How Hermes picks models: everything goes through OpenRouter with explicit provider pins, per-role defaults, no-training/no-storage routing, and BYOK for tenants.",
    "details": [
-    "Main default deepseek/deepseek-v4.1-flash (CEO 2026-09-20, replacing openai/gpt-5.6-luna; before that tencent/hy3); fallback tencent/hy3; set by env vars HERMES_DEFAULT_MODEL / HERMES_FALLBACK_MODEL, reconciled each boot",
-    "Auditor profile exempt: orchestrator deepseek/deepseek-v4-flash-0731; system/content reviewer and judge deepseek/deepseek-v4.1-flash; separate HERMES_AUDITOR_OPENROUTER_API_KEY keeps spend off the shared weekly cap",
-    "Job pins: Translation Engineer and Website Maintenance (Shoroban) on tencent/hy3 (2026-08-17); a 2026-09-22 decision pinned the two infographic jobs to xiaomi/mimo-v2.6-pro but the A/B was blocked, current state unconfirmed",
+    "Main default deepseek/deepseek-v4.1-flash (CEO 2026-09-20); fallback z-ai/glm-5.3-flash since 2026-10-09 (was tencent/hy3); vision deepseek/deepseek-v4.1-flash; set by env vars HERMES_DEFAULT_MODEL / HERMES_FALLBACK_MODEL, reconciled each boot",
+    "Auditor profile exempt: orchestrator deepseek/deepseek-v4-flash-0731; system and content reviewers/judge moonshotai/kimi-k2.6 (2026-10-10, replacing xiaomi/mimo-v2.6-flash which returned stubs on 6 of 9 judge calls; minimax-m3 and deepseek-v4.1-flash passed as fallbacks); separate HERMES_AUDITOR_OPENROUTER_API_KEY keeps spend off the shared cap. GLM is a valid fallback but not a judge (mandatory reasoning)",
+    "Keys rotated 2026-10-09 to the LLC's OpenRouter account (hermes, hermes-auditor); boot_reconcile rewrites INJECT keys into every non-tenant profile at each boot, so rotation is Zeabur env + full restart",
+    "Job pins: all 6 pinned jobs use deepseek-v4.1-flash, no hy3 pins remain (2026-10-09)",
+    "provider_routing.data_collection=deny forced on main and every profile by boot_reconcile, passed to the cron agent, sent on every auditor judge request and by the WhatsApp assistant (#425, 2026-10-10); replaced the account-wide ZDR switch. Gaps: auxiliary vision/summaries and image/video plugins send no provider block. meta/muse-image has no zero-retention provider",
     "Images: openrouter bytedance-seed/seedream-4.5 (~$0.04 per art plate) for BigLobster; tenants with their own FAL_KEY use fal (flux-2 klein, or seedream via fal)",
     "Web research: Exa for BigLobster profiles; rented tenants use the free ddgs backend. video_gen provider pinned to huggingface at boot",
-    "Always name the dated OpenRouter slug and pass --provider openrouter on interactive switches (vendor segment like tencent/ or openai/ would auto-detect a direct provider with no key)",
-    "The OpenRouter account refuses providers that train on paid prompts, so DeepSeek's own provider is dropped by routing (0 of 3,993 calls); lifting that setting was rejected"
+    "Always name the dated OpenRouter slug and pass --provider openrouter on interactive switches (vendor segment like tencent/ or openai/ would auto-detect a direct provider with no key)"
    ],
    "status": "live",
    "links": [],
@@ -393,7 +394,9 @@
     "hermes-sandbox/BIGLOBSTER_SETUP.md",
     "hermes-sandbox/hermes_cli/fork_ext/boot_reconcile.py",
     "memories/decisions/hermes.md",
-    "hermes-sandbox/docker/config.yaml"
+    "hermes-sandbox/docker/config.yaml",
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/auditor/llm.py"
    ],
    "confidence": "from-docs"
   },
@@ -609,14 +612,16 @@
     "Code exists in scripts/whatsapp-lead-bot (commits 2026-08-14) with GET /api/knowledge on the customer's bl-site-package; the plan doc still says implementation not started",
     "Pilot on customer-created Meta Apps; Meta Tech Provider registration targeted from 2026-09-03 (4-6 weeks); Chatwoot self-hosted Embedded Signup is broken upstream",
     "Chatwoot volumes (Postgres+pgvector, Redis) appear in the host backup script, so a Chatwoot instance exists on the server",
-    "Separate from upstream's own scripts/whatsapp-bridge"
+    "Separate from upstream's own scripts/whatsapp-bridge",
+    "2026-10-10: the assistant now sends provider_routing data_collection=deny (code merged; service not redeployed per the decision log)"
    ],
    "status": "unknown",
    "links": [],
    "sources": [
     "hermes-sandbox/WHATSAPP-BOT-PLAN.md",
     "hermes-sandbox/scripts/whatsapp-lead-bot",
-    "hermes-sandbox/ops/README.md"
+    "hermes-sandbox/ops/README.md",
+    "hermes-sandbox/scripts/whatsapp-lead-bot/src/assistant.js"
    ],
    "confidence": "from-docs"
   },
@@ -784,7 +789,7 @@
     "`python -m auditor.pending` lists unreviewed PRs (cap 10/run, ~90 tool-call budget); each PR is tiered system or content (fail-safe: unknown paths = system)",
     "Content-tier PRs are merged by the auditor itself after the judge; system-tier PRs get an APPROVE with a head-SHA marker and the CEO merges (or labels auto-merge)",
     "Repo set = engine + union of docker/profiles/*/repos.txt: hermes-sandbox, biglobster, FinView, grow-shop-api, grow-shop-landing, SocialAgenda, bl-site-package",
-    "Orchestrator deepseek/deepseek-v4-flash-0731 via OpenRouter; own OpenRouter key; request deadline 420s",
+    "Orchestrator deepseek/deepseek-v4-flash-0731 via OpenRouter; reviewers kimi-k2.6 since 2026-10-10; own OpenRouter key; request deadline 420s",
     "Bot account created 2026-06-24; live and merging content-tier PRs account-wide since 2026-06-26; 2026-09-12 runaway fixed (budget burned re-running pending 47 times); dead-cron handling still unbuilt"
    ],
    "status": "live",
@@ -810,7 +815,8 @@
     "Exit 4 = judge could not run: auditor emits JUDGE UNAVAILABLE and withholds the approve marker (2026-09-16 decision)",
     "The judge never executed in production from 2026-06-24 to 2026-09-16 (~12 weeks); a 48h liveness check now lives in the incident watcher",
     "Reads HERMES_AUDITOR_OPENROUTER_API_KEY first (OPENROUTER_API_KEY is stripped from subprocess env by design)",
-    "2026-10-01: DeepSeek provider pin removed; sends ignore: [open-inference] after trickling-stream hangs"
+    "2026-10-01: DeepSeek provider pin removed; sends ignore: [open-inference] after trickling-stream hangs",
+    "2026-10-10: reviewer model moved from xiaomi/mimo-v2.6-flash to moonshotai/kimi-k2.6 (4 of 4 verdicts); every judge request now carries provider_routing data_collection=deny (#425, #427)"
    ],
    "status": "live",
    "links": [],
@@ -1100,20 +1106,23 @@
    "label": "Shorts Producer + Publisher",
    "kind": "agent",
    "parent": "hermes",
-   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~60s vertical video and publish it, rendering in GitHub Actions.",
+   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~20 s vertical tip short said to camera by a fixed presenter (Lucía ES, Martín EN), rendered in GitHub Actions; Hermes publishes YouTube, SocialBot in Buzz does Facebook, Instagram and X.",
    "details": [
-    "Producer `30 8 * * *`: one short per language (EN, ES) from the newest post without one; writes a JSON package and submits it. Publisher `20 9,13 * * *`: collects finished renders and publishes",
-    "Publish targets: YouTube Shorts, Instagram Reels and Stories, Facebook; X is handed to Brais on Telegram",
+    "Producer `30 8 * * *`: one short per language (EN, ES) from the newest post without one; writes a JSON package (format `tip`, version 2: 4-6 beats, 40-55 words, hook lands its promise in the first 3 s, CTA asks to save or share) and submits it. Publisher `20 9,13 * * *`: collects finished renders and publishes",
+    "Publish split (2026-10-11): Hermes publishes YouTube Shorts; once a short is live `handoff` posts files and copy to the Buzz shorts channel and @SocialBot publishes Facebook, Instagram and X. With SHORTS_BUZZ_CHANNEL set the tool drops the Meta targets so the two can never double-post; shadow mode never posts to Buzz",
     "Nothing is published unless SHORTS_PUBLISH_MODE=live (shadow by default); live uploads were still unproven in the docs read",
-    "Keys (SHORTS_STUDIO_GITHUB_TOKEN, YOUTUBE_*, META_*) live only in the service env and are deliberately not in INJECT",
-    "The tool, not the prompt, enforces facts: submit re-reads the article and rejects unsourced figures"
+    "Keys (SHORTS_STUDIO_GITHUB_TOKEN, YOUTUBE_*, META_*) live only in the service env and are deliberately not in INJECT; the paid-video key is a dedicated SHORTS_OPENROUTER_API_KEY secret",
+    "The tool, not the prompt, enforces facts: submit re-reads the article and rejects unsourced figures, and refuses any format but the tip",
+    "Older notes about a ~60 s short with X handed to Brais on Telegram predate the 2026-10-10/11 tip format and Buzz hand-off"
    ],
    "status": "dry-run",
    "links": [],
    "sources": [
     "hermes-sandbox/shorts/STUDIO.md",
     "hermes-sandbox/scripts/setup_shorts_jobs.py",
-    "hermes-sandbox/CLAUDE.md"
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/plugins/shorts/buzz_share.py",
+    "hermes-sandbox/plugins/shorts/studio/package.py"
    ],
    "confidence": "from-docs"
   },
@@ -1122,17 +1131,26 @@
    "label": "Shorts Studio (Remotion render)",
    "kind": "tool",
    "parent": "hermes",
-   "summary": "plugins/shorts studio: package contract, ledger and publishers on the Hermes side; Remotion + Edge TTS rendering runs in GitHub Actions (shorts-studio.yml).",
+   "summary": "plugins/shorts studio: package contract, ledger and publishers on the Hermes side; Remotion rendering runs in GitHub Actions (shorts-studio.yml) with a HeyGen Avatar IV presenter and optional paid generated scenes, both via OpenRouter.",
    "details": [
     "Render never runs in the pod (~1,800 browser frames/min would starve the fleet); workflow_dispatch carries the package inline",
-    "Footage from Pexels/Mixkit, Edge TTS WordBoundary karaoke timing, loudness/freeze/black/silence QA",
+    "Presenter (presenter.py): Avatar IV lip-syncs only the opener, hook and CTA segments, in a setting an image model places from the presenter's photo; middle beats are cards. One fixed neural voice per presenter (es-ES-Elvira for Lucía, en-US Andrew for Martín); the avatar is paid only on camera, a take must stay under $1 (estimate uses each presenter's pace; tip word limit 48 es / 55 en) and $2/day. A render without its on-camera clip fails QA",
+    "A bubble loop per presenter is recorded once and kept in the Actions cache (committed as an artifact), generated only when missing; outro is a fixed animated card pointing to biglobster.top",
+    "Generated scenes (genvideo.py): up to 3 beats per short with heygen/heygen-video-1 through OpenRouter's video API, capped $0.50/short and $1/day; any refusal or timeout falls back to stock footage; such shorts upload with containsSyntheticMedia",
+    "Stock footage from Pexels/Mixkit, Edge TTS WordBoundary karaoke timing, loudness/freeze/black/silence QA; music bed ducked under the presenter",
+    "buzz_share.py hands live shorts to the Buzz shorts channel using Block's `buzz` CLI, which the Dockerfile builds from a pinned commit (tag v0.5.2)",
     "Separate rental SKU Social Shorts (shorts_render, in-container ffmpeg, client's own Pexels key) is unchanged"
    ],
    "status": "dry-run",
    "links": [],
    "sources": [
     "hermes-sandbox/shorts/STUDIO.md",
-    "hermes-sandbox/.github/workflows/shorts-studio.yml"
+    "hermes-sandbox/.github/workflows/shorts-studio.yml",
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/plugins/shorts/buzz_share.py",
+    "hermes-sandbox/plugins/shorts/studio/genvideo.py",
+    "hermes-sandbox/plugins/shorts/studio/presenter.py",
+    "hermes-sandbox/Dockerfile"
    ],
    "confidence": "from-docs"
   },
@@ -1165,13 +1183,15 @@
    "details": [
     "Needs --old-site-url; create_blog_post goes live with a CTA",
     "Its prompt still tells the agent articles are saved as drafts (fix left open 2026-09-17)",
-    "Whether any client has it provisioned is not stated"
+    "Whether any client has it provisioned is not stated",
+    "2026-10-10 prompt rework (guides): compared products show their catalogue photo (exact image_url), two fixed picks (best high-end, best value), 4-5 products per comparison, 1500-3000 words; new buyer-opinions section in words only, naming the kind of source (never a shop), exact URLs kept in the unpublished run report"
    ],
    "status": "unknown",
    "links": [],
    "sources": [
     "hermes-sandbox/AGENT_RENTAL_SETUP.md",
-    "memories/decisions/hermes.md"
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/product-articles/bl-site-package-product-articles.prompt"
    ],
    "confidence": "from-docs"
   },
@@ -2633,7 +2653,7 @@
    "source": "hermes-shorts-studio",
    "target": "ext-meta",
    "kind": "writes",
-   "label": "Instagram Reels/Stories and Facebook (live mode only)",
+   "label": "Instagram Reels/Stories and Facebook (live mode only) (superseded by the SocialBot hand-off when SHORTS_BUZZ_CHANNEL is set)",
    "sources": [
     "hermes-sandbox/shorts/STUDIO.md"
    ],
@@ -2752,6 +2772,28 @@
    "sources": [
     "hermes-sandbox/incidents/sweep.py",
     "hermes-sandbox/tests/test_laptop_backup_incident.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-shorts-studio",
+   "target": "fizz-bot-socialbot",
+   "kind": "notifies",
+   "label": "hands live shorts to SocialBot in the Buzz shorts channel for Facebook, Instagram, X",
+   "sources": [
+    "hermes-sandbox/plugins/shorts/buzz_share.py",
+    "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-shorts-studio",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "HeyGen Avatar IV presenter and heygen-video-1 scenes, capped $1/take, $1/day scenes",
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/shorts/STUDIO.md"
    ],
    "confidence": "from-docs"
   }

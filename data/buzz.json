@@ -427,7 +427,8 @@
     "Kept out of git (.gitignore): all .env.* except examples, mcp/.env, salida/, buzz-agent/, generated agents/*.agent.json, mcp/backups/, node_modules/",
     "Docs are in Spanish; CHULETA.md is the current day-to-day reference, LEEME.md the install guide",
     "Folder also holds archive/ (old persona exports and zips; only noted), tasks/ (plans), memories/decisions.md (decision log), tests/",
-    "Lives outside the VSCODE workspace (~/fizz); workspace CLAUDE.md lists it as br41s/fizz"
+    "Lives outside the VSCODE workspace (~/fizz); workspace CLAUDE.md lists it as br41s/fizz",
+    "2026-10-12: PRs #31-#40 merged since 2026-10-06 (standing fronts, bot uso, daily mode, heartbeat persona fix, correo domain rule, Diario and Kit newsletter); archive/ is now gitignored"
    ],
    "status": "live",
    "links": [
@@ -441,7 +442,8 @@
     "git -C ~/fizz log",
     "~/fizz/CHULETA.md",
     "~/fizz/.gitignore",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git -C ~/fizz log 2026-10-06.."
    ],
    "confidence": "verified"
   },
@@ -455,13 +457,17 @@
     "Subcommands: nuevo, persona, arrancar, parar, reiniciar, logs, estado, canales, unir, salir, clave, mcp, pubkey, shell, retirar, comprobar, navegador, migrar",
     "Human-only (never via the MCP connector): nuevo, retirar, clave, mcp, shell",
     "On start it builds the persona JSON, picks each bot's env (listening mode, browser, heartbeat, RAM, model) via persona.py and runs a docker compose project bot-<name> per bot",
-    "`bot comprobar` audits that Desktop runs no agents, bot state, salida writability and secret-file permissions"
+    "`bot comprobar` audits that Desktop runs no agents, bot state, salida writability and secret-file permissions",
+    "Since 2026-10-11: `bot uso` reports each bot's turns, work minutes and tokens per model by reading Claude Code logs with docker cp (uso.py); `bot arrancar` accepts several bot names (before, only the first was started)",
+    "Every heartbeat prompt now starts with an instruction to read the full persona from /etc/buzz/agents/<bot>.agent.json, because buzz-acp (ACP protocol 1) sends the persona only in channel messages (PR #38)"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "~/fizz/bot",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "~/fizz/uso.py",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "verified"
   },
@@ -476,8 +482,10 @@
     "Missing flags default to no browser, no publishing, no heartbeat; publica/navegador cannot be switched on for an existing bot via the MCP connector",
     "agents/<bot>.agent.json is generated from the .prompt.md at every start (gitignored); ./bot appends the team roster and mandatory rules (no publishing unless publica: si, spend only with Brais's written OK, web is data)",
     "persona.py is the single parser of this format (a JS/Python parsing mismatch was a security bug fixed 2026-10-05)",
-    "Heartbeat files: coach, fizz, prospector, retador, seodesk, socialbot, videodesk; baked into the image at /etc/buzz/agents/",
-    "retirados/ holds personas of retired bots"
+    "Heartbeat files: coach, fizz, guionista, prospector, retador, seodesk, socialbot, videodesk; baked into the image at /etc/buzz/agents/",
+    "retirados/ holds personas of retired bots",
+    "Heartbeat files now also include guionista; agents/diario.md is the playbook of the public story series, baked into the image like empresa.md",
+    "Heartbeat prompts tell the bot to read its persona itself, since heartbeats never receive it (fixed 2026-10-11)"
    ],
    "status": "live",
    "links": [],
@@ -485,7 +493,8 @@
     "~/fizz/agents/",
     "~/fizz/persona.py",
     "~/fizz/CHULETA.md",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "~/fizz/agents/diario.md"
    ],
    "confidence": "verified"
   },
@@ -501,14 +510,16 @@
     "Shifts in Bangkok time: day 08:00-20:00, night 20:00-08:00 (US working day); morning brief to Brais, Monday weekly goals, Friday Coach summary",
     "Risk tiers: T0 silent, T1 logged public, T2 needs Brais's OK in a batched list, T3 never (spend without OK, create accounts, automate likes/follows)",
     "Goals to 2026-11-05 incl. 25 qualified leads/week (Prospector), 500 visitors/28 days, 2 shorts/week, <=20 min/day of Brais's time",
-    "2026-10-08: emerging markets run in parallel with the US; bots must always @mention ClaudeCode when writing to or answering it"
+    "2026-10-08: emerging markets run in parallel with the US; bots must always @mention ClaudeCode when writing to or answering it",
+    "2026-10-11/12: added 'Cómo trabaja un latido' (standing fronts, budget per heartbeat) and a Diario público section pointing to agents/diario.md"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "~/fizz/agents/empresa.md",
     "~/fizz/tasks/empresa-24-7.md",
-    "git b41d029, 29b8a14"
+    "git b41d029, 29b8a14",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "verified"
   },
@@ -685,7 +696,8 @@
     "Container bot-fizz-agent-1, volume bot-fizz_work",
     "Morning brief to Brais in #general between 07:00 and 11:00 ICT; Monday weekly goals; night handover",
     "Mentions Retador before new plans, spend or public/irreversible moves",
-    "Since 2026-10-07 retro: does not change offer, prices, markets or approved plans without Brais (T2); assigns work only in the bot's own channel and not to a stopped bot; checks empty heartbeats of Prospector, SEODesk and SocialBot"
+    "Since 2026-10-07 retro: does not change offer, prices, markets or approved plans without Brais (T2); assigns work only in the bot's own channel and not to a stopped bot; checks empty heartbeats of Prospector, SEODesk and SocialBot",
+    "Saturday: writes the next Diario entry (agents/diario.md) and asks Retador to check it; Monday: two Kit newsletter drafts (EN, ES) for Brais to send; the Sunday brief asks Brais to approve the entry"
    ],
    "status": "live",
    "links": [],
@@ -694,7 +706,9 @@
     "mcp__buzz__fleet_status",
     "docker ps",
     "~/fizz/CHULETA.md",
-    "git b9d4064, fcae3f5"
+    "git b9d4064, fcae3f5",
+    "~/fizz/agents/fizz.latido.md",
+    "~/fizz/agents/diario.md"
    ],
    "confidence": "verified"
   },
@@ -799,7 +813,11 @@
     "Container bot-socialbot-agent-1, volume bot-socialbot_work",
     "Playbooks per network (X, Reddit, Facebook, Instagram, GEO sites) in salida/socialbot/playbooks",
     "Nightly summary to Fizz around 20:00 ICT; likes/follows/group posts left to Brais in lista-hoy.md",
-    "2026-10-08 experiment: drafts only on threads asking for help, every biglobster.top link carries UTM parameters"
+    "2026-10-08 experiment: drafts only on threads asking for help, every biglobster.top link carries UTM parameters",
+    "Heartbeat is 1h (fleet_status 2026-10-12) with standing fronts: Reddit as the brand (comments and joins, no votes or follows), community map, role models, own accounts, Guionista's proposals, and the Diario front (distributes published entries)",
+    "Each day it draws a mode with shuf (lector, explorador, investigador, conversador) and each heartbeat a random front order",
+    "Since 2026-10-10 publishes the shorts Hermes delivers in the shorts channel to Facebook, Instagram and X via Zernio; Hermes publishes to YouTube itself",
+    "Uses the 'social' browser (localhost:3002) for Reddit"
    ],
    "status": "live",
    "links": [],
@@ -808,7 +826,9 @@
     "mcp__buzz__fleet_status",
     "docker ps",
     "~/fizz/CHULETA.md",
-    "git b9d4064"
+    "git b9d4064",
+    "~/fizz/agents/socialbot.latido.md",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "verified"
   },
@@ -817,16 +837,17 @@
    "label": "Guionista",
    "kind": "bot",
    "parent": "fizz-fleet",
-   "summary": "Turns a blog article or idea into a video script and storyboard with cost estimate for VideoDesk; produces and publishes nothing.",
+   "summary": "Turns a blog article or idea into a video script and storyboard with cost estimate for VideoDesk, and analyses the reach of BigLobster's videos and shorts; produces and publishes nothing.",
    "details": [
     "Model: sonnet (Claude, via Claude Code in the container)",
     "Listens: mentions",
-    "Heartbeat: none",
+    "Heartbeat: 1h",
     "Memory limit: 1.5 GB default",
     "Browser: yes (browser flag set)",
     "Publishes: no",
     "Container bot-guionista-agent-1, volume bot-guionista_work",
-    "Hands scripts to VideoDesk for a free animatic before any spend"
+    "Hands scripts to VideoDesk for a free animatic before any spend",
+    "Since 2026-10-11 also the reach analyst for videos and shorts (per-video audit, trends, role-model channels) with a 1h heartbeat"
    ],
    "status": "live",
    "links": [],
@@ -834,7 +855,8 @@
     "~/fizz/agents/guionista.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "~/fizz/agents/guionista.latido.md"
    ],
    "confidence": "verified"
   },
@@ -853,7 +875,8 @@
     "Publishes: no",
     "Container bot-videodesk-agent-1, volume bot-videodesk_work",
     "Local free transcription (faster-whisper) and TTS (Kokoro); generated shots via OpenRouter HeyGen model with a 2 USD/day cap",
-    "Outputs in salida/video (entrada, renders, fichas, transcripciones, cola.md)"
+    "Outputs in salida/video (entrada, renders, fichas, transcripciones, cola.md)",
+    "2026-10-10: the hook must deliver the promise in the first 3 seconds (shared with Guionista)"
    ],
    "status": "live",
    "links": [],
@@ -883,7 +906,8 @@
     "The repo's CLAUDE.md names Hermes as COO; its persona overrides that: its boss is Fizz (no Hermes integration found)",
     "Since 2026-10-08: weekly Friday check of BigLobster's listings in AI directories (There's An AI For That, Launch Llama, GenLink) using Brais's session; looks and drafts only, writes status to salida/seo/directorios.md",
     "Search Console emails reach it as copies written by Prospector to seo/avisos-gsc.md (it does not read the mailbox); progress goes in estado.md, @Fizz only for a ready PR, a blocker or a decision",
-    "The 2026-10-08 website CTA experiment was dropped the same day: Brais keeps changes to the website"
+    "The 2026-10-08 website CTA experiment was dropped the same day: Brais keeps changes to the website",
+    "Publishes the Diario entries by PR to the blog repo after Brais's yes; will check Kit docs for the site signup form"
    ],
    "status": "live",
    "links": [],
@@ -892,7 +916,9 @@
     "mcp__buzz__fleet_status",
     "docker ps",
     "~/fizz/CHULETA.md",
-    "git b7bcf49, b9d4064, 25fb216"
+    "git b7bcf49, b9d4064, 25fb216",
+    "~/fizz/agents/diario.md",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "verified"
   },
@@ -928,12 +954,13 @@
    "label": "Shared visual browsers",
    "kind": "service",
    "parent": "fizz",
-   "summary": "Two Chromium desktops (linuxserver/chromium) next to the bots, split by task: one with Brais's logins on a closed allowlist, one with no logins for open exploration.",
+   "summary": "Three Chromium desktops (linuxserver/chromium) next to the bots, split by task: one with Brais's logins on a closed allowlist, one with no logins for open exploration, one with the brand's Reddit session.",
    "details": [
     "navegador.compose.yml run via `bot navegador arrancar|parar|estado`; desktops published only on the Mac's loopback (ports 3000 and 3001) with basic auth",
     "Bots control them over CDP (port 9223, nginx in the image) on internal Docker networks fizz-navegador and fizz-exploracion; nginx accepts only Host <name>:9223 (DNS-rebinding fix 2026-10-06)",
     "A bot joins a network only if its .env sets PLAYWRIGHT_MCP_CDP_ENDPOINT (set by Brais); whoever joins the work network controls Brais's sessions",
-    "Image pinned by digest; up to 3 GB each; RESTART_APP watchdog relaunches Chromium; both containers Up 2 hours on 2026-10-06"
+    "Image pinned by digest; up to 3 GB each; RESTART_APP watchdog relaunches Chromium; both containers Up 2 hours on 2026-10-06",
+    "2026-10-11: a third desktop 'social' (localhost:3002, network fizz-social) holds the brand's Reddit session; SocialBot reads other people's threads all day, so it is kept apart from the Google/GitHub sessions. Not yet verified live."
    ],
    "status": "live",
    "links": [],
@@ -1041,7 +1068,8 @@
     "Caps: 10 emails/day total, 5/day cold; CAN-SPAM footer and unsubscribe added; uses a Gmail app password stored only in Prospector's env",
     "Tests: tests/test_correo.py (23 tests per tasks/todo.md)",
     "Since 2026-10-08 `enviar` writes a plan (salida/growth/espaciado) and starts a detached background sender with a per-batch lock: random gaps of 10 min to 8 h inside 13:00-19:00 UTC; before each email it re-checks the batch fingerprint, the 7-day approval, the do-not-contact list and the daily cap; `estado` reports progress, rerunning `enviar` resumes a stopped batch",
-    "Not verified upstream: that the background sender survives the end of the bot's Claude session"
+    "Not verified upstream: that the background sender survives the end of the bot's Claude session",
+    "2026-10-10: one email per company domain (a second address of a written domain is rejected, except contacto-previo); the first delivery report, delay included, writes the address and @domain to no-contactar.txt; `leer --conocidos` ends with a '# sin registrar' line of unregistered sender domains"
    ],
    "status": "live",
    "links": [],
@@ -1050,7 +1078,8 @@
     "~/fizz/tasks/correo-saliente.md",
     "~/fizz/tests/test_correo.py",
     "~/fizz/CHULETA.md",
-    "git e1e339c"
+    "git e1e339c",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "from-docs"
   },
@@ -1153,7 +1182,8 @@
     "memories/decisions.md logs decisions with rejected alternatives (connector design, persona_set security fix, browser split, Zeabur-to-Colima move, retro fixes)",
     "archive/ holds old exports and zips of earlier bot versions (noted only, not read)",
     "A Claude memory note flags LEEME.md as possibly stale; CHULETA.md is current",
-    "CHULETA.md also documents the aviso-buzz notifier (install, log, stop)"
+    "CHULETA.md also documents the aviso-buzz notifier (install, log, stop)",
+    "tasks/ also holds diario-newsletter.md (plan for the public story series and Kit newsletter) and empresa-24-7.md section 9 (standing fronts)"
    ],
    "status": "live",
    "links": [],
@@ -1162,7 +1192,8 @@
     "~/fizz/CHULETA.md",
     "~/fizz/tasks/",
     "~/fizz/memories/decisions.md",
-    "git 22abc40"
+    "git 22abc40",
+    "~/fizz/tasks/diario-newsletter.md"
    ],
    "confidence": "verified"
   },
@@ -1320,6 +1351,105 @@
     "launchctl list"
    ],
    "confidence": "verified"
+  },
+  {
+   "id": "fizz-nav-social",
+   "label": "Social browser (localhost:3002)",
+   "kind": "service",
+   "parent": "fizz-navegador",
+   "summary": "Chromium holding the brand's Reddit session, limited by Chromium policy to Reddit, X (read) and biglobster.top; SocialBot uses it.",
+   "details": [
+    "Container on network fizz-social, profile volume perfil-social; allowlist: reddit.com, redd.it, redditmedia.com, x.com, twitter.com, biglobster.top, captcha hosts",
+    "Signs in with username and password, deliberately not Google, so it never stores a Google session",
+    "Added 2026-10-11; sign-in hosts untested with a real login, container not checked live"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/navegador.compose.yml",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-uso",
+   "label": "bot uso (usage report)",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Reports per-bot turns, work minutes and tokens per model from Claude Code's logs inside the containers.",
+   "details": [
+    "uso.py parses the tar from docker cp of the container's projects folder; runs nothing inside the container",
+    "Figures reset when `bot arrancar` recreates a container",
+    "Tests in tests/test_uso.py; container logs are treated as untrusted input"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/uso.py",
+    "~/fizz/tests/test_uso.py",
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-kit",
+   "label": "kit (newsletter drafts tool)",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Python CLI for Kit (kit.com) that can only list forms/segments and create or delete newsletter drafts; it has no send or schedule command.",
+   "details": [
+    "Commands: estado, borrador, borrar (drafts only); needs KIT_API_KEY, set by Brais through `bot clave`",
+    "Drafts filtered to one segment (en or es); Brais sends from Kit",
+    "6 tests with a fake server; added 2026-10-12 (PR #40)",
+    "Live check by Fizz: `kit estado` works on the free plan; a live borrador needs a real segment"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/herramientas/bin/kit",
+    "~/fizz/tests/test_kit.py",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-diario",
+   "label": "Diario (public story series)",
+   "kind": "doc",
+   "parent": "fizz",
+   "summary": "Playbook for BigLobster's public build-in-public series and weekly Kit newsletter: editorial rules, entry format and the Fizz, Retador, Brais, SEODesk, SocialBot circuit.",
+   "details": [
+    "agents/diario.md, baked into the image; the bots read it, only Brais changes it",
+    "Weekly: Fizz writes on Saturday, Retador checks, Brais approves in Sunday's brief (T2 for the first four), SEODesk publishes by PR, SocialBot distributes; first entry planned 2026-10-17",
+    "Rules: story before numbers, figures only as trends, no clients or leads, the owner never appears",
+    "Newsletter via Kit, one edition per language (EN, ES), Monday; Brais sends"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/agents/diario.md",
+    "~/fizz/tasks/diario-newsletter.md",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-kit",
+   "label": "Kit (newsletter)",
+   "kind": "external",
+   "parent": "buzz",
+   "summary": "Newsletter service (kit.com, free plan) holding the subscribers and the EN/ES segments; Fizz creates drafts through its API, Brais sends.",
+   "details": [
+    "Chosen 2026-10-12 because draft creation works through the API on the free plan",
+    "Site signup form and language segments still to be set up by Brais"
+   ],
+   "status": "planned",
+   "links": [],
+   "sources": [
+    "~/fizz/memories/decisions.md",
+    "~/fizz/agents/diario.md"
+   ],
+   "confidence": "from-docs"
   }
  ],
  "edges": [
@@ -2745,6 +2875,98 @@
     "~/fizz/CHULETA.md"
    ],
    "confidence": "verified"
+  },
+  {
+   "source": "fizz-nav-social",
+   "target": "fizz-colima",
+   "kind": "deployed-on",
+   "label": "navegador.compose.yml",
+   "sources": [
+    "~/fizz/navegador.compose.yml"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "fizz-nav-social",
+   "kind": "calls",
+   "label": "Reddit as the brand via CDP",
+   "sources": [
+    "~/fizz/navegador-red.yml",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-uso",
+   "target": "fizz-fleet",
+   "kind": "monitors",
+   "label": "tokens and turns per bot",
+   "sources": [
+    "~/fizz/uso.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-cli",
+   "target": "fizz-tool-uso",
+   "kind": "calls",
+   "label": "bot uso",
+   "sources": [
+    "~/fizz/bot"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-tool-kit",
+   "kind": "calls",
+   "label": "creates newsletter drafts",
+   "sources": [
+    "~/fizz/agents/diario.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-kit",
+   "target": "ext-kit",
+   "kind": "writes",
+   "label": "drafts only, never sends",
+   "sources": [
+    "~/fizz/herramientas/bin/kit"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "fizz-diario",
+   "kind": "reads",
+   "label": "writes entries by its rules",
+   "sources": [
+    "~/fizz/agents/fizz.latido.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "fizz-diario",
+   "kind": "reads",
+   "label": "distributes published entries",
+   "sources": [
+    "~/fizz/agents/diario.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-shorts",
+   "target": "fizz-bot-socialbot",
+   "kind": "routes-to",
+   "label": "daily shorts for Facebook, Instagram and X",
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md",
+    "~/fizz/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
   }
  ]
 }

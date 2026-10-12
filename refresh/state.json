@@ -1,5 +1,5 @@
 {
-  "refreshedAt": "2026-10-08T07:51:24.911Z",
+  "refreshedAt": "2026-10-12T02:02:04.493Z",
   "dirs": {
     "~/.claude/agents": [],
     "~/.claude/skills": [
@@ -70,6 +70,7 @@
       "finview-learning-loops-check",
       "fizz-old-volume-check",
       "hermes-http-cache-semantics-recheck",
+      "revision-frentes-48h",
       "shoroban-cdx-recheck",
       "shoroban-seo-legacy-scan-retrigger",
       "stackmap-weekly-refresh"
@@ -105,11 +106,13 @@
       "coach.agent.json",
       "coach.latido.md",
       "coach.prompt.md",
+      "diario.md",
       "empresa.md",
       "fizz.agent.json",
       "fizz.latido.md",
       "fizz.prompt.md",
       "guionista.agent.json",
+      "guionista.latido.md",
       "guionista.prompt.md",
       "opsbot.agent.json",
       "opsbot.prompt.md",
@@ -130,24 +133,9 @@
       "videodesk.latido.md",
       "videodesk.prompt.md"
     ],
-    "FACTURAS": [
-      "Factura",
-      "Pagos",
-      "Pedidos",
-      "PickingLists",
-      "README.md",
-      "Transporte",
-      "corregir_originales.py",
-      "data",
-      "generar.py",
-      "originales",
-      "plantilla",
-      "preparar.py",
-      "salida"
-    ]
+    "FACTURAS": []
   },
   "zeabur": [
-    "B_Browser",
     "biglobster",
     "biglobster/biglobster-osee",
     "biglobster/bl-site-package",

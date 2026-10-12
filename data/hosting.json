@@ -14,7 +14,8 @@
     "Service-data migration (env vars + config files move into Kubernetes Secrets on the server, irreversible) finished for all 6 projects 2026-10-02..06. Zeabur keeps no copy; the dated template exports in ~/Backups/zeabur are the only off-server copy",
     "Zeabur's edge HTTP/3 stalled Safari after ~20-29 requests per connection (SocialAgenda, 2026-09-27); apps answer Alt-Svc: clear, and experiencianatural.com is proxied through Cloudflare",
     "No token scopes exist; guardrail = global Claude Code hook plus deny rules blocking six destructive or spend-incurring verbs (deleting projects or services, renting servers, buying or renewing domains, topping up AI Hub)",
-    "CLI is logged in (verified 2026-10-06); live service state must be read with 'service get', not 'deployment list'"
+    "CLI is logged in (verified 2026-10-06); live service state must be read with 'service get', not 'deployment list'",
+    "Account owner/billing identity moved to Biglobster LLC (decided 2026-10-09, done); service-data and plan unchanged"
    ],
    "status": "live",
    "links": [
@@ -28,6 +29,7 @@
     "zeabur auth status (plan shown in the login banner)",
     "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_zeabur_guardrail.md",
     "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/reference_zeabur_live_status.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
     "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
@@ -1611,9 +1613,9 @@
     "Dumps: pg_dumpall for the Chatwoot, SocialAgenda and FlyWell Postgres, Redis SAVE, BigLobster sentinel SQLite via the backup API, tars of the idle Chrome/CDP volumes",
     "Stages root-only in /var/backups/volumes/<stamp>, uploads with the host's own rclone to hermesdrive:/VolumeBackups/<stamp> and fails unless rclone check passes",
     "First run 2026-10-06 (192 MB, all dumps verified); PR hermes-sandbox#415 merged 2026-10-06",
-    "Scheduled nightly at 02:00 UTC since 2026-10-06 by /etc/cron.d/backup-volumes through backup-volumes-cron.sh, which appends one OK / FAILED line per run to /var/log/backup-volumes.log (hermes-sandbox#416 merged to main; install on the host is per the ops README, not re-verified over SSH)",
+    "Scheduled nightly at 02:00 host time (host clock UTC+8, so 18:00 UTC; earlier notes said 02:00 UTC, corrected 2026-10-08) since 2026-10-06 by /etc/cron.d/backup-volumes through backup-volumes-cron.sh, which appends one OK / FAILED line per run to /var/log/backup-volumes.log (hermes-sandbox#416 merged to main; install on the host is per the ops README, not re-verified over SSH)",
     "Retention (Brais, 2026-10-06): 14 days of stamps on the host, 30 in Drive, pruned by the script only after that night's upload verified; about 0.7 GB on the host and 1.5 GB in Drive at steady state",
-    "Nothing pages on failure: the incident watcher does not see host cron; the Drive folder is unencrypted by choice and readable with the container's OAuth token"
+    "Failure coverage since 2026-10-08: the Hermes incident watcher checks the outcome in Drive (newest folder under 50h old holding the three Postgres dumps of at least 1 KB; rclone refusing counts as blind). Gap: a failed final rclone check after the dumps landed shows only in the host log. The Drive folder is unencrypted by choice and readable with the container's OAuth token"
    ],
    "status": "live",
    "links": [],
@@ -1622,7 +1624,9 @@
     "/Users/brais/VSCODE/hermes-sandbox/ops/backup-volumes.sh",
     "/Users/brais/VSCODE/hermes-sandbox/ops/backup-volumes-cron.sh",
     "git log in hermes-sandbox (commits 0649dfe706, 457d8d1074)",
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/backup-volumes-cron.sh",
+    "git log in hermes-sandbox (commit 1dbaa9f14a)"
    ],
    "confidence": "from-docs"
   },
