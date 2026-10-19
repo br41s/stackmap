@@ -598,7 +598,9 @@
     "Container hardening: cap_drop ALL, no-new-privileges, pids_limit 512, shm 512m, restart unless-stopped, mem_limit default 1536m (overridden by persona memoria)",
     "Each bot gets only .env.comun (Claude token, owner pubkey) and its own .env.<bot> (identity, attestation, its own keys); mounts its work volume and ~/fizz/salida",
     "Env: BUZZ_RELAY_URL, BUZZ_ACP_SUBSCRIBE (all|mentions), ANTHROPIC_MODEL, BUZZ_ACP_HEARTBEAT_INTERVAL/PROMPT, ENABLE_CLAUDEAI_MCP_SERVERS=false",
-    "navegador-red.yml attaches a bot to the visual-browser network named by its PLAYWRIGHT_MCP_CDP_ENDPOINT"
+    "navegador-red.yml attaches a bot to the visual-browser network named by its PLAYWRIGHT_MCP_CDP_ENDPOINT",
+    "2026-10-17: every bot container runs with init: true (tini as PID 1 reaps orphaned Chromium zombies that filled pids_limit); salida/ is excluded from the Docker build context (.dockerignore)",
+    "Image now also bakes the series kit (herramientas/escenas) and the escena, montar-episodio and musica commands"
    ],
    "status": "live",
    "links": [],
@@ -606,7 +608,8 @@
     "~/fizz/bots.compose.yml",
     "~/fizz/Dockerfile.bots",
     "~/fizz/navegador-red.yml",
-    "docker ps"
+    "docker ps",
+    "git 3bcf208, 1d58f14, 5b85fb2"
    ],
    "confidence": "verified"
   },
@@ -817,7 +820,9 @@
     "Heartbeat is 1h (fleet_status 2026-10-12) with standing fronts: Reddit as the brand (comments and joins, no votes or follows), community map, role models, own accounts, Guionista's proposals, and the Diario front (distributes published entries)",
     "Each day it draws a mode with shuf (lector, explorador, investigador, conversador) and each heartbeat a random front order",
     "Since 2026-10-10 publishes the shorts Hermes delivers in the shorts channel to Facebook, Instagram and X via Zernio; Hermes publishes to YouTube itself",
-    "Uses the 'social' browser (localhost:3002) for Reddit"
+    "Uses the 'social' browser (localhost:3002) for Reddit",
+    "Since 2026-10-16 takes the daily GEO Scout brief from #geo as its GEO site of the day (by brief id): Reddit it posts itself (checks the thread is open first), other sites go top of Brais's lista-hoy.md, directories go to SEODesk (2026-10-18), plus a weekly community to join (2026-10-17)",
+    "Also posts series episodes announced by SEODesk's social copy"
    ],
    "status": "live",
    "links": [],
@@ -828,7 +833,8 @@
     "~/fizz/CHULETA.md",
     "git b9d4064",
     "~/fizz/agents/socialbot.latido.md",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git d52bb0b, dac75cf, cc88de2, 1705e3d, 314f7bb"
    ],
    "confidence": "verified"
   },
@@ -847,7 +853,8 @@
     "Publishes: no",
     "Container bot-guionista-agent-1, volume bot-guionista_work",
     "Hands scripts to VideoDesk for a free animatic before any spend",
-    "Since 2026-10-11 also the reach analyst for videos and shorts (per-video audit, trends, role-model channels) with a 1h heartbeat"
+    "Since 2026-10-11 also the reach analyst for videos and shorts (per-video audit, trends, role-model channels) with a 1h heartbeat",
+    "Since 2026-10-16 writes the bilingual script and storyboard for each series episode (queue cola.md chains it with VideoDesk)"
    ],
    "status": "live",
    "links": [],
@@ -856,7 +863,8 @@
     "mcp__buzz__fleet_status",
     "docker ps",
     "~/fizz/CHULETA.md",
-    "~/fizz/agents/guionista.latido.md"
+    "~/fizz/agents/guionista.latido.md",
+    "git 9cd92e5, 5b85fb2"
    ],
    "confidence": "verified"
   },
@@ -865,18 +873,20 @@
    "label": "VideoDesk",
    "kind": "bot",
    "parent": "fizz-fleet",
-   "summary": "Video desk: edits recordings, makes shorts from blog articles, builds animatics and (with Brais's 'aprobado vN') generated shots; never publishes.",
+   "summary": "Video desk: edits recordings, assembles the 'Agentes BigLobster' series episodes, builds animatics and (with Brais's 'aprobado vN') generated shots; requests publication from Hermes but never publishes itself.",
    "details": [
     "Model: sonnet (Claude, via Claude Code in the container)",
     "Listens: mentions",
-    "Heartbeat: none (weekly queue switchable)",
+    "Heartbeat: 20m (fleet_status 2026-10-19; the series queue runs first each beat)",
     "Memory limit: 4 GB",
     "Browser: no",
     "Publishes: no",
     "Container bot-videodesk-agent-1, volume bot-videodesk_work",
     "Local free transcription (faster-whisper) and TTS (Kokoro); generated shots via OpenRouter HeyGen model with a 2 USD/day cap",
     "Outputs in salida/video (entrada, renders, fichas, transcripciones, cola.md)",
-    "2026-10-10: the hook must deliver the promise in the first 3 seconds (shared with Guionista)"
+    "2026-10-10: the hook must deliver the promise in the first 3 seconds (shared with Guionista)",
+    "Since 2026-10-16 also assembles the 'Agentes BigLobster' series episodes from a queue (montar-episodio, one montage at a time) and, since 2026-10-17, requests publication of finished episodes from Hermes and hands the video ids to SEODesk; no longer makes the daily blog shorts (Hermes does)",
+    "2026-10-17: containers run with init (tini) after VideoDesk exhausted its process limit on zombie Chromium children (398 of 512)"
    ],
    "status": "live",
    "links": [],
@@ -884,7 +894,9 @@
     "~/fizz/agents/videodesk.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "~/fizz/agents/videodesk.latido.md",
+    "git 44925d8, 3bcf208"
    ],
    "confidence": "verified"
   },
@@ -907,7 +919,9 @@
     "Since 2026-10-08: weekly Friday check of BigLobster's listings in AI directories (There's An AI For That, Launch Llama, GenLink) using Brais's session; looks and drafts only, writes status to salida/seo/directorios.md",
     "Search Console emails reach it as copies written by Prospector to seo/avisos-gsc.md (it does not read the mailbox); progress goes in estado.md, @Fizz only for a ready PR, a blocker or a decision",
     "The 2026-10-08 website CTA experiment was dropped the same day: Brais keeps changes to the website",
-    "Publishes the Diario entries by PR to the blog repo after Brais's yes; will check Kit docs for the site signup form"
+    "Publishes the Diario entries by PR to the blog repo after Brais's yes; will check Kit docs for the site signup form",
+    "Since 2026-10-16 optimises each published series episode and the blog Shorts for YouTube and social: chapters from real timings, 16:9 cover via escena, title/description/tags, per-network copy, then a #actualizar-video request to Hermes",
+    "Since 2026-10-18 reviews directory sign-up briefs forwarded from the GEO Scout by SocialBot (salida/seo/directorios-propuestos.md): checks the form and corrects the listing against biglobster.top (the Scout invented HQ and team size), leaves it for Brais under 'Para Brais'; Brais submits it"
    ],
    "status": "live",
    "links": [],
@@ -918,7 +932,8 @@
     "~/fizz/CHULETA.md",
     "git b7bcf49, b9d4064, 25fb216",
     "~/fizz/agents/diario.md",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git 1705e3d, 314f7bb, e24ebaa, cf296c1"
    ],
    "confidence": "verified"
   },
@@ -985,7 +1000,8 @@
     "Container navegador-chromium-1; network fizz-navegador; SEODesk is the bot that uses it",
     "Updated 2026-10-08: allowlist also covers Google sign-in hosts (accounts.youtube.com, regional accounts.google.* and /accounts paths, ogs.google.com), workspace.google.com, drive.google.com and recaptcha/Cloudflare challenge hosts",
     "Also allowlisted since 2026-10-08: the AI directories where BigLobster is listed (theresanaiforthat.com, launchllama.co, genlink.so) so SEODesk can check the listings weekly with Brais's session",
-    "Embedded Google frames (sign-in, Drive) were the reason for the 2026-10-08 allowlist fix (PR #21); not re-tested live"
+    "Embedded Google frames (sign-in, Drive) were the reason for the 2026-10-08 allowlist fix (PR #21); not re-tested live",
+    "Updated 2026-10-18: studio.youtube.com added to the closed list so SEODesk can look at retention and CTR of the videos (read only, PR #66)"
    ],
    "status": "live",
    "links": [],
@@ -993,7 +1009,8 @@
     "~/fizz/navegador.compose.yml",
     "~/fizz/memories/decisions.md",
     "docker ps",
-    "git 39f18c6, b7bcf49, dc3da73"
+    "git 39f18c6, b7bcf49, dc3da73",
+    "git d7b28c8"
    ],
    "confidence": "verified"
   },
@@ -1110,7 +1127,8 @@
    "details": [
     "transcribir: faster-whisper on CPU (free); locutar: Kokoro/Piper TTS, optional cloned voice; subtitular: word-highlight ASS subtitles; montar-short: ffmpeg vertical short assembly",
     "generar-plano: one video shot per call from an OpenRouter model (default heygen/heygen-video-1) with a daily spend cap (2 USD) logged to salida/video/gasto-openrouter.csv",
-    "Used mainly by VideoDesk; OpsBot uses transcribir"
+    "Used mainly by VideoDesk; OpsBot uses transcribir",
+    "Series commands escena, montar-episodio and musica live in the same herramientas/bin; see fizz-serie-agentes-kit"
    ],
    "status": "live",
    "links": [],
@@ -1119,7 +1137,8 @@
     "~/fizz/herramientas/bin/transcribir",
     "~/fizz/herramientas/bin/locutar",
     "~/fizz/herramientas/bin/montar-short",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "~/fizz/herramientas/bin/montar-episodio"
    ],
    "confidence": "from-docs"
   },
@@ -1183,7 +1202,8 @@
     "archive/ holds old exports and zips of earlier bot versions (noted only, not read)",
     "A Claude memory note flags LEEME.md as possibly stale; CHULETA.md is current",
     "CHULETA.md also documents the aviso-buzz notifier (install, log, stop)",
-    "tasks/ also holds diario-newsletter.md (plan for the public story series and Kit newsletter) and empresa-24-7.md section 9 (standing fronts)"
+    "tasks/ also holds diario-newsletter.md (plan for the public story series and Kit newsletter) and empresa-24-7.md section 9 (standing fronts)",
+    "tasks/video-serie-agentes.md holds the plan and state of the Agentes BigLobster series; CHULETA.md gained sections on the series, Hermes shorts and the GEO Scout handoff"
    ],
    "status": "live",
    "links": [],
@@ -1193,7 +1213,8 @@
     "~/fizz/tasks/",
     "~/fizz/memories/decisions.md",
     "git 22abc40",
-    "~/fizz/tasks/diario-newsletter.md"
+    "~/fizz/tasks/diario-newsletter.md",
+    "~/fizz/tasks/video-serie-agentes.md"
    ],
    "confidence": "verified"
   },
@@ -1448,6 +1469,68 @@
    "sources": [
     "~/fizz/memories/decisions.md",
     "~/fizz/agents/diario.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "buzz-channel-geo",
+   "label": "#geo",
+   "kind": "channel",
+   "parent": "buzz",
+   "summary": "Channel where Hermes drops the daily Off-Site GEO Scout brief (no mention); SocialBot takes it, Fizz hears it.",
+   "details": [
+    "Since 2026-10-16 the Hermes job's deliver target includes this channel (route set in Hermes, not in the shared prompt); BigLobster only, client-rented Scouts do not deliver to Buzz",
+    "SocialBot processes each brief once, tracked by brief id in its estado.md, and never replies here because Fizz hears the channel and each message costs it a turn",
+    "Directory sign-up briefs are handed to SEODesk (since 2026-10-18); a weekly 'community to join' section reaches Brais's lista-hoy.md (since 2026-10-17)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/agents/socialbot.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "buzz-channel-shorts",
+   "label": "#shorts",
+   "kind": "channel",
+   "parent": "buzz",
+   "summary": "Channel where Hermes leaves each published blog short (video, Story, cover, copy) as a thread and mentions SocialBot, who posts it to Facebook, Instagram and X and replies with the links.",
+   "details": [
+    "Each short is a thread; Fizz's morning brief summarises which shorts arrived and which SocialBot already published",
+    "Not reconciled against the live channel list in this refresh (fleet_channels needs a bot argument); taken from CHULETA.md and persona files"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/agents/fizz.latido.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-serie-agentes-kit",
+   "label": "Series 'Agentes BigLobster' kit",
+   "kind": "tool",
+   "parent": "fizz",
+   "summary": "Zero-cost video kit for the explainer series (one 2-3 min EN+ES video per rented agent): escena, montar-episodio and musica commands plus HTML/SVG scene templates baked into the bot image.",
+   "details": [
+    "Commands escena (HTML scene templates rendered with the image's Chromium and ffmpeg), montar-episodio (per-scene Kokoro voice, subtitles, music at -28 LUFS, voice at -16 LUFS; per-language pronunciation map; cover template; chapter timings written to <render>.planos.json) and musica (synthesised Blade Runner-style bed, no third-party licences)",
+    "Kit in herramientas/escenas/ is copied to /usr/local/share/fizz/escenas in the image (Dockerfile.bots); a robot with its own SVG trait per agent",
+    "Pipeline: ClaudeCode writes a source sheet per agent, Guionista writes the bilingual script and storyboard, VideoDesk assembles via a queue (cola.md) and Brais approves the Spanish cut with 'aprobado vN' before the English one is built",
+    "Since 2026-10-16/17: VideoDesk asks Hermes to publish finished episodes to YouTube through a #publicar-episodio message in Media Forgery, then hands the video ids to SEODesk for the site data file; SEODesk then prepares chapters, cover, title/description/tags and social copy per episode and asks Hermes to update the YouTube metadata with an #actualizar-video message",
+    "montar-episodio and escena now run one montage at a time and never truncate a finished render (2026-10-17)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/tasks/video-serie-agentes.md",
+    "~/fizz/Dockerfile.bots",
+    "~/fizz/agents/videodesk.prompt.md",
+    "~/fizz/agents/seodesk.prompt.md",
+    "git 5b85fb2, 3767a0c, e1ef035, a69df30, a307182, 314f7bb"
    ],
    "confidence": "from-docs"
   }
@@ -2967,6 +3050,109 @@
     "~/fizz/memories/decisions.md"
    ],
    "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "buzz-channel-geo",
+   "kind": "reads",
+   "label": "takes the daily GEO Scout brief",
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-fizz",
+   "target": "buzz-channel-geo",
+   "kind": "reads",
+   "label": "hears every message",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "buzz-channel-shorts",
+   "kind": "reads",
+   "label": "posts Hermes shorts to Facebook, Instagram and X",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-geo-scout",
+   "target": "buzz-channel-geo",
+   "kind": "writes",
+   "label": "daily brief, no mention",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-shorts",
+   "target": "buzz-channel-shorts",
+   "kind": "writes",
+   "label": "delivers published shorts as threads",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-socialbot",
+   "target": "fizz-bot-seodesk",
+   "kind": "routes-to",
+   "label": "GEO Scout directory briefs, via salida/seo/directorios-propuestos.md",
+   "sources": [
+    "~/fizz/agents/socialbot.prompt.md",
+    "~/fizz/agents/seodesk.prompt.md",
+    "git 1705e3d"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "fizz-serie-agentes-kit",
+   "kind": "calls",
+   "label": "assembles series episodes",
+   "sources": [
+    "~/fizz/agents/videodesk.prompt.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "fizz-bot-seodesk",
+   "kind": "routes-to",
+   "label": "published episode ids for the site data file and YouTube optimisation",
+   "sources": [
+    "~/fizz/agents/videodesk.prompt.md",
+    "git a307182"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-bot-videodesk",
+   "target": "hermes-shorts-studio",
+   "kind": "notifies",
+   "label": "asks Hermes to publish episodes to YouTube via #publicar-episodio in Media Forgery",
+   "sources": [
+    "~/fizz/agents/videodesk.prompt.md"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "fizz-bot-seodesk",
+   "target": "hermes-shorts-studio",
+   "kind": "notifies",
+   "label": "asks Hermes to update YouTube metadata via #actualizar-video in Media Forgery",
+   "sources": [
+    "~/fizz/agents/seodesk.prompt.md"
+   ],
+   "confidence": "inferred"
   }
  ]
 }

@@ -8,14 +8,15 @@
    "summary": "Primary PaaS: Brais's always-on apps, the Hermes engine and their databases run as Kubernetes workloads on one dedicated Frankfurt server rented through Zeabur.",
    "details": [
     "Account plan DEVELOPER (Dev $5/mo) plus one dedicated server (~$21-22/mo): fixed plan, no usage billing, no Project Budget, so no server-side spend cap exists (dashboard check 2026-06-20)",
-    "7 projects exist today (CLI, 2026-10-06): hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural, B_Browser. All sit on the single Frankfurt server",
+    "6 projects exist today (CLI, 2026-10-19): hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural. All sit on the single Frankfurt server",
     "Decision notes say 'all 6 projects': the six migrated and exported are hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural. The 7th, B_Browser (created 2026-10-05), has no services",
     "Every service uses template PREBUILT_V2. Git-sourced services auto-deploy on push to main; Hermes deploys by moving its GHCR image tag (scripts/deploy.sh); service restart and redeploy do not pull a new image",
     "Service-data migration (env vars + config files move into Kubernetes Secrets on the server, irreversible) finished for all 6 projects 2026-10-02..06. Zeabur keeps no copy; the dated template exports in ~/Backups/zeabur are the only off-server copy",
     "Zeabur's edge HTTP/3 stalled Safari after ~20-29 requests per connection (SocialAgenda, 2026-09-27); apps answer Alt-Svc: clear, and experiencianatural.com is proxied through Cloudflare",
     "No token scopes exist; guardrail = global Claude Code hook plus deny rules blocking six destructive or spend-incurring verbs (deleting projects or services, renting servers, buying or renewing domains, topping up AI Hub)",
     "CLI is logged in (verified 2026-10-06); live service state must be read with 'service get', not 'deployment list'",
-    "Account owner/billing identity moved to Biglobster LLC (decided 2026-10-09, done); service-data and plan unchanged"
+    "Account owner/billing identity moved to Biglobster LLC (decided 2026-10-09, done); service-data and plan unchanged",
+    "B_Browser (7th project on 2026-10-06, no services) no longer appears in 'zeabur project list' on 2026-10-19; see zb-b-browser"
    ],
    "status": "live",
    "links": [
@@ -218,14 +219,15 @@
    "label": "B_Browser",
    "kind": "project",
    "parent": "zeabur",
-   "summary": "Empty Zeabur project 'B_Browser' with no services; probably the idle Chrome/CDP project whose leftover volumes the host backup tars.",
+   "summary": "Former empty Zeabur project 'B_Browser' (no services); no longer exists as of 2026-10-19.",
    "details": [
     "Created 2026-10-05 16:12 UTC; 'service list' returns no services",
     "Not in the 2026-10-05/06 template exports and not part of the 'all 6 projects' migration notes",
     "backup-volumes.sh tars three volumes of an 'untitled' Chrome/CDP proxy project with no running workload; matching them to B_Browser is an inference",
-    "Display name has capitals and an underscore; id normalised to zb-b-browser"
+    "Display name has capitals and an underscore; id normalised to zb-b-browser",
+    "Retired: absent from 'zeabur project list -i=false' on 2026-10-19 (six projects listed); it was still listed on 2026-10-06. When it was removed is not recorded"
    ],
-   "status": "unknown",
+   "status": "retired",
    "links": [
     {
      "label": "Zeabur project",
@@ -252,7 +254,8 @@
     "Generated public domains: blhermes.zeabur.app (panel, GitHub-OAuth login) and hermes-webhook.zeabur.app (webhook port)",
     "Status RUNNING (service get 2026-10-06); restarts every 1-2 h are benign Zeabur rollouts, not crashes",
     "~45 environment variable NAMES (OpenRouter, GitHub, Langfuse, Telegram, Tiingo, X, HuggingFace, Exa, Typesafe keys and Hermes settings); values were never read",
-    "Env changes need an image-tag bounce, not a restart; the gateway CLI restart is unsupported on Zeabur's k8s pods"
+    "Env changes need an image-tag bounce, not a restart; the gateway CLI restart is unsupported on Zeabur's k8s pods",
+    "2026-10-12: env OPENROUTER_IMAGE_MODEL set to bytedance-seed/seedream-4.5 on this service and restarted (OpenRouter ZDR has no provider for meta/muse-image)"
    ],
    "status": "live",
    "links": [
@@ -265,7 +268,8 @@
     "zeabur service list --project-id <id> -i=false --json",
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
    ],
    "confidence": "verified"
   },
@@ -320,7 +324,9 @@
    "details": [
     "Image chatwoot/chatwoot:v4.16.2-ce; port 3000; storage volume /app/storage; custom /docker/entrypoint.sh config file",
     "Public generated domain bl-chatwoot.zeabur.app (HTTP 200 on 2026-10-06)",
-    "Status RUNNING; account signup and enterprise features are controlled by env names ENABLE_ACCOUNT_SIGNUP and DISABLE_ENTERPRISE"
+    "Status RUNNING; account signup and enterprise features are controlled by env names ENABLE_ACCOUNT_SIGNUP and DISABLE_ENTERPRISE",
+    "Chatwoot upgraded to 4.17.0 per the 2026-10-18 Hermes session summary (not re-checked live; the image detail above is from 2026-10-06)",
+    "Per the same summary: widget rate limits off (ENABLE_RACK_ATTACK_WIDGET_API=false), assets gzipped at boot, 1 GiB limits; two Chatwoot accounts serve biglobster.top and shoroban.com"
    ],
    "status": "live",
    "links": [
@@ -332,9 +338,10 @@
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs"
   },
   {
    "id": "zb-hermes-eu-sidekiq",
@@ -344,15 +351,17 @@
    "summary": "Chatwoot background job worker running the same image as rails.",
    "details": [
     "Image chatwoot/chatwoot:v4.16.2-ce with a sidekiq command; no ports; shares the /app/storage volume id",
-    "Status RUNNING (service get)"
+    "Status RUNNING (service get)",
+    "Chatwoot upgraded to 4.17.0 per the 2026-10-18 Hermes session summary (not re-checked live; the image detail above is from 2026-10-06)"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
-    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)"
+    "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs"
   },
   {
    "id": "zb-hermes-eu-redis",
@@ -383,7 +392,8 @@
     "Image built by Zeabur from an uploaded source (registry-oci.zeabur.cloud), not from a Git repo; port 8080; created 2026-08-14",
     "Public generated domain bl-whatsapp-bot.zeabur.app (404 at root, webhook-style)",
     "Env names show its wiring: CHATWOOT_BASE_URL, CHATWOOT_AGENT_BOT_TOKEN, OPENROUTER_API_KEY, VISITOR_AGENT_MODEL, WEBHOOK_SHARED_SECRET",
-    "Status RUNNING (service get)"
+    "Status RUNNING (service get)",
+    "Live as the web-chat lead bot on biglobster.top and shoroban.com since 2026-10-13..18 (one Chatwoot account, agent bot and webhook secret per site; env names include per-account agentBotToken/webhookSecret settings); direct-deployed, a merge never updates it (Hermes session summary 2026-10-18)"
    ],
    "status": "live",
    "links": [],
@@ -391,7 +401,8 @@
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/hermes-sandbox/WHATSAPP-BOT-PLAN.md (file name only)"
+    "/Users/brais/VSCODE/hermes-sandbox/WHATSAPP-BOT-PLAN.md (file name only)",
+    "/Users/brais/VSCODE/memories/decisions/hermes.md"
    ],
    "confidence": "verified"
   },
@@ -864,11 +875,13 @@
    "parent": "gcp-project-finview-brais-2026",
    "summary": "FastAPI backend of FinView on Cloud Run europe-west1, billed per request.",
    "details": [
-    "Created 2026-04-20; revision finview-api-56eac97 serves 100% and is Ready (gcloud, 2026-10-06); /api/health returns 200",
+    "Created 2026-04-20; revision finview-api-7795535-<build id> serves 100% (gcloud, 2026-10-19; was finview-api-56eac97 on 2026-10-06); /api/health returns 200",
     "Flags: --cpu-throttling (request billing), min 0, max 1 instance, 1 GiB, 1800 s timeout, FINVIEW_ENV=production, FINVIEW_REQUEST_SCOPED_RUNTIME=true",
     "Required env names: FINVIEW_DATABASE_URL, FINVIEW_AUTH_SECRET, FINVIEW_SECRET_KEY, FINVIEW_FRONTEND_URL, FINVIEW_CRON_SECRET, FINVIEW_OPENROUTER_API_KEY, FINVIEW_TURNSTILE_SECRET",
     "Cron cadence halved 2026-10-01 to fit the 180,000 vCPU-s/month free tier (measured ~268k vCPU-s)",
-    "April 2026 incident: redeploying to a new service without replaying env vars gave a SQLite fallback and 'Invalid token'; replay env vars first"
+    "April 2026 incident: redeploying to a new service without replaying env vars gave a SQLite fallback and 'Invalid token'; replay env vars first",
+    "Optional env names added 2026-10-15: FINVIEW_CREDENTIALS_KEY (Fernet key encrypting broker tokens; mounted from Secret Manager secret finview-credentials-key; empty closes the IBKR connection with 503) and FINVIEW_IBKR_FLEX_URL",
+    "Revisions are named finview-api-<short sha>-<build id> since 2026-10-17 so a retry of a failed commit gets its own revision"
    ],
    "status": "live",
    "links": [
@@ -915,7 +928,8 @@
     "Trigger finview-api-deploy, GitHub App (1st gen), region global, repo br41s/FinView (gcloud, 2026-10-06)",
     "Fires on pushes touching backend/**, scripts/**, Dockerfile, pyproject.toml or cloudbuild.yaml",
     "cloudbuild.yaml: build, boot test on PORT=8080, candidate revision at 0% traffic, guard script, pause scheduler jobs, promote, readiness check, resume jobs; automatic rollback on failure",
-    "Runs as service account github-actions-deployer; building in 'global' pushes images to Europe over the internet (EUR 2.13 egress in two weeks)"
+    "Runs as service account github-actions-deployer; building in 'global' pushes images to Europe over the internet (EUR 2.13 egress in two weeks)",
+    "2026-10-17: candidate revision name now finview-api-$SHORT_SHA-$BUILD_ID; a failed candidate kept its commit's name and Cloud Run will not delete the latest created revision, so re-running the commit reported the old error (FinView #352)"
    ],
    "status": "live",
    "links": [
@@ -936,12 +950,13 @@
    "label": "Cloud Scheduler (europe-west1)",
    "kind": "service",
    "parent": "gcp-project-finview-brais-2026",
-   "summary": "Production periodicity for FinView: four HTTP jobs that call the Cloud Run cron endpoints.",
+   "summary": "Production periodicity for FinView: five HTTP jobs that call the Cloud Run cron endpoints.",
    "details": [
-    "All four jobs ENABLED (gcloud, 2026-10-06)",
-    "Authenticated with an X-Cron-Key header matched against FINVIEW_CRON_SECRET; attempt-deadline 1800 s, no retries",
+    "All five jobs ENABLED (gcloud, 2026-10-19)",
+    "Authenticated with an X-Cron-Key header matched against FINVIEW_CRON_SECRET; attempt-deadline 1800 s, no retries except options-agent-cycle (2 retries, 60-120 s backoff, since 2026-10-14)",
     "The Cloud Build rollout pauses the jobs before moving traffic and resumes them on exit; a failed promotion leaves them paused on purpose",
-    "In-process APScheduler is a dev convenience and dies with min instances 0"
+    "In-process APScheduler is a dev convenience and dies with min instances 0",
+    "ibkr-sync-daily added 2026-10-15; all jobs are in SCHEDULER_JOBS in cloudbuild.yaml, so a new job must exist (created paused) before the code is deployed or the rollout aborts"
    ],
    "status": "live",
    "links": [],
@@ -975,11 +990,12 @@
    "label": "options-agent-cycle",
    "kind": "cron-job",
    "parent": "gcp-cloud-scheduler",
-   "summary": "Cloud Scheduler job calling /api/options/agent/cron: options monitor, EU and US market hours on weekdays.",
+   "summary": "Cloud Scheduler job calling /api/options/agent/cron: options monitor every 30 min (minutes 5 and 35), EU and US market hours on weekdays.",
    "details": [
-    "Schedule (UTC): */30 7-22 * * 1-5",
-    "State ENABLED on 2026-10-06 (gcloud)",
-    "Target /api/options/agent/cron on finview-api with X-Cron-Key authentication"
+    "Schedule (UTC): 5,35 7-22 * * 1-5 (since 2026-10-14; was */30)",
+    "State ENABLED on 2026-10-19 (gcloud)",
+    "Target /api/options/agent/cron on finview-api with X-Cron-Key authentication",
+    "2 retries with 60-120 s backoff: at minute 0 the tick hit the single instance during the geo cycle and Cloud Run answered 429 three times in a month. The only job with retries (geo jobs keep none on purpose)"
    ],
    "status": "live",
    "links": [],
@@ -1024,6 +1040,27 @@
    "sources": [
     "gcloud scheduler jobs list --location=europe-west1",
     "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
+  },
+  {
+   "id": "gcp-scheduler-ibkr-sync-daily",
+   "label": "ibkr-sync-daily",
+   "kind": "cron-job",
+   "parent": "gcp-cloud-scheduler",
+   "summary": "Cloud Scheduler job calling /api/brokers/cron: daily sync of every user's IBKR Flex connection.",
+   "details": [
+    "Schedule (UTC): 20 6 * * * (06:20, off the geo job's minute 0 and before options at 07:00)",
+    "State ENABLED on 2026-10-19 (gcloud); created 2026-10-15, no retries, attempt deadline 1800 s",
+    "Target /api/brokers/cron on finview-api with X-Cron-Key authentication; one 300 s budget for all connections, unfinished runs resume next day",
+    "Returns 500 only if a user's step raised an exception; an IBKR error for one user shows on their card"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "gcloud scheduler jobs list --location=europe-west1",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
    ],
    "confidence": "verified"
   },
@@ -2771,6 +2808,16 @@
     "hermes-sandbox/incidents/sweep.py"
    ],
    "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-scheduler-ibkr-sync-daily",
+   "target": "gcp-cloud-run-finview-api",
+   "kind": "calls",
+   "label": "POST /api/brokers/cron",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/docs/deployment.md"
+   ],
+   "confidence": "verified"
   }
  ]
 }

@@ -47,7 +47,8 @@
     "Absorbed OptionsAI (options agent, fiscal engine, importers) and WorldHawk (geo-intel signal layer, ported to Python 2026-06 onward).",
     "Latest work (2026-10-05/06): options alert dedup moved to DB, generative answers persisted, reasoning off on LLM calls.",
     "Production LLM (2026-10-10): FINVIEW_OPENROUTER_MODEL=deepseek/deepseek-v4.1-flash set on Cloud Run (code default stays deepseek-v4-flash). Key moved to Biglobster LLC's OpenRouter account 2026-10-09; every OpenRouter call sends provider.data_collection=deny via llm_envelope.chat().",
-    "Watch: first Zonas Clave scorer run on the new model (22:15 UTC Mon-Fri); Artifact Registry keeps only the newest 10 images (cleanup policies since 2026-10-08)."
+    "Watch: first Zonas Clave scorer run on the new model (22:15 UTC Mon-Fri); Artifact Registry keeps only the newest 10 images (cleanup policies since 2026-10-08).",
+    "Added 2026-10-12..19: direct IBKR Flex sync with daily cron (#347/#348), sector/region/AI exposure from annual reports (#351-#357), backend token renewal via POST /auth/refresh (#344), Cloud Run revision named per build (#352), fiscal inputs loaded once per request (#342)."
    ],
    "status": "live",
    "links": [
@@ -65,7 +66,8 @@
     "/Users/brais/VSCODE/FinView/README.md",
     "/Users/brais/VSCODE/FinView/docs/deployment.md",
     "/Users/brais/VSCODE/memories/decisions/finview.md",
-    "/Users/brais/VSCODE/memories/decisions.md"
+    "/Users/brais/VSCODE/memories/decisions.md",
+    "git log since 2026-10-12 in /Users/brais/VSCODE/FinView"
    ],
    "confidence": "verified"
   },
@@ -80,7 +82,8 @@
     "~100 MDX blog posts under src/app/blog (build fails if index, files and illustrations drift).",
     "Landing page has a 'dividend garden' canvas animation that becomes a game (2026-10-02).",
     "Merge gate: Vercel preview check must be green before merging any PR touching frontend/**.",
-    "Vercel holds only BACKEND_URL, AUTH_SECRET, public Turnstile site key and public Stripe price ids; ingestion keys live only in Cloud Run."
+    "Vercel holds only BACKEND_URL, AUTH_SECRET, public Turnstile site key and public Stripe price ids; ingestion keys live only in Cloud Run.",
+    "Session handling (2026-10): ends the session when a retried request is still 401 (#343); token renewal in the NextAuth jwt callback (#344)."
    ],
    "status": "live",
    "links": [
@@ -110,7 +113,8 @@
     "Cron endpoints authenticated with X-Cron-Key; Turnstile verification on login/register.",
     "Notifications: ntfy.sh, SMTP email, Telegram bot (all optional, env-driven).",
     "OpenRouter key rotation: new Cloud Run revision with --no-traffic, diff, then update-traffic --to-latest (docs/deployment.md).",
-    "Artifact Registry repo cloud-run-source-deploy (europe-west1) keeps the newest 10 images (keep-newest-10 + delete-the-rest policies, 2026-10-08); for a manual rollback pick one of the 10 latest revisions."
+    "Artifact Registry repo cloud-run-source-deploy (europe-west1) keeps the newest 10 images (keep-newest-10 + delete-the-rest policies, 2026-10-08); for a manual rollback pick one of the 10 latest revisions.",
+    "POST /auth/refresh (2026-10, #344) issues a fresh token to a still-valid session; the NextAuth jwt callback renews it when fewer than 7 days remain. Candidate Cloud Run revisions are named per build, not per commit (#352)."
    ],
    "status": "live",
    "links": [
@@ -123,7 +127,8 @@
     "/Users/brais/VSCODE/FinView/CLAUDE.md",
     "/Users/brais/VSCODE/FinView/docs/deployment.md",
     "/Users/brais/VSCODE/FinView/backend/config.py",
-    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml",
+    "git show 1a5562e and cf5063d in /Users/brais/VSCODE/FinView"
    ],
    "confidence": "verified"
   },
@@ -254,17 +259,19 @@
    "label": "options-agent-cycle (30 min)",
    "kind": "cron-job",
    "parent": "gcp-cloud-scheduler",
-   "summary": "Cloud Scheduler job POSTing /api/options/agent/cron (*/30 7-22 * * 1-5 UTC).",
+   "summary": "Cloud Scheduler job POSTing /api/options/agent/cron (5,35 7-22 * * 1-5 UTC).",
    "details": [
     "Market hours only (EU+US); every 30 min since 2026-10-01 (was */15) to fit Cloud Run free tier.",
     "Authenticated with X-Cron-Key header (FINVIEW_CRON_SECRET); attempt-deadline 1800s, no retries; endpoint runs synchronously.",
-    "The Cloud Build rollout pauses and then resumes all four jobs; the build fails if any does not return to ENABLED."
+    "The Cloud Build rollout pauses and then resumes all four jobs; the build fails if any does not return to ENABLED.",
+    "Moved from minute 0/30 to 5 and 35 with two retries (PR #344): at :00 the tick hit the single instance during the geo cycle and Cloud Run answered 429 three times in a month, losing the cycle. Earlier detail \"no retries\" no longer holds."
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/VSCODE/FinView/docs/deployment.md",
-    "/Users/brais/VSCODE/FinView/cloudbuild.yaml"
+    "/Users/brais/VSCODE/FinView/cloudbuild.yaml",
+    "git show 1a5562e in /Users/brais/VSCODE/FinView"
    ],
    "confidence": "verified"
   },
@@ -773,7 +780,8 @@
     "Generated at build: blog index, sitemap, RSS feed, FAQPage JSON-LD, table-scroll wrappers, WhatsApp QR.",
     "Build guards fail on SVG var() geometry, type scale below 14px and infographic rules.",
     "Legal identity (Biglobster LLC) and company data in site/_data/site.json.",
-    "site/apps.html and en/apps.html still link agenda.experiencianatural.com for Social Agenda (detached 2026-10-03)."
+    "site/apps.html and en/apps.html still link agenda.experiencianatural.com for Social Agenda (detached 2026-10-03).",
+    "Agent pages carry a YouTube video block fed by site/_data/videosAgentes.json (PR #698); episode videos for Content Gap Hunter added; English BIG landing and video links on /big.html."
    ],
    "status": "live",
    "links": [
@@ -785,7 +793,8 @@
    "sources": [
     "/Users/brais/VSCODE/biglobster/CLAUDE.md",
     "/Users/brais/VSCODE/biglobster/site/en/apps.html",
-    "/Users/brais/VSCODE/biglobster/site/_data/site.json"
+    "/Users/brais/VSCODE/biglobster/site/_data/site.json",
+    "git show f9b46d0 in /Users/brais/VSCODE/biglobster"
    ],
    "confidence": "verified"
   },
@@ -869,14 +878,15 @@
    "parent": "layer-products",
    "summary": "Deployable web package sold to Spanish SMB clients: public Eleventy site, management panel, blog, inbox, optional catalogue/shop and AI marketing agent; one Zeabur (or Plesk) deploy per customer.",
    "details": [
-    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.19.2.",
+    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.27.0 (see later lines).",
     "Customer-facing Spanish docs (INSTRUCCIONES-CLIENTE, DEPLOY, RELEASE) are treated as published.",
     "Customer deploys put the customer as legal owner under Spanish law (2026-10-02); footer carries only a 'Creado por Biglobster' credit link.",
     "Turnstile is mandatory for new customer onboarding (DEPLOY.md); fleet manifest is the source of truth for deployments.",
     "Opt-in extras: B2B trade-price area, 'Pedido a pedido' hero game (2026-10-02).",
     "v1.17.0 adds a Google Search Console verification setting in the panel (rendered in the site head).",
     "Default agent model is the paid openai/gpt-oss-120b via OpenRouter (BYOK per customer), decided 2026-10-09 so it works under data_collection=deny; free models are only a fallback on 429/402. A customer's saved ai_model wins (Shoroban keeps its own). Do not change the default again without a decision.",
-    "1.18.0-1.19.2: blog posts show catalogue product photos; panel moves Turnstile, site URL/GSC and WhatsApp settings to an Integraciones section; form fields kept at 16px so iOS does not zoom."
+    "1.18.0-1.19.2: blog posts show catalogue product photos; panel moves Turnstile, site URL/GSC and WhatsApp settings to an Integraciones section; form fields kept at 16px so iOS does not zoom.",
+    "1.20-1.27.0 (2026-10-15..17): Cálida site style (site_style key, default empty = Clásico; wizard writes calida), page_index_highlights, services/team cards and FAQ accordions, a 404 page built in the site style; per-turn catalogue search for the WhatsApp bot (/api/knowledge/search); web-chat widget via chat_widget_url and chat_widget_token (Chatwoot)."
    ],
    "status": "live",
    "links": [
@@ -892,7 +902,8 @@
     "/Users/brais/VSCODE/bl-site-package/package.json",
     "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
     "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
-    "/Users/brais/VSCODE/bl-site-package/src/api/chat.js"
+    "/Users/brais/VSCODE/bl-site-package/src/api/chat.js",
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
    ],
    "confidence": "verified"
   },
@@ -905,7 +916,8 @@
    "details": [
     "Every async route wrapped in asyncHandler (Node 22 exits on unhandled rejection).",
     "Panel login and contact form protected by Turnstile when configured; RENTAL_AUTOMATION_KEY lets Hermes agents bypass the captcha via X-Automation-Key.",
-    "Email via SMTP settings (SMTP_HOST etc.); passenger-startup.cjs supports Passenger hosts."
+    "Email via SMTP settings (SMTP_HOST etc.); passenger-startup.cjs supports Passenger hosts.",
+    "Serves a 404 page built from the site template (src/not-found.js, 1.27.0). GET /api/knowledge/search?q= (Bearer KNOWLEDGE_API_TOKEN) gives the WhatsApp bot real products per turn (1.25.0-1.25.1)."
    ],
    "status": "live",
    "links": [],
@@ -913,7 +925,8 @@
     "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
     "/Users/brais/VSCODE/bl-site-package/DEPLOY.md",
     "/Users/brais/VSCODE/bl-site-package/.env.example",
-    "/Users/brais/VSCODE/bl-site-package/fleet/README.md"
+    "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
+    "git show 49b4c72 and 8301f90 in /Users/brais/VSCODE/bl-site-package"
    ],
    "confidence": "verified"
   },
@@ -1443,6 +1456,49 @@
     "/Users/brais/VSCODE/memories/decisions/finview.md"
    ],
    "confidence": "verified"
+  },
+  {
+   "id": "proj-finview-ibkr-sync",
+   "label": "FinView IBKR direct sync",
+   "kind": "tool",
+   "parent": "proj-finview",
+   "summary": "Direct Interactive Brokers connection via the Flex Web Service: pulls full account history one calendar year per request and imports it through the same path as an uploaded CSV.",
+   "details": [
+    "Added 2026-10 (PRs #347, #348). User supplies a read-only Flex token and query ID; token encrypted at rest with Fernet (FINVIEW_CREDENTIALS_KEY; unset closes the feature), never returned by the API or included in the data export.",
+    "Resumable run stored on broker_connections; services in backend/services/ibkr_flex.py and broker_sync.py. Synced imports do not spend the upload quota.",
+    "Daily sync: POST /api/brokers/cron (X-Cron-Key) runs broker_sync.sync_all round-robin over every active connection under a 300 s budget; Cloud Scheduler job ibkr-sync-daily, added to the rollout SCHEDULER_JOBS.",
+    "Frontend: IBKR connection card on the import tab, hidden when the backend has no credentials key."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/FinView/backend/services/broker_sync.py",
+    "/Users/brais/VSCODE/FinView/backend/services/ibkr_flex.py",
+    "/Users/brais/VSCODE/FinView/docs/deployment.md",
+    "git show 7cec720 and 88f012b in /Users/brais/VSCODE/FinView"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "proj-finview-exposure",
+   "label": "FinView sector/region/AI exposure",
+   "kind": "tool",
+   "parent": "proj-finview",
+   "summary": "Spreads each position's value over the sectors, regions and AI exposure its issuer's own latest annual report implies, shown on /portfolio.",
+   "details": [
+    "Added 2026-10 (PRs #351, #353, #356, #357). US issuers read from the latest 10-K XBRL on SEC EDGAR; all others from the ESEF segment note (ISIN to LEI via GLEIF, filings via filings.xbrl.org), amounts copied by an LLM and stored only if they add up to the tagged total and appear verbatim.",
+    "PR #356: totals for banks (gross margin), insurers and property companies; report year taken from its facts. PR #357: each check stores a reader version so a reader fix invalidates cached answers.",
+    "Uncovered stocks are estimated 100% by ISIN country and Yahoo Finance sector (equities only, labelled \"estimado\" in the UI), cached in listing_profiles (30 days).",
+    "AI exposure: counts AI mentions in the report (up to three verbatim quotes) plus an industry AI index built offline from open data (Eloundou et al. 2024 scores weighted by BLS OEWS staffing)."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/finview.md",
+    "/Users/brais/VSCODE/FinView/backend/api/portfolio.py",
+    "git show 93b303c, 43ecd78, 6e8e2aa, 7795535 in /Users/brais/VSCODE/FinView"
+   ],
+   "confidence": "from-docs"
   }
  ],
  "edges": [
@@ -2525,6 +2581,66 @@
    ],
    "confidence": "from-docs",
    "note": "hermes-sandbox #417 merged 2026-10-07 (gh pr view); deploy not verified"
+  },
+  {
+   "source": "proj-finview-api",
+   "target": "proj-finview-ibkr-sync",
+   "kind": "depends-on",
+   "label": "hosts the IBKR sync routes and broker_sync service",
+   "sources": [
+    "/Users/brais/VSCODE/FinView/backend/services/broker_sync.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "gcp-scheduler-ibkr-sync-daily",
+   "target": "proj-finview-ibkr-sync",
+   "kind": "calls",
+   "label": "POST /api/brokers/cron",
+   "sources": [
+    "git show 88f012b in /Users/brais/VSCODE/FinView"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-finview-ibkr-sync",
+   "target": "proj-finview-importers",
+   "kind": "writes",
+   "label": "imports Flex statements through import_ibkr_report",
+   "sources": [
+    "git show 7cec720 in /Users/brais/VSCODE/FinView"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-finview-api",
+   "target": "proj-finview-exposure",
+   "kind": "depends-on",
+   "label": "/portfolio exposure endpoints and segment refresh",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/finview.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-finview-exposure",
+   "target": "ext-openrouter",
+   "kind": "uses-model",
+   "label": "copies segment-note amounts and picks AI quotes",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/finview.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-finview-exposure",
+   "target": "ext-market-data-feeds",
+   "kind": "reads",
+   "label": "Yahoo Finance sector for the listing fallback",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/finview.md"
+   ],
+   "confidence": "from-docs"
   }
  ]
 }

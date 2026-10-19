@@ -177,14 +177,16 @@
     "Never bring up a gateway-<profile> slot for a secondary profile (double-serves it) and never copy TELEGRAM_BOT_TOKEN into a profile",
     "HERMES_FORK_SCOPE_PROCESS_ENV=1 lets the launch profile's secret scope fall back to the service env; health probe: hermes_cli.fork_ext.process_env_scope --check must say VERDICT: OK",
     "First multiplex rollout 2026-09-28 silenced Telegram; re-enabled after the process-env scope fix",
-    "Logs: /opt/data/logs/agent.log (infrastructure only; use Langfuse for what an agent did), profiles/<p>/logs/agent.log for moved jobs"
+    "Logs: /opt/data/logs/agent.log (infrastructure only; use Langfuse for what an agent did), profiles/<p>/logs/agent.log for moved jobs",
+    "2026-10-17: the Buzz platform adapter splits long messages by UTF-8 bytes (60,000 under the relay's 65,536 limit) instead of cron output being cut at 4000 with an unreadable 'saved to' footer (PR #470)"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/ops/multiplex-stage3-plan.md",
-    "memories/decisions/hermes.md"
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/plugins/platforms/buzz/adapter.py"
    ],
    "confidence": "verified"
   },
@@ -603,25 +605,30 @@
   },
   {
    "id": "hermes-whatsapp-lead-bot",
-   "label": "WhatsApp lead chatbot (Chatwoot AgentBot)",
+   "label": "Chat Assistant (WhatsApp / web-chat lead bot)",
    "kind": "bot",
    "parent": "hermes",
-   "summary": "Planned rented WhatsApp lead-qualification chatbot for bl-site-package customers: Chatwoot CE inbox plus a Node AgentBot service using OpenRouter.",
+   "summary": "Rented lead-qualification chat assistant (Chatwoot AgentBot, Node service scripts/whatsapp-lead-bot, replies via OpenRouter); live on web-chat widgets for biglobster.top and shoroban.com, WhatsApp itself not yet connected.",
    "details": [
     "Plan: customer owns the WABA and Meta billing; BigLobster charges EUR 49/month excluding Meta fees; Chatwoot CE self-hosted on Zeabur EU",
     "Code exists in scripts/whatsapp-lead-bot (commits 2026-08-14) with GET /api/knowledge on the customer's bl-site-package; the plan doc still says implementation not started",
     "Pilot on customer-created Meta Apps; Meta Tech Provider registration targeted from 2026-09-03 (4-6 weeks); Chatwoot self-hosted Embedded Signup is broken upstream",
     "Chatwoot volumes (Postgres+pgvector, Redis) appear in the host backup script, so a Chatwoot instance exists on the server",
     "Separate from upstream's own scripts/whatsapp-bridge",
-    "2026-10-10: the assistant now sends provider_routing data_collection=deny (code merged; service not redeployed per the decision log)"
+    "2026-10-10: the assistant now sends provider_routing data_collection=deny (code merged; service not redeployed per the decision log)",
+    "2026-10-18 decision-log summary: live on biglobster.top (Chatwoot account 2) and shoroban.com (account 3, own agent bot, webhook secret and Telegram alert group); Chatwoot upgraded to 4.17.0. Direct-deployed: a merge never updates the service",
+    "Behaviour (hermes #445-#465): per-turn search of the site's catalogue (bl-site-package /api/knowledge/search) with matches first and any site URL not in the reference stripped from the reply; human request skips the model; handoff to a human expires after HANDOFF_TTL_MINUTES (15) and fires a Telegram alert",
+    "Cost (#465): reference prefix byte-identical between turns so providers cache it, provider.sort=price under deny; measured about 0.0003 $/turn after caching",
+    "Sold as the agent-chat-assistant rental at 29.99 EUR/month (decision 2026-10-18; the earlier EUR 49 plan is superseded). Next: connect BigLobster's own WhatsApp number to Chatwoot (runbook ONBOARDING-WHATSAPP.md in bl-site-package)"
    ],
-   "status": "unknown",
+   "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/WHATSAPP-BOT-PLAN.md",
     "hermes-sandbox/scripts/whatsapp-lead-bot",
     "hermes-sandbox/ops/README.md",
-    "hermes-sandbox/scripts/whatsapp-lead-bot/src/assistant.js"
+    "hermes-sandbox/scripts/whatsapp-lead-bot/src/assistant.js",
+    "memories/decisions/hermes.md"
    ],
    "confidence": "from-docs"
   },
@@ -860,7 +867,8 @@
     "Fails loud: a signal that is blind (no token, unstamped image, 401/403/404) raises its own incident instead of returning empty",
     "Attaches gated remediation proposals; known gap: does not cover failures of no-agent script jobs such as the nightly backup; also does not see the host-side volume backup cron",
     "Dedicated tokens: HERMES_DEP_ALERT_GITHUB_TOKEN; no-agent cron scripts never see GITHUB_TOKEN/GH_TOKEN",
-    "ChatMemo backup heartbeat: reads a secret gist the Mac backup rewrites after each verified dump; briefs after 50h of silence or an unreadable heartbeat; blind (401/403/404, file gone) is its own incident; outside the deployment it is a no-op with no network call"
+    "ChatMemo backup heartbeat: reads a secret gist the Mac backup rewrites after each verified dump; briefs after 50h of silence or an unreadable heartbeat; blind (401/403/404, file gone) is its own incident; outside the deployment it is a no-op with no network call",
+    "2026-10-13: the runaway signal pages on the forced max-iteration request message (not on the call count); a run that ended cron_complete with a real report stays silent even at 85-89 iterations"
    ],
    "status": "live",
    "links": [],
@@ -1013,13 +1021,16 @@
    "summary": "Daily agent (job be8a4add42b0) that finds one off-site mention opportunity for BigLobster and drafts a ready-to-post asset for a human to publish.",
    "details": [
     "Never publishes; a human reviews the brief and posts it; worldwide English-language audience since 2026-08-12",
-    "Canary for the stage 3 job moves (moved to the biglobster store 2026-10-02; first run 03:00 +07:00 lost its start ping, fixed in #388)"
+    "Canary for the stage 3 job moves (moved to the biglobster store 2026-10-02; first run 03:00 +07:00 lost its start ping, fixed in #388)",
+    "2026-10-17 (a47b0c298b): prompt lists our accounts and SocialBot's EXCLUDED/PAUSED platforms (mirror of fizz agents/socialbot.prompt.md; change both together), bars any platform pitched in the last 21 days (PLATFORM_COOLDOWN, each subreddit its own), prefers niche crawlable communities, writes LEDGER lines, and every Monday adds a 'Community to join this week' section that SocialBot turns into a 'crear cuenta' item for Brais",
+    "2026-10-18 (#478): may pick Reddit threads it cannot open (reddit.com blocks Zeabur) when a search result shows subreddit, title and a date within 30 days; briefs are marked Status: UNVERIFIED and SocialBot checks them with the brand's Reddit session. Delivery goes to the Buzz #geo channel for SocialBot (docs #468/#469); the briefs' Buzz delivery needs the primary profile route"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/offsite-geo/geo-scout.prompt",
-    "hermes-sandbox/ops/multiplex-stage3-plan.md"
+    "hermes-sandbox/ops/multiplex-stage3-plan.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
    ],
    "confidence": "from-docs"
   },
@@ -1032,14 +1043,16 @@
    "details": [
     "BigLobster: job 4a0ebe8779ca, `0 8 * * *`, DRY_RUN pushes a branch and opens no PR; decay scanner scripts/content-decay/scan.mjs (GSC-aware) lives in the biglobster repo; first live edit merged 2026-09-16",
     "Rule: when unsure, leave the page alone; every figure needs an official source; each article reviewed at most once a year",
-    "Rental variant built (PRs #293/#294, 2026-09-19): publishes directly, refuses sites without revision history (bl-site-package < 1.8.0); provisioning on the client profile was still open as of 2026-09-29"
+    "Rental variant built (PRs #293/#294, 2026-09-19): publishes directly, refuses sites without revision history (bl-site-package < 1.8.0); provisioning on the client profile was still open as of 2026-09-29",
+    "2026-10-17 (#473): the DRY_RUN flag, STEP 8-DRY and every 'Under DRY_RUN' clause were removed from the BigLobster prompt after the model misread DRY_RUN: false as true and pushed a branch without a PR; runs on 10-15 and 10-16 had published normally. The agent now always opens the PR"
    ],
-   "status": "dry-run",
+   "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/tasks/content-updater.md",
     "hermes-sandbox/tasks/content-updater-rental.md",
-    "memories/decisions/hermes.md"
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/content-updater/biglobster-content-updater.prompt"
    ],
    "confidence": "from-docs"
   },
@@ -1106,14 +1119,17 @@
    "label": "Shorts Producer + Publisher",
    "kind": "agent",
    "parent": "hermes",
-   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~20 s vertical tip short said to camera by a fixed presenter (Lucía ES, Martín EN), rendered in GitHub Actions; Hermes publishes YouTube, SocialBot in Buzz does Facebook, Instagram and X.",
+   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~20 s vertical tip short said to camera by a fixed presenter (Lucía ES, Martín EN), rendered in GitHub Actions; Hermes publishes YouTube (Shorts and, since 2026-10-15, the long 'Agentes BigLobster' series episodes), SocialBot in Buzz does Facebook, Instagram and X.",
    "details": [
-    "Producer `30 8 * * *`: one short per language (EN, ES) from the newest post without one; writes a JSON package (format `tip`, version 2: 4-6 beats, 40-55 words, hook lands its promise in the first 3 s, CTA asks to save or share) and submits it. Publisher `20 9,13 * * *`: collects finished renders and publishes",
+    "Producer `30 8 * * *`: one short per language (EN, ES) from the newest post without one; writes a JSON package (format `tip`, version 2: 4-6 beats, 40-55 words, the opener joke plus hook must land the promise within 10 s (TIP_PROMISE_SECONDS, #475; the 8-word first-sentence rule stays for the classic format only), CTA asks to save or share) and submits it. Publisher `20 9,13 * * *`: collects finished renders and publishes",
     "Publish split (2026-10-11): Hermes publishes YouTube Shorts; once a short is live `handoff` posts files and copy to the Buzz shorts channel and @SocialBot publishes Facebook, Instagram and X. With SHORTS_BUZZ_CHANNEL set the tool drops the Meta targets so the two can never double-post; shadow mode never posts to Buzz",
     "Nothing is published unless SHORTS_PUBLISH_MODE=live (shadow by default); live uploads were still unproven in the docs read",
     "Keys (SHORTS_STUDIO_GITHUB_TOKEN, YOUTUBE_*, META_*) live only in the service env and are deliberately not in INJECT; the paid-video key is a dedicated SHORTS_OPENROUTER_API_KEY secret",
     "The tool, not the prompt, enforces facts: submit re-reads the article and rejects unsourced figures, and refuses any format but the tip",
-    "Older notes about a ~60 s short with X handed to Brais on Telegram predate the 2026-10-10/11 tip format and Buzz hand-off"
+    "Older notes about a ~60 s short with X handed to Brais on Telegram predate the 2026-10-10/11 tip format and Buzz hand-off",
+    "Hook patterns rotate per language (#474); the Producer calls shorts_studio 'performance' once per run and prefers stronger allowed patterns (#477; 'not enough signal' under 5 shorts)",
+    "Series (#466, #467): the Publisher also runs shorts_studio 'series', reading #publicar-episodio (VideoDesk) and #actualizar-video (SEODesk) requests from the Buzz series channel and uploading or updating the 2-3 min ES/EN episodes as regular YouTube videos; one episode a day by default (quota). Since #479 #actualizar-video also accepts blog Shorts that the shorts ledger records as uploaded by Hermes; every Short now opens with its Thumb still for 0.5 s as the cover frame",
+    "Status docs read this week still say shadow by default; whether live uploads are on in Zeabur was not re-checked"
    ],
    "status": "dry-run",
    "links": [],
@@ -1122,7 +1138,11 @@
     "hermes-sandbox/scripts/setup_shorts_jobs.py",
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/plugins/shorts/buzz_share.py",
-    "hermes-sandbox/plugins/shorts/studio/package.py"
+    "hermes-sandbox/plugins/shorts/studio/package.py",
+    "hermes-sandbox/plugins/shorts/series.py",
+    "hermes-sandbox/plugins/shorts/social/youtube_analytics.py",
+    "hermes-sandbox/shorts/biglobster-shorts-producer.prompt",
+    "memories/decisions/hermes.md"
    ],
    "confidence": "from-docs"
   },
@@ -1139,7 +1159,10 @@
     "Generated scenes (genvideo.py): up to 3 beats per short with heygen/heygen-video-1 through OpenRouter's video API, capped $0.50/short and $1/day; any refusal or timeout falls back to stock footage; such shorts upload with containsSyntheticMedia",
     "Stock footage from Pexels/Mixkit, Edge TTS WordBoundary karaoke timing, loudness/freeze/black/silence QA; music bed ducked under the presenter",
     "buzz_share.py hands live shorts to the Buzz shorts channel using Block's `buzz` CLI, which the Dockerfile builds from a pinned commit (tag v0.5.2)",
-    "Separate rental SKU Social Shorts (shorts_render, in-container ffmpeg, client's own Pexels key) is unchanged"
+    "Separate rental SKU Social Shorts (shorts_render, in-container ffmpeg, client's own Pexels key) is unchanged",
+    "plugins/shorts/series.py (2026-10-15): Buzz-driven publisher for the 'Agentes BigLobster' series episodes (SERIES_BUZZ_CHANNEL, SERIES_BUZZ_FROM, SERIES_MAX_PER_DAY, shadow mode publishes nothing); downloads masters with `buzz media get`, checks 16:9/audio/30-900 s, uploads with SRT, replies in thread; ledger keyed by message id",
+    "plugins/shorts/social/youtube_analytics.py (#477): read-only 'performance' action, each short's views as a multiple of the channel median and the median per hook_pattern, lang and palette; needs the YouTube Analytics scopes added when minting the refresh token (#476)",
+    "Short.tsx (#479): Thumb still shown for the first 15 frames so YouTube's Shorts shelf picks the cover"
    ],
    "status": "dry-run",
    "links": [],
@@ -1150,7 +1173,10 @@
     "hermes-sandbox/plugins/shorts/buzz_share.py",
     "hermes-sandbox/plugins/shorts/studio/genvideo.py",
     "hermes-sandbox/plugins/shorts/studio/presenter.py",
-    "hermes-sandbox/Dockerfile"
+    "hermes-sandbox/Dockerfile",
+    "hermes-sandbox/plugins/shorts/series.py",
+    "hermes-sandbox/plugins/shorts/social/youtube_analytics.py",
+    "hermes-sandbox/shorts/studio/remotion/src/Short.tsx"
    ],
    "confidence": "from-docs"
   },
@@ -1161,16 +1187,18 @@
    "parent": "hermes",
    "summary": "Rental agent that writes product sheets from a distributor feed's own specs; only useful to clients whose catalogue comes from a feed.",
    "details": [
-    "Daily and open-ended (about ten products per run); toolsets bl_site_product + web",
+    "Daily and open-ended (7 products per run since 2026-10-13, was 10); toolsets bl_site_product + web",
     "Saves drafts unless publication is explicit and the site checklist passes",
-    "Went quiet on a client without a feed; once ran five days without its tool in schema"
+    "Went quiet on a client without a feed; once ran five days without its tool in schema",
+    "2026-10-13: cut to 7 per run because 7 of 165 runs in 20 days hit the 90-iteration cap mid-product (7 x 11 + 2 = 79 < 85); throughput nominal 70/day, the schedule change to recover it is left to Brais"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/scripts/provision_bl_client.py",
     "hermes-sandbox/CLAUDE.md",
-    "hermes-sandbox/AGENT_RENTAL_SETUP.md"
+    "hermes-sandbox/AGENT_RENTAL_SETUP.md",
+    "memories/decisions/hermes.md"
    ],
    "confidence": "from-docs"
   },
@@ -1364,14 +1392,16 @@
    "label": "YouTube",
    "kind": "external",
    "parent": "layer-external",
-   "summary": "YouTube Data API target for published Shorts.",
+   "summary": "YouTube Data API (and, read-only, YouTube Analytics) target for published Shorts and the BigLobster agent-series episodes.",
    "details": [
-    "Refresh token minted once with scripts/youtube_oauth.py"
+    "Refresh token minted once with scripts/youtube_oauth.py",
+    "2026-10-12..19: also receives long series episodes (regular videos with SRT) and videos.update/thumbnails.set edits; the refresh token now needs the Analytics scopes (#476) so short performance can be read back (#477)"
    ],
    "status": "dry-run",
    "links": [],
    "sources": [
-    "hermes-sandbox/shorts/STUDIO.md"
+    "hermes-sandbox/shorts/STUDIO.md",
+    "hermes-sandbox/plugins/shorts/series.py"
    ],
    "confidence": "from-docs"
   },
@@ -2683,9 +2713,10 @@
    "source": "hermes-whatsapp-lead-bot",
    "target": "ext-meta",
    "kind": "calls",
-   "label": "WhatsApp Cloud API via Chatwoot (planned)",
+   "label": "WhatsApp Cloud API via Chatwoot (planned, next step)",
    "sources": [
-    "hermes-sandbox/WHATSAPP-BOT-PLAN.md"
+    "hermes-sandbox/WHATSAPP-BOT-PLAN.md",
+    "memories/decisions/hermes.md"
    ],
    "confidence": "from-docs"
   },
@@ -2794,6 +2825,39 @@
    "sources": [
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/shorts/STUDIO.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-shorts-studio",
+   "target": "fizz-bot-videodesk",
+   "kind": "reads",
+   "label": "#publicar-episodio requests in the Buzz series channel",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md",
+    "hermes-sandbox/plugins/shorts/series.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-shorts-studio",
+   "target": "fizz-bot-seodesk",
+   "kind": "reads",
+   "label": "#actualizar-video requests (series episodes and blog Shorts)",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md",
+    "hermes-sandbox/plugins/shorts/series.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-geo-scout",
+   "target": "fizz-bot-socialbot",
+   "kind": "notifies",
+   "label": "briefs incl. UNVERIFIED Reddit threads and the weekly community pick, in Buzz #geo",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/offsite-geo/geo-scout.prompt"
    ],
    "confidence": "from-docs"
   }
