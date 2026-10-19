@@ -1,5 +1,5 @@
 {
-  "refreshedAt": "2026-10-12T02:02:04.493Z",
+  "refreshedAt": "2026-10-19T02:01:56.784Z",
   "dirs": {
     "~/.claude/agents": [],
     "~/.claude/skills": [
@@ -70,6 +70,7 @@
       "finview-learning-loops-check",
       "fizz-old-volume-check",
       "hermes-http-cache-semantics-recheck",
+      "parte-lunes-19-10",
       "revision-frentes-48h",
       "shoroban-cdx-recheck",
       "shoroban-seo-legacy-scan-retrigger",

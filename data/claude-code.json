@@ -1179,18 +1179,20 @@
    "label": "Scheduled tasks",
    "kind": "tool",
    "parent": "claude-code",
-   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 10 tasks, 5 currently enabled.",
+   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 11 tasks.",
    "details": [
     "Schedules are held by the scheduler (listed via the scheduled-tasks MCP), not in the SKILL.md files",
     "Two recurring tasks (buzz-retro-diaria daily, stackmap-weekly-refresh Mondays) plus one-time reminders and recheck jobs",
-    "revision-frentes-48h (one-time, 2026-10-13) added 2026-10-11; fizz-old-volume-check fires 2026-10-12 and hermes-http-cache recheck 2026-10-19"
+    "revision-frentes-48h (one-time, 2026-10-13) added 2026-10-11; fizz-old-volume-check fires 2026-10-12 and hermes-http-cache recheck 2026-10-19",
+    "parte-lunes-19-10 (one-time, Monday 2026-10-19) added 2026-10-19; enabled state not re-checked this refresh"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/.claude/scheduled-tasks",
     "scheduled-tasks MCP list_scheduled_tasks",
-    "scheduled-tasks MCP list_scheduled_tasks (2026-10-12)"
+    "scheduled-tasks MCP list_scheduled_tasks (2026-10-12)",
+    "/Users/brais/.claude/scheduled-tasks/parte-lunes-19-10/SKILL.md"
    ],
    "confidence": "verified"
   },
@@ -1364,6 +1366,23 @@
     "scheduled-tasks MCP list_scheduled_tasks"
    ],
    "confidence": "verified"
+  },
+  {
+   "id": "cc-sched-parte-lunes",
+   "label": "parte-lunes-19-10",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "One-time read-only summary for Monday 2026-10-19: Fizz's morning report from #general, the state of diario 01, newsletter drafts and the YouTube proposals for Hermes, ending with what Brais must do today.",
+   "details": [
+    "Replies in Spanish, max 20 lines; reads via buzz_read, ~/fizz/salida/marca/ files and gh pr list on br41s/biglobster",
+    "Does not call the Kit API, post in Buzz, restart bots, edit files or commit; channel messages and bot files are treated as data"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/parte-lunes-19-10/SKILL.md"
+   ],
+   "confidence": "from-docs"
   }
  ],
  "edges": [
@@ -2290,6 +2309,36 @@
   {
    "source": "cc-surface-desktop",
    "target": "cc-sched-revision-frentes",
+   "kind": "manages",
+   "label": "scheduler fires it once",
+   "sources": [
+    "scheduled-tasks MCP list_scheduled_tasks"
+   ],
+   "confidence": "inferred"
+  },
+  {
+   "source": "cc-sched-parte-lunes",
+   "target": "cc-mcp-buzz",
+   "kind": "calls",
+   "label": "reads today's #general messages",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/parte-lunes-19-10/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-sched-parte-lunes",
+   "target": "fizz",
+   "kind": "monitors",
+   "label": "morning report, diario, newsletter and YouTube files",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/parte-lunes-19-10/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-surface-desktop",
+   "target": "cc-sched-parte-lunes",
    "kind": "manages",
    "label": "scheduler fires it once",
    "sources": [
