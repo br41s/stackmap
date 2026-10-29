@@ -22,7 +22,7 @@ function call(path, { method = "GET", headers = {}, body } = {}) {
 }
 
 before(async () => {
-  server = spawn(process.execPath, [fileURLToPath(new URL("../server.mjs", import.meta.url))], { env: { ...process.env, PORT: String(PORT), STACKMAP_FIZZ_DIR: "", STACKMAP_HERMES_STATUS_URL: "" } });
+  server = spawn(process.execPath, [fileURLToPath(new URL("../server.mjs", import.meta.url))], { env: { ...process.env, PORT: String(PORT), STACKMAP_FIZZ_DIR: "", STACKMAP_HERMES_STATUS_URL: "", STACKMAP_ACTIVITY_FILE: "" } });
   await new Promise((resolve, reject) => {
     server.stdout.on("data", (d) => String(d).includes("stackmap on") && resolve());
     server.on("exit", (code) => reject(new Error(`server exited ${code}`)));
@@ -88,6 +88,18 @@ test("a signal posted with a folder reaches the live feed as its node", async ()
   assert.equal(signal.node, "proj-biglobster");
   assert.equal(signal.kind, "done");
   assert.equal(signal.text, "shipped the fix");
+});
+
+test("activity: a node's history carries the full message the feed leaves out", async () => {
+  const body = JSON.stringify({ node: "hermes-gateway", kind: "done", text: "Restarted", detail: "Restarted\nafter the **deploy**" });
+  assert.equal((await call("/api/signal", { method: "POST", headers: { "content-type": "application/json" }, body })).status, 202);
+  const group = JSON.parse((await call("/api/activity?node=hermes")).body);
+  const hit = group.signals.find((s) => s.text === "Restarted");
+  assert.equal(hit.node, "hermes-gateway"); // a group's card includes what is inside it
+  assert.equal(hit.detail, "Restarted\nafter the deploy");
+  assert.deepEqual(group.status, []);
+  assert.equal((await call("/api/activity?node=nope")).status, 404);
+  assert.equal((await call("/api/activity?node=hermes", { headers: { host: "evil.example" } })).status, 403);
 });
 
 test("no files outside public/ or the vendor allowlist", async () => {

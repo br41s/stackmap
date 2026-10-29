@@ -12,10 +12,12 @@ Read `README.md` for the run commands and the data format.
   or the cache breaks) and the per-question details (user prompt, picked by `relevantIds`).
   `lib/chat.mjs` — spawns `claude -p` locked down, map only (no tools) or Deep (Read/Grep/
   Glob); change its flags only with a re-test.
-- `server.mjs` — static files, `/api/stack`, `/api/chat` (SSE), `/api/signal` (in) and
-  `/api/signals` (SSE out). No framework, no build.
-- `lib/signals.mjs` — agent signals: the folder → node table (`FOLDERS`), text cleaning and
-  the in-memory buffer. `scripts/signal-hook.mjs` — the Claude Code Stop/Notification hook
+- `server.mjs` — static files, `/api/stack`, `/api/chat` (SSE), `/api/signal` (in),
+  `/api/signals` (SSE out, no details) and `/api/activity?node=` (a node's history with
+  details, plus a bot's `estado.md`). No framework, no build.
+- `lib/signals.mjs` — agent signals: the folder → node table (`FOLDERS`), text/detail
+  cleaning and the 14-day history. `lib/activity.mjs` — saves it to `.activity/activity.jsonl`
+  (gitignored) and reloads it trimmed at start. `scripts/signal-hook.mjs` — the Claude Code Stop/Notification hook
   that posts them (800 ms timeout, always exits 0). `lib/sources.mjs` — the other sources:
   the Fizz `estado.md` watcher (new lines → pings, `FIZZ_FOLDERS`) and the opt-in Hermes
   `/api/status` poller (changes → pings).
@@ -47,7 +49,8 @@ Read `README.md` for the run commands and the data format.
   2026-10-07: map only ~20–25k in / 0.6–1.7k out per question; Deep ~65k with one lookup.
 - Server stays bound to 127.0.0.1 with the Host and Origin checks; `npm test` covers them.
   Signal POSTs are the inverse: no Origin allowed (local scripts only).
-- Signals stay in memory, out of `data/` and out of the chat prompt (the cached index must not
-  change per question). A renamed project id must be updated in `FOLDERS` / `FIZZ_FOLDERS` —
+- Signals stay in `.activity/` (gitignored, 14 days), out of `data/` and out of the chat prompt
+  (the cached index must not change per question). The SSE feed stays brief (no details); the
+  Activity card fetches them. A renamed project id must be updated in `FOLDERS` / `FIZZ_FOLDERS` —
   `npm test` fails. The Hermes poller is the server's only outbound request: public probe only,
   opt-in by env var, never an authenticated endpoint.

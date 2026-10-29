@@ -432,6 +432,7 @@ function showDetails() {
       h("button", { class: "primary", onclick: () => openChat({ prefill: `Brief me on ${n.label}: what it does, what it depends on, what depends on it, and what would break without it.` }) }, "Ask Claude"),
       kidsOf.length ? h("button", { onclick: () => toggle(id) }, open ? "Collapse" : `Open (${kidsOf.length})`) : null,
       focus.canGoBack() ? h("button", { onclick: goBack }, "◂ Back") : null),
+    activityCard(id),
     relationChips(rels, "out"),
     relationChips(rels, "in"),
     kidsOf.length ? [h("h3", {}, `Inside (${kidsOf.length})`), h("div", { class: "chips" }, kidsOf.map((c) => h("button", { type: "button", class: "chip", style: `--chip:${colorOf(c)}`, onclick: () => reveal(c) }, node(c).label)))] : null,
@@ -551,8 +552,8 @@ function buildStatus() {
 // ---------- agent signals ----------
 
 // Pings from local agents. A live one makes its node — or the collapsed group standing in for
-// it — glow for a moment; every one lands in the ticker, and a click there flies to the node.
-// The recent ones sent on connect only fill the ticker.
+// it — glow for a moment; every one lands in the ticker, and a click there flies to the node
+// with that ping open in its activity card. The recent ones sent on connect only fill the ticker.
 const SIGNAL_COLORS = { done: "#38d989", waiting: "#ffc04d", info: "#6aa8ff" };
 const TICKER_SIZE = 4;
 
@@ -564,6 +565,69 @@ function pulse(id, kind) {
   el.scratch("_ping", setTimeout(() => el.removeClass("ping"), REDUCED ? 2500 : 900));
 }
 
+// The selected node's activity card: the pings of the node and of everything inside it, newest
+// first, each opening to its full message; for a Fizz bot also its status file, scrolled to the
+// end. Drawn from the last answer at once, then from /api/activity. Hidden when there is nothing.
+const activity = { focus: null, cache: new Map() };
+
+function activityCard(id) {
+  const box = h("section", { class: "activity", "aria-label": "Activity", hidden: true });
+  if (activity.cache.has(id)) fillActivity(box, id, activity.cache.get(id));
+  loadActivity(box, id);
+  return box;
+}
+
+function refreshActivity() {
+  const box = $("#details .activity");
+  if (box && state.selected) loadActivity(box, state.selected);
+}
+
+async function loadActivity(box, id) {
+  try {
+    const res = await fetch(`/api/activity?node=${encodeURIComponent(id)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    activity.cache.set(id, data);
+    fillActivity(box, id, data);
+    activity.focus = null;
+  } catch {}
+}
+
+function when(at) {
+  const d = new Date(at);
+  const today = d.toDateString() === new Date().toDateString();
+  return d.toLocaleString([], today ? { hour: "2-digit", minute: "2-digit" } : { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function fillActivity(box, id, { signals, status, days }) {
+  box.hidden = !signals.length && !status.length;
+  if (box.hidden) return;
+  // A refresh (a new ping) keeps whatever the reader had open.
+  const wasOpen = new Set([...box.querySelectorAll("details[open]")].map((d) => d.dataset.key));
+  const entry = (s) => {
+    const head = [h("span", { class: "dot" }), h("span", { class: "muted" }, when(s.at)),
+      s.node !== id ? h("span", { class: "who" }, node(s.node)?.label ?? s.node) : null, h("span", { class: "text" }, s.text)];
+    const focused = s.id === activity.focus;
+    return h("li", { class: `entry ${s.kind}${focused ? " focused" : ""}` },
+      s.detail ? h("details", { "data-key": s.id, open: focused || wasOpen.has(s.id) }, h("summary", {}, head), h("p", { class: "detail" }, s.detail)) : h("div", { class: "line" }, head));
+  };
+  const doc = (d) => h("details", { class: "status-doc", "data-key": d.file, open: !signals.length || wasOpen.has(d.file) },
+    h("summary", {}, `${d.file} · updated ${when(d.updated)}`),
+    h("div", { class: "doc" }, d.lines.map((l) => (l.startsWith("# ") ? h("h4", {}, l.slice(2)) : h("p", {}, l)))));
+  fill(box,
+    h("h3", {}, `Activity · last ${days} days`),
+    signals.length ? h("ol", { class: "activity-list" }, signals.map(entry)) : h("p", { class: "muted" }, "No pings recorded yet."),
+    status.map(doc));
+  // Status files read like a log: newest at the end.
+  for (const el of box.querySelectorAll(".status-doc")) {
+    const end = () => { const d = el.querySelector(".doc"); d.scrollTop = d.scrollHeight; };
+    el.addEventListener("toggle", end);
+    if (el.open) requestAnimationFrame(end);
+  }
+  const focused = box.querySelector(".focused");
+  if (focused) requestAnimationFrame(() => focused.scrollIntoView({ block: "nearest" }));
+}
+
 function setupSignals() {
   const ticker = h("ul", { class: "signals", "aria-live": "polite", "aria-label": "Agent signals" });
   document.body.append(ticker);
@@ -573,11 +637,12 @@ function setupSignals() {
     seen.add(s.id);
     const time = new Date(s.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const item = h("li", { class: `signal ${s.kind}` },
-      h("button", { class: "card", title: `${s.kind} · fly to ${node(s.node).label}`, onclick: () => { item.remove(); reveal(s.node); } },
+      h("button", { class: "card", title: `${s.kind} · fly to ${node(s.node).label}`, onclick: () => { item.remove(); activity.focus = s.id; reveal(s.node); } },
         h("span", { class: "dot" }), h("strong", {}, node(s.node).label), h("span", { class: "text" }, s.text), h("span", { class: "muted" }, time)));
     ticker.prepend(item);
     while (ticker.children.length > TICKER_SIZE) ticker.lastChild.remove();
     if (live) pulse(s.node, s.kind);
+    if (live && state.selected && ancestry(state.index, s.node).includes(state.selected)) refreshActivity();
   };
   const feed = new EventSource("/api/signals");
   feed.addEventListener("recent", (ev) => JSON.parse(ev.data).forEach((s) => show(s, false)));

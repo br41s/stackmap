@@ -235,6 +235,32 @@ a { color: var(--accent); }
 .signal .text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .signal .muted { flex: none; font: 11px var(--mono); }
 
+/* ---- activity card (in the HUD) ---- */
+.activity { margin: 14px 0 4px; padding: 2px 12px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--chip); }
+.activity h3 { margin-top: 10px; }
+.activity-list { list-style: none; margin: 0; padding: 0; max-height: 38vh; overflow: auto; }
+.activity .entry { margin: 0; padding: 5px 6px; border-radius: 8px; font-size: 12.5px; }
+.activity .entry + .entry { border-top: 1px solid var(--border); }
+.activity .entry.focused { background: rgba(106, 168, 255, 0.12); }
+.activity summary, .activity .line { display: flex; align-items: baseline; gap: 7px; cursor: default; list-style: none; }
+.activity summary { cursor: pointer; }
+.activity summary::-webkit-details-marker { display: none; }
+.activity summary::after { content: "▸"; margin-left: auto; color: var(--muted); }
+.activity details[open] > summary::after { content: "▾"; }
+.activity .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; align-self: center; }
+.activity .done .dot { background: #38d989; }
+.activity .waiting .dot { background: #ffc04d; }
+.activity .info .dot { background: var(--accent); }
+.activity .muted { flex: none; font: 11px var(--mono); }
+.activity .who { flex: none; font-weight: 600; }
+.activity .text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity .detail { margin: 6px 0 4px 14px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; }
+.status-doc { margin-top: 10px; }
+.status-doc > summary { font: 11px var(--mono); color: var(--muted); }
+.status-doc .doc { max-height: 38vh; overflow: auto; margin-top: 6px; font-size: 12px; line-height: 1.45; }
+.status-doc .doc p { margin: 0 0 5px; overflow-wrap: anywhere; }
+.status-doc .doc h4 { margin: 10px 0 4px; font: 600 11px var(--mono); color: var(--accent); }
+
 /* ---- chat ---- */
 .chat-fab {
   position: fixed; right: 20px; bottom: 20px; width: 56px; height: 56px; border-radius: 50%;

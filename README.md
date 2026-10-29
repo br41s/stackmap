@@ -25,7 +25,9 @@ product — with a floating chat that answers questions about it.
   Every answer shows its mode, time and tokens (in / cached / out).
 - **Agent signals:** local agents ping the map — the node (or the collapsed group holding
   it) glows for a moment and a one-line description lands in a ticker bottom-left; click it
-  to fly there. Green = done, amber = waiting on you. See [Agent signals](#agent-signals).
+  to fly there with that ping open in the node's **Activity** card: its pings of the last 14
+  days (and those of everything inside it), each opening to the full message, plus a bot's
+  `estado.md`. Green = done, amber = waiting on you. See [Agent signals](#agent-signals).
 - **Local only:** the server binds to `127.0.0.1`.
 
 ## Run
@@ -53,6 +55,7 @@ Env vars (all optional, `stackmap/.env` is read at start): `OPENROUTER_API_KEY`,
 `STACKMAP_MODEL` (Claude model for Deep, `sonnet`), `STACKMAP_EFFORT`
 (default `low` for map only, `medium` for Deep), `STACKMAP_WORKSPACE` (parent folder of this
 repo), `STACKMAP_AS_OF`, `STACKMAP_FIZZ_DIR` (`~/fizz/salida`; empty turns the Fizz source off),
+`STACKMAP_ACTIVITY_FILE` (`.activity/activity.jsonl`; empty keeps activity in memory only),
 `STACKMAP_HERMES_STATUS_URL` (unset = no Hermes source).
 
 ## Data
@@ -98,14 +101,23 @@ npm test           # merge, edge lifting, prompt, signals, server request guards
 
 ## Agent signals
 
-`POST /api/signal` with a JSON body `{node | cwd, kind, text}`: `node` is a map id, or `cwd`
+`POST /api/signal` with a JSON body `{node | cwd, kind, text, detail}`: `node` is a map id, or `cwd`
 is a folder that `FOLDERS` in `lib/signals.mjs` maps to one (longest match; the rest of the
 workspace → `vscode-workspace`, anything else → `claude-code`). `kind` is `done`, `waiting`
-or `info`; `text` becomes one line of plain text (markdown stripped), at most 140 characters. The page listens on `GET /api/signals`
-(SSE). Signals live in memory only (the last 50) and are never written to `data/`.
+or `info`; `text` becomes one line of plain text (markdown stripped), at most 140 characters;
+`detail`, the message behind it, stays plain text with its line breaks, at most 2,000. The page
+listens on `GET /api/signals` (SSE: the last 50 and each new one, without details) and fills a
+node's Activity card from `GET /api/activity?node=<id>` (its signals and those of its
+descendants, newest first, with details; for a Fizz bot, its `estado.md` lines).
+
+Signals of the last 14 days are saved to `.activity/activity.jsonl` (gitignored; trimmed at
+start; `STACKMAP_ACTIVITY_FILE` moves it, `""` keeps them in memory only), so a restart keeps
+the history. They hold the first 2,000 characters of each Claude Code answer: local only, never
+in `data/` or the chat prompt.
 
 Claude Code sessions send them through `scripts/signal-hook.mjs` (Stop → done, with the first
-line of the last answer, so a long answer never passes the 4 KB body limit; Notification → waiting). Register it once in `~/.claude/settings.json`
+line of the last answer as text and its first 2,000 characters as detail; Notification →
+waiting, with the message). Register it once in `~/.claude/settings.json`
 under `hooks.Stop` and `hooks.Notification`:
 
 ```json
