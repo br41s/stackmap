@@ -52,7 +52,8 @@ Env vars (all optional, `stackmap/.env` is read at start): `OPENROUTER_API_KEY`,
 `STACKMAP_MAP_MODEL` (`openai/gpt-oss-120b`; `claude` forces the CLI), `PORT` (4317),
 `STACKMAP_MODEL` (Claude model for Deep, `sonnet`), `STACKMAP_EFFORT`
 (default `low` for map only, `medium` for Deep), `STACKMAP_WORKSPACE` (parent folder of this
-repo), `STACKMAP_AS_OF`.
+repo), `STACKMAP_AS_OF`, `STACKMAP_FIZZ_DIR` (`~/fizz/salida`; empty turns the Fizz source off),
+`STACKMAP_HERMES_STATUS_URL` (unset = no Hermes source).
 
 ## Data
 
@@ -114,6 +115,20 @@ under `hooks.Stop` and `hooks.Notification`:
 It gives up after 800 ms and always exits 0, so a session never waits on stackmap or fails
 because it is not running. `STACKMAP_PORT` points it at another port. The chat's own
 `claude -p` runs with `--setting-sources ""`, so it never fires the hook.
+
+Two more sources live in `lib/sources.mjs`, for agents that cannot run the hook:
+
+- **Fizz bots** (containers): every 20 s the server checks `~/fizz/salida/*/estado.md`, the
+  status files the bots write into the folder they share with this Mac. A changed file pings
+  its bot (`FIZZ_FOLDERS`; other folders → `fizz-fleet`) with the last line it did not have
+  before: `waiting` if it says *bloquead…* or *esperando*, else `info`. The first read of each
+  file is its baseline, and the daily archive run only removes lines, so neither pings. Bots
+  without an `estado.md` (coach, retador, prospector) stay silent.
+- **Hermes** (Zeabur), opt-in: with `STACKMAP_HERMES_STATUS_URL` set (e.g.
+  `https://blhermes.zeabur.app/api/status`, the public liveness probe), the server reads it
+  every 5 minutes and pings on a change: gateway stopped / running again, degraded / healthy
+  again, a new version, agents starting to work, the probe unreachable / back. It is the
+  server's only request to the outside. A deploy shows only when the version number changes.
 
 ## Chat safety
 

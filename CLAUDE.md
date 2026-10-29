@@ -16,7 +16,9 @@ Read `README.md` for the run commands and the data format.
   `/api/signals` (SSE out). No framework, no build.
 - `lib/signals.mjs` — agent signals: the folder → node table (`FOLDERS`), text cleaning and
   the in-memory buffer. `scripts/signal-hook.mjs` — the Claude Code Stop/Notification hook
-  that posts them (800 ms timeout, always exits 0).
+  that posts them (800 ms timeout, always exits 0). `lib/sources.mjs` — the other sources:
+  the Fizz `estado.md` watcher (new lines → pings, `FIZZ_FOLDERS`) and the opt-in Hermes
+  `/api/status` poller (changes → pings).
 - `public/graph-model.js` — pure tree/edge-lifting logic, shared by the browser and tests.
 - `public/narrate.js` — relations → briefing sentences; `public/orbit.js` — where neighbours
   go in focus mode. Both pure and tested (`test/cinematic.test.mjs`).
@@ -46,4 +48,6 @@ Read `README.md` for the run commands and the data format.
 - Server stays bound to 127.0.0.1 with the Host and Origin checks; `npm test` covers them.
   Signal POSTs are the inverse: no Origin allowed (local scripts only).
 - Signals stay in memory, out of `data/` and out of the chat prompt (the cached index must not
-  change per question). A renamed project id must be updated in `FOLDERS` — `npm test` fails.
+  change per question). A renamed project id must be updated in `FOLDERS` / `FIZZ_FOLDERS` —
+  `npm test` fails. The Hermes poller is the server's only outbound request: public probe only,
+  opt-in by env var, never an authenticated endpoint.

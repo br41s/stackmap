@@ -22,7 +22,7 @@ function call(path, { method = "GET", headers = {}, body } = {}) {
 }
 
 before(async () => {
-  server = spawn(process.execPath, [fileURLToPath(new URL("../server.mjs", import.meta.url))], { env: { ...process.env, PORT: String(PORT) } });
+  server = spawn(process.execPath, [fileURLToPath(new URL("../server.mjs", import.meta.url))], { env: { ...process.env, PORT: String(PORT), STACKMAP_FIZZ_DIR: "", STACKMAP_HERMES_STATUS_URL: "" } });
   await new Promise((resolve, reject) => {
     server.stdout.on("data", (d) => String(d).includes("stackmap on") && resolve());
     server.on("exit", (code) => reject(new Error(`server exited ${code}`)));
