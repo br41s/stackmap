@@ -14,8 +14,9 @@ import { loadStack } from "./lib/stack.mjs";
 import { systemPrompt, userPrompt, turnContext } from "./lib/prompt.mjs";
 import { runChat } from "./lib/chat.mjs";
 import { runOpenRouter } from "./lib/openrouter.mjs";
-import { FOLDERS, cleanText, createSignals, nodeForCwd } from "./lib/signals.mjs";
-import { pollHermes, watchFizz } from "./lib/sources.mjs";
+import { DAYS, FOLDERS, cleanDetail, cleanText, createSignals, nodeForCwd } from "./lib/signals.mjs";
+import { fizzStatus, pollHermes, watchFizz } from "./lib/sources.mjs";
+import { loadActivity, saveTo } from "./lib/activity.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 // OPENROUTER_API_KEY lives in stackmap/.env (gitignored); never logged, never sent to the page.
@@ -42,6 +43,8 @@ const MAX_CHATS = 3;
 // Hermes: off unless a status URL is set — the server's only request to the outside.
 const FIZZ_DIR = process.env.STACKMAP_FIZZ_DIR ?? join(homedir(), "fizz", "salida");
 const HERMES_STATUS_URL = process.env.STACKMAP_HERMES_STATUS_URL ?? "";
+// Activity history across restarts (gitignored; "" keeps it in memory only).
+const ACTIVITY_FILE = process.env.STACKMAP_ACTIVITY_FILE ?? join(ROOT, ".activity", "activity.jsonl");
 const ALLOWED_HOSTS = new Set([`${HOST}:${PORT}`, `localhost:${PORT}`]);
 const ALLOWED_ORIGINS = new Set([...ALLOWED_HOSTS].map((h) => `http://${h}`));
 
@@ -62,9 +65,9 @@ const SECURITY_HEADERS = {
 };
 
 let activeChats = 0;
-const signals = createSignals();
-function addSignal({ node, kind, text }) {
-  const signal = signals.add({ node, kind, text: cleanText(text) });
+const signals = createSignals(ACTIVITY_FILE ? { history: loadActivity(ACTIVITY_FILE, DAYS), onAdd: saveTo(ACTIVITY_FILE) } : {});
+function addSignal({ node, kind, text, detail }) {
+  const signal = signals.add({ node, kind, text: cleanText(text), detail: cleanDetail(detail || text) });
   console.log(`[signal] ${signal.kind} on ${node}`);
   return signal;
 }
@@ -153,14 +156,15 @@ async function handleChat(req, res) {
   });
 }
 
-// A ping from a local agent: {node} or {cwd} (mapped through FOLDERS), a kind and one line of text.
+// A ping from a local agent: {node} or {cwd} (mapped through FOLDERS), a kind, one line of text
+// and optionally the message behind it (detail).
 // No Origin allowed: a browser always sends one on a cross-site POST, a hook's fetch never does.
 async function handleSignal(req, res) {
   if (req.headers.origin) return send(res, 403, "Signals come from local scripts, not pages");
   if (!String(req.headers["content-type"]).startsWith("application/json")) return send(res, 415, "JSON only");
   let body;
   try {
-    body = await readJson(req, 4_000);
+    body = await readJson(req, 16_000);
   } catch {
     return send(res, 400, "Bad JSON");
   }
@@ -169,7 +173,7 @@ async function handleSignal(req, res) {
   const text = cleanText(body?.text);
   if (!node || !ids.has(node)) return send(res, 400, "Unknown node");
   if (!text) return send(res, 400, "Text required");
-  const signal = addSignal({ node, kind: body.kind, text });
+  const signal = addSignal({ node, kind: body.kind, text, detail: body.detail });
   return send(res, 202, JSON.stringify({ id: signal.id, node }), "application/json");
 }
 
@@ -184,6 +188,23 @@ function streamSignals(req, res) {
     clearInterval(keepAlive);
     unsubscribe();
   });
+}
+
+// A node's activity card: the signals of the node and everything inside it (newest first, with
+// their details) and, for a Fizz bot, its status files.
+async function activityFor(res, id) {
+  const { nodes } = loadStack(DATA);
+  if (!nodes.some((n) => n.id === id)) return send(res, 404, "Unknown node");
+  const children = new Map();
+  for (const n of nodes) if (n.parent) children.set(n.parent, [...(children.get(n.parent) ?? []), n.id]);
+  const ids = [];
+  for (const stack = [id]; stack.length; ) {
+    const cur = stack.pop();
+    ids.push(cur);
+    stack.push(...(children.get(cur) ?? []));
+  }
+  const status = await fizzStatus(FIZZ_DIR && existsSync(FIZZ_DIR) ? FIZZ_DIR : "", id);
+  return send(res, 200, JSON.stringify({ node: id, days: DAYS, signals: signals.forNodes(ids), status }), "application/json");
 }
 
 const server = createServer((req, res) => {
@@ -209,6 +230,7 @@ async function route(req, res) {
   if (req.method !== "GET") return send(res, 405, "Method not allowed");
   if (path === "/api/stack") return send(res, 200, JSON.stringify(stackPayload()), "application/json");
   if (path === "/api/signals") return streamSignals(req, res);
+  if (path === "/api/activity") return activityFor(res, url.searchParams.get("node") ?? "");
   if (path.startsWith("/vendor/")) {
     const rel = VENDOR[path.slice("/vendor/".length)];
     return rel ? serveFile(res, join(ROOT, "node_modules", rel)) : send(res, 404, "Not found");

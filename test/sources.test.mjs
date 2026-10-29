@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { FIZZ_FLEET, FIZZ_FOLDERS, HERMES_NODES, addedLines, fizzSignal, hermesChanges, watchFizz } from "../lib/sources.mjs";
+import { FIZZ_FLEET, FIZZ_FOLDERS, HERMES_NODES, addedLines, fizzSignal, fizzStatus, hermesChanges, watchFizz } from "../lib/sources.mjs";
 import { loadStack } from "../lib/stack.mjs";
 
 test("every node the sources ping is on the map", () => {
@@ -41,7 +41,7 @@ test("the watcher pings appended lines per bot and stays quiet on start and on t
   await writeFile(join(dir, "growth", "estado.md"), "- g2\n");
   await settle();
   stop();
-  assert.deepEqual(got, [{ node: "fizz-bot-seodesk", kind: "info", text: "Latido 09:10: PR #660 abierto" }]);
+  assert.deepEqual(got, [{ node: "fizz-bot-seodesk", kind: "info", text: "Latido 09:10: PR #660 abierto", detail: "Latido 09:10: PR #660 abierto" }]);
 });
 
 test("Hermes: the first read is a baseline; changes become signals", () => {
@@ -59,4 +59,17 @@ test("Hermes: the first read is a baseline; changes become signals", () => {
   assert.deepEqual(texts(ok, null), ["hermes-dashboard waiting Hermes status unreachable"]);
   assert.deepEqual(texts(null, null), []);
   assert.deepEqual(texts(null, ok), ["hermes-dashboard done Hermes status reachable again"]);
+});
+
+test("a bot's card gets its own status file; the fleet gets the root one and unclaimed folders", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "stackmap-status-"));
+  for (const f of ["seo", "growth", "2026-10-03-promo"]) await mkdir(join(dir, f));
+  await writeFile(join(dir, "seo", "estado.md"), "# Estado SEODesk\n\n## Bloqueado\n- **GSC** caído\nLatido 09:10\n");
+  await writeFile(join(dir, "growth", "estado.md"), "- g1\n");
+  await writeFile(join(dir, "estado.md"), "root\n");
+  const seo = await fizzStatus(dir, "fizz-bot-seodesk");
+  assert.deepEqual(seo.map((d) => [d.file, d.lines]), [["seo/estado.md", ["# Estado SEODesk", "# Bloqueado", "GSC caído", "Latido 09:10"]]]);
+  assert.deepEqual((await fizzStatus(dir, FIZZ_FLEET)).map((d) => d.file).sort(), ["estado.md", "growth/estado.md"]);
+  assert.deepEqual(await fizzStatus(dir, "fizz-bot-coach"), []);
+  assert.deepEqual(await fizzStatus("", "fizz-bot-seodesk"), []);
 });
