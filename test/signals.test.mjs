@@ -33,6 +33,14 @@ test("text becomes one short line", () => {
   assert.equal(cleanText(42), "");
 });
 
+test("markdown becomes plain text; snake_case and [[mentions]] survive", () => {
+  assert.equal(cleanText("**Zero tokens a day.** No part calls a model"), "Zero tokens a day. No part calls a model");
+  assert.equal(cleanText("Committed as `2183717 feat(signals): x` on `feat/agent-signals`"), "Committed as 2183717 feat(signals): x on feat/agent-signals");
+  assert.equal(cleanText("Opened [br41s/stackmap#5 — feat](https://github.com/br41s/stackmap/pull/5)"), "Opened br41s/stackmap#5 — feat");
+  assert.equal(cleanText("## Done\n- fixed *the* build\n> quoted __note__"), "Done fixed the build quoted note");
+  assert.equal(cleanText("renamed signal_hook in [[proj-finview]], 2 * 3 = 6"), "renamed signal_hook in [[proj-finview]], 2 * 3 = 6");
+});
+
 test("the buffer keeps the newest, fans out, and forgets unsubscribed listeners", () => {
   const signals = createSignals({ keep: 2 });
   const got = [];
