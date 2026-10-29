@@ -23,6 +23,9 @@ product — with a floating chat that answers questions about it.
     (read-only). Each lookup re-sends the prompt, so expect ~3× the tokens; use it for exact
     schedules, config, live state.
   Every answer shows its mode, time and tokens (in / cached / out).
+- **Agent signals:** local agents ping the map — the node (or the collapsed group holding
+  it) glows for a moment and a one-line description lands in a ticker bottom-left; click it
+  to fly there. Green = done, amber = waiting on you. See [Agent signals](#agent-signals).
 - **Local only:** the server binds to `127.0.0.1`.
 
 ## Run
@@ -89,8 +92,28 @@ Run it by hand: Claude desktop → Scheduled → "Stackmap: weekly refresh PR" �
 
 ```bash
 npm run check      # merge + list dangling edges, unknown parents, cycles, duplicates
-npm test           # merge, edge lifting, prompt, server request guards
+npm test           # merge, edge lifting, prompt, signals, server request guards
 ```
+
+## Agent signals
+
+`POST /api/signal` with a JSON body `{node | cwd, kind, text}`: `node` is a map id, or `cwd`
+is a folder that `FOLDERS` in `lib/signals.mjs` maps to one (longest match; the rest of the
+workspace → `vscode-workspace`, anything else → `claude-code`). `kind` is `done`, `waiting`
+or `info`; `text` is cut to one line of 140 characters. The page listens on `GET /api/signals`
+(SSE). Signals live in memory only (the last 50) and are never written to `data/`.
+
+Claude Code sessions send them through `scripts/signal-hook.mjs` (Stop → done, with the first
+line of the last answer; Notification → waiting). Register it once in `~/.claude/settings.json`
+under `hooks.Stop` and `hooks.Notification`:
+
+```json
+{ "matcher": "", "hooks": [{ "type": "command", "command": "node /Users/brais/VSCODE/stackmap/scripts/signal-hook.mjs" }] }
+```
+
+It gives up after 800 ms and always exits 0, so a session never waits on stackmap or fails
+because it is not running. `STACKMAP_PORT` points it at another port. The chat's own
+`claude -p` runs with `--setting-sources ""`, so it never fires the hook.
 
 ## Chat safety
 
@@ -102,4 +125,5 @@ chats out of `~/.claude/projects` and ChatMemo), and read denials for `.env*`, k
 
 The server only answers requests whose `Host` is `127.0.0.1:<port>` / `localhost:<port>`
 (DNS rebinding), and chat POSTs must carry this page's `Origin` and a JSON body (no
-cross-site form posts).
+cross-site form posts). Signal POSTs must carry no `Origin` at all (a browser always sends
+one, a local script never does) and a JSON body; the page shows their text as plain text.

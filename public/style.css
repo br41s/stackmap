@@ -220,6 +220,21 @@ a { color: var(--accent); }
 .tip { position: fixed; pointer-events: none; padding: 9px 11px; max-width: 290px; font-size: 12px; z-index: 5; }
 .tip .muted { margin-top: 4px; font: 11px var(--mono); }
 
+/* ---- agent signals (newest on top, above the status line) ---- */
+.signals { position: fixed; left: 12px; bottom: 46px; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; max-width: min(420px, calc(100vw - 24px)); z-index: 4; }
+.details:not([hidden]) ~ .signals { left: 424px; max-width: min(420px, calc(100vw - 436px)); }
+.signal { animation: rise 0.35s ease-out; }
+.signal button {
+  display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left; padding: 6px 11px; border-radius: 9px; font-size: 12px;
+}
+.signal .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; align-self: center; }
+.signal.done .dot { background: #38d989; box-shadow: 0 0 8px #38d989; }
+.signal.waiting .dot { background: #ffc04d; box-shadow: 0 0 8px #ffc04d; }
+.signal.info .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.signal strong { flex: none; font-weight: 600; }
+.signal .text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signal .muted { flex: none; font: 11px var(--mono); }
+
 /* ---- chat ---- */
 .chat-fab {
   position: fixed; right: 20px; bottom: 20px; width: 56px; height: 56px; border-radius: 50%;
@@ -282,6 +297,8 @@ a { color: var(--accent); }
   .details:not([hidden]) ~ .chat-fab { bottom: calc(46vh + 24px); }
   .details:not([hidden]) ~ .chat { bottom: calc(46vh + 92px); height: min(420px, calc(54vh - 110px)); }
   .status { display: none; }
+  .signals { bottom: 12px; max-width: calc(100vw - 96px); }
+  .details:not([hidden]) ~ .signals { display: none; }
   .intro-title { font-size: 34px; }
 }
 @keyframes sheet-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }

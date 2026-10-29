@@ -1,7 +1,8 @@
 // The map: loads /api/stack, draws the expanded part of the tree with Cytoscape + fcose, and
 // turns every click into a camera move. A node → focus mode (focus.js): it grows, its
 // relations fly into orbit, the HUD types out a briefing. An open group → the camera frames
-// it. Search, chat links and HUD chips all travel the same way.
+// it. Search, chat links and HUD chips all travel the same way. Agent signals
+// (/api/signals) make their node glow and land in a ticker.
 import { buildIndex, ancestry, descendantCount, visibleNodeIds, liftEdges, representative } from "./graph-model.js";
 import { initChat, openChat } from "./chat.js";
 import { createFocus } from "./focus.js";
@@ -70,7 +71,7 @@ function cyStyle() {
   const bg = cssVar("--bg");
   const accent = cssVar("--accent");
   // Class changes (dim, hero, orbit…) fade and resize on their own through these.
-  const nodeFx = { "transition-property": "opacity, width, height, font-size, underlay-opacity, text-opacity, background-opacity, border-opacity", "transition-duration": REDUCED ? 0 : 650, "transition-timing-function": "ease-in-out-cubic" };
+  const nodeFx = { "transition-property": "opacity, width, height, font-size, underlay-opacity, underlay-padding, text-opacity, background-opacity, border-opacity", "transition-duration": REDUCED ? 0 : 650, "transition-timing-function": "ease-in-out-cubic" };
   const edgeFx = { "transition-property": "opacity, width, line-color", "transition-duration": REDUCED ? 0 : 650 };
   return [
     { selector: "node", style: {
@@ -128,6 +129,8 @@ function cyStyle() {
     // The relation's name sits at the neighbour's end, so it never piles up on the hero.
     { selector: "edge.beam-out", style: { "target-label": "data(kindLabel)", "target-text-offset": 64 } },
     { selector: "edge.beam-in", style: { "source-label": "data(kindLabel)", "source-text-offset": 64 } },
+    // A signal just arrived (setupSignals): the glow swells, then fades back through nodeFx.
+    { selector: "node.ping", style: { "underlay-color": "data(ping)", "underlay-opacity": 0.85, "underlay-padding": 16 } },
     { selector: ".boot", style: { opacity: 0 } },
   ];
 }
@@ -545,6 +548,42 @@ function buildStatus() {
   fill($("#intro .sub"), `${nodes.length} systems · ${edges.length} relations`);
 }
 
+// ---------- agent signals ----------
+
+// Pings from local agents. A live one makes its node — or the collapsed group standing in for
+// it — glow for a moment; every one lands in the ticker, and a click there flies to the node.
+// The recent ones sent on connect only fill the ticker.
+const SIGNAL_COLORS = { done: "#38d989", waiting: "#ffc04d", info: "#6aa8ff" };
+const TICKER_SIZE = 4;
+
+function pulse(id, kind) {
+  const el = cy.getElementById(representative(state.index, id, state.expanded));
+  if (el.empty()) return;
+  clearTimeout(el.scratch("_ping"));
+  el.data("ping", SIGNAL_COLORS[kind]).addClass("ping");
+  el.scratch("_ping", setTimeout(() => el.removeClass("ping"), REDUCED ? 2500 : 900));
+}
+
+function setupSignals() {
+  const ticker = h("ul", { class: "signals", "aria-live": "polite", "aria-label": "Agent signals" });
+  document.body.append(ticker);
+  const seen = new Set();
+  const show = (s, live) => {
+    if (seen.has(s.id) || !node(s.node)) return;
+    seen.add(s.id);
+    const time = new Date(s.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const item = h("li", { class: `signal ${s.kind}` },
+      h("button", { class: "card", title: `${s.kind} · fly to ${node(s.node).label}`, onclick: () => { item.remove(); reveal(s.node); } },
+        h("span", { class: "dot" }), h("strong", {}, node(s.node).label), h("span", { class: "text" }, s.text), h("span", { class: "muted" }, time)));
+    ticker.prepend(item);
+    while (ticker.children.length > TICKER_SIZE) ticker.lastChild.remove();
+    if (live) pulse(s.node, s.kind);
+  };
+  const feed = new EventSource("/api/signals");
+  feed.addEventListener("recent", (ev) => JSON.parse(ev.data).forEach((s) => show(s, false)));
+  feed.addEventListener("signal", (ev) => show(JSON.parse(ev.data), true));
+}
+
 function setupTooltip() {
   const tip = h("div", { class: "card tip", hidden: true });
   document.body.append(tip);
@@ -623,6 +662,7 @@ async function main() {
   buildStatus();
   setupTooltip();
   setupParallax();
+  setupSignals();
   initChat({
     models: state.stack.meta.models,
     getFocus: () => state.selected,
