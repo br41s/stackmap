@@ -8,11 +8,14 @@ import { openSync, readSync, fstatSync, closeSync } from "node:fs";
 
 const ENDPOINT = `http://127.0.0.1:${process.env.STACKMAP_PORT ?? 4317}/api/signal`;
 
+// First non-empty line, capped: whole answers can pass the server's 4 KB body limit.
+const firstLine = (text) => (typeof text === "string" ? text.trim().split("\n")[0].slice(0, 500) : "");
+
 // Which hook events become a ping, and what they say. null = stay quiet.
 function signalFor(hook) {
-  if (hook.hook_event_name === "Notification") return { kind: "waiting", text: hook.message || "Needs you" };
+  if (hook.hook_event_name === "Notification") return { kind: "waiting", text: firstLine(hook.message) || "Needs you" };
   if (hook.hook_event_name === "Stop" && !hook.stop_hook_active) {
-    return { kind: "done", text: hook.last_assistant_message || lastAssistantText(hook.transcript_path) || "Finished a turn" };
+    return { kind: "done", text: firstLine(hook.last_assistant_message) || lastAssistantText(hook.transcript_path) || "Finished a turn" };
   }
   return null;
 }
@@ -32,7 +35,7 @@ function lastAssistantText(path, tail = 64_000) {
         const entry = JSON.parse(line);
         const parts = entry.type === "assistant" && Array.isArray(entry.message?.content) ? entry.message.content : [];
         const text = parts.filter((p) => p.type === "text" && p.text?.trim()).map((p) => p.text).join(" ");
-        if (text) return text.trim().split("\n")[0];
+        if (text) return firstLine(text);
       } catch {} // the first line of the tail is usually cut
     }
   } catch {}

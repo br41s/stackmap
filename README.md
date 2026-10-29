@@ -100,11 +100,11 @@ npm test           # merge, edge lifting, prompt, signals, server request guards
 `POST /api/signal` with a JSON body `{node | cwd, kind, text}`: `node` is a map id, or `cwd`
 is a folder that `FOLDERS` in `lib/signals.mjs` maps to one (longest match; the rest of the
 workspace → `vscode-workspace`, anything else → `claude-code`). `kind` is `done`, `waiting`
-or `info`; `text` is cut to one line of 140 characters. The page listens on `GET /api/signals`
+or `info`; `text` becomes one line of plain text (markdown stripped), at most 140 characters. The page listens on `GET /api/signals`
 (SSE). Signals live in memory only (the last 50) and are never written to `data/`.
 
 Claude Code sessions send them through `scripts/signal-hook.mjs` (Stop → done, with the first
-line of the last answer; Notification → waiting). Register it once in `~/.claude/settings.json`
+line of the last answer, so a long answer never passes the 4 KB body limit; Notification → waiting). Register it once in `~/.claude/settings.json`
 under `hooks.Stop` and `hooks.Notification`:
 
 ```json
