@@ -52,6 +52,44 @@ test("chat needs this page's Origin and JSON", async () => {
   assert.equal((await call("/api/chat", { method: "POST", headers: { ...json, origin: `http://127.0.0.1:${PORT}` }, body: '{"messages":[]}' })).status, 400);
 });
 
+test("signals: local scripts only, JSON only, known nodes only", async () => {
+  const json = { "content-type": "application/json" };
+  const body = JSON.stringify({ node: "hermes", text: "hi" });
+  assert.equal((await call("/api/signal", { method: "POST", headers: { ...json, origin: `http://127.0.0.1:${PORT}` }, body })).status, 403);
+  assert.equal((await call("/api/signal", { method: "POST", headers: { ...json, origin: "https://evil.example" }, body })).status, 403);
+  assert.equal((await call("/api/signal", { method: "POST", headers: { "content-type": "text/plain" }, body })).status, 415);
+  assert.equal((await call("/api/signal", { method: "POST", headers: json, body: '{"node":"nope","text":"hi"}' })).status, 400);
+  assert.equal((await call("/api/signal", { method: "POST", headers: json, body: '{"node":"hermes","text":"  "}' })).status, 400);
+  assert.equal((await call("/api/signal", { method: "POST", headers: { ...json, host: "evil.example" }, body })).status, 403);
+});
+
+test("a signal posted with a folder reaches the live feed as its node", async () => {
+  const cwd = fileURLToPath(new URL("../../biglobster/.worktrees/x", import.meta.url));
+  const feed = new Promise((resolve, reject) => {
+    const req = request({ host: "127.0.0.1", port: PORT, path: "/api/signals", headers: { host: `127.0.0.1:${PORT}` } }, (res) => {
+      let data = "";
+      res.on("data", (d) => {
+        data += d;
+        if (data.includes("event: recent") && !data.includes("event: signal")) post();
+        const m = data.match(/event: signal\ndata: (.+)\n/);
+        if (m) {
+          req.destroy();
+          resolve(JSON.parse(m[1]));
+        }
+      });
+    });
+    req.on("error", reject);
+    req.end();
+  });
+  let posted;
+  const post = () => (posted ??= call("/api/signal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cwd, kind: "done", text: "shipped\nthe fix" }) }));
+  const signal = await feed;
+  assert.equal((await posted).status, 202);
+  assert.equal(signal.node, "proj-biglobster");
+  assert.equal(signal.kind, "done");
+  assert.equal(signal.text, "shipped the fix");
+});
+
 test("no files outside public/ or the vendor allowlist", async () => {
   assert.notEqual((await call("/../server.mjs")).status, 200);
   assert.notEqual((await call("/%2e%2e/server.mjs")).status, 200);

@@ -12,7 +12,11 @@ Read `README.md` for the run commands and the data format.
   or the cache breaks) and the per-question details (user prompt, picked by `relevantIds`).
   `lib/chat.mjs` — spawns `claude -p` locked down, map only (no tools) or Deep (Read/Grep/
   Glob); change its flags only with a re-test.
-- `server.mjs` — static files, `/api/stack`, `/api/chat` (SSE). No framework, no build.
+- `server.mjs` — static files, `/api/stack`, `/api/chat` (SSE), `/api/signal` (in) and
+  `/api/signals` (SSE out). No framework, no build.
+- `lib/signals.mjs` — agent signals: the folder → node table (`FOLDERS`), text cleaning and
+  the in-memory buffer. `scripts/signal-hook.mjs` — the Claude Code Stop/Notification hook
+  that posts them (800 ms timeout, always exits 0).
 - `public/graph-model.js` — pure tree/edge-lifting logic, shared by the browser and tests.
 - `public/narrate.js` — relations → briefing sentences; `public/orbit.js` — where neighbours
   go in focus mode. Both pure and tested (`test/cinematic.test.mjs`).
@@ -40,3 +44,6 @@ Read `README.md` for the run commands and the data format.
 - Token budget: `npm test` fails if the cached prompt nears the old full-map size. Measured
   2026-10-07: map only ~20–25k in / 0.6–1.7k out per question; Deep ~65k with one lookup.
 - Server stays bound to 127.0.0.1 with the Host and Origin checks; `npm test` covers them.
+  Signal POSTs are the inverse: no Origin allowed (local scripts only).
+- Signals stay in memory, out of `data/` and out of the chat prompt (the cached index must not
+  change per question). A renamed project id must be updated in `FOLDERS` — `npm test` fails.

@@ -1,6 +1,8 @@
-// stackmap server: the map page, /api/stack (merged data/*.json) and /api/chat (local claude CLI).
+// stackmap server: the map page, /api/stack (merged data/*.json), /api/chat (local claude CLI)
+// and agent signals (POST /api/signal in, GET /api/signals out as SSE).
 // Listens on 127.0.0.1 only. Every request must name this host; chat POSTs must come from
-// this page (Origin check) so another site in the browser cannot drive the CLI.
+// this page (Origin check) so another site in the browser cannot drive the CLI. Signal POSTs
+// come from local scripts (hooks), so they must carry no Origin at all.
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -11,6 +13,7 @@ import { loadStack } from "./lib/stack.mjs";
 import { systemPrompt, userPrompt, turnContext } from "./lib/prompt.mjs";
 import { runChat } from "./lib/chat.mjs";
 import { runOpenRouter } from "./lib/openrouter.mjs";
+import { FOLDERS, cleanText, createSignals, nodeForCwd } from "./lib/signals.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 // OPENROUTER_API_KEY lives in stackmap/.env (gitignored); never logged, never sent to the page.
@@ -53,6 +56,7 @@ const SECURITY_HEADERS = {
 };
 
 let activeChats = 0;
+const signals = createSignals();
 
 function send(res, status, body, type = "text/plain; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store", ...SECURITY_HEADERS });
@@ -138,6 +142,40 @@ async function handleChat(req, res) {
   });
 }
 
+// A ping from a local agent: {node} or {cwd} (mapped through FOLDERS), a kind and one line of text.
+// No Origin allowed: a browser always sends one on a cross-site POST, a hook's fetch never does.
+async function handleSignal(req, res) {
+  if (req.headers.origin) return send(res, 403, "Signals come from local scripts, not pages");
+  if (!String(req.headers["content-type"]).startsWith("application/json")) return send(res, 415, "JSON only");
+  let body;
+  try {
+    body = await readJson(req, 4_000);
+  } catch {
+    return send(res, 400, "Bad JSON");
+  }
+  const ids = new Set(loadStack(DATA).nodes.map((n) => n.id));
+  const node = ids.has(body?.node) ? body.node : nodeForCwd(body?.cwd, { workspace: WORKSPACE, home: homedir() });
+  const text = cleanText(body?.text);
+  if (!node || !ids.has(node)) return send(res, 400, "Unknown node");
+  if (!text) return send(res, 400, "Text required");
+  const signal = signals.add({ node, kind: body.kind, text });
+  console.log(`[signal] ${signal.kind} on ${node}`);
+  return send(res, 202, JSON.stringify({ id: signal.id, node }), "application/json");
+}
+
+// The page's live feed: the recent signals once, then each new one. A comment every 25 s keeps
+// idle connections open through anything that times them out.
+function streamSignals(req, res) {
+  res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-store", Connection: "keep-alive", ...SECURITY_HEADERS });
+  res.write(`event: recent\ndata: ${JSON.stringify(signals.recent())}\n\n`);
+  const unsubscribe = signals.subscribe((s) => res.write(`event: signal\ndata: ${JSON.stringify(s)}\n\n`));
+  const keepAlive = setInterval(() => res.write(": keep-alive\n\n"), 25_000);
+  res.on("close", () => {
+    clearInterval(keepAlive);
+    unsubscribe();
+  });
+}
+
 const server = createServer((req, res) => {
   route(req, res).catch((err) => {
     console.error("[server]", err);
@@ -157,8 +195,10 @@ async function route(req, res) {
   }
 
   if (req.method === "POST" && path === "/api/chat") return handleChat(req, res);
+  if (req.method === "POST" && path === "/api/signal") return handleSignal(req, res);
   if (req.method !== "GET") return send(res, 405, "Method not allowed");
   if (path === "/api/stack") return send(res, 200, JSON.stringify(stackPayload()), "application/json");
+  if (path === "/api/signals") return streamSignals(req, res);
   if (path.startsWith("/vendor/")) {
     const rel = VENDOR[path.slice("/vendor/".length)];
     return rel ? serveFile(res, join(ROOT, "node_modules", rel)) : send(res, 404, "Not found");
@@ -171,6 +211,8 @@ async function route(req, res) {
 server.listen(PORT, HOST, () => {
   const { nodes, edges, issues } = loadStack(DATA);
   console.log(`stackmap on http://${HOST}:${PORT} — ${nodes.length} nodes, ${edges.length} edges, ${issues.length} issues`);
+  const ids = new Set(nodes.map((n) => n.id));
+  for (const [folder, id] of Object.entries(FOLDERS)) if (!ids.has(id)) console.warn(`[signal] ${folder} points at ${id}, which is not on the map`);
   const map = mapViaOpenRouter() ? `${MAP_MODEL} via OpenRouter` : `claude ${MODEL}, no tools, effort ${effortFor(false)}${OPENROUTER_KEY ? "" : " (no OPENROUTER_API_KEY in .env)"}`;
   console.log(`chat: map only → ${map}; deep → claude ${MODEL}, Read/Grep/Glob in ${READ_DIRS.join(", ")}, effort ${effortFor(true)}`);
 });
