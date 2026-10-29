@@ -1,5 +1,6 @@
 // stackmap server: the map page, /api/stack (merged data/*.json), /api/chat (local claude CLI)
-// and agent signals (POST /api/signal in, GET /api/signals out as SSE).
+// and agent signals (POST /api/signal in, GET /api/signals out as SSE). Signals also come from
+// the Fizz bots' status files and, when STACKMAP_HERMES_STATUS_URL is set, Hermes' /api/status.
 // Listens on 127.0.0.1 only. Every request must name this host; chat POSTs must come from
 // this page (Origin check) so another site in the browser cannot drive the CLI. Signal POSTs
 // come from local scripts (hooks), so they must carry no Origin at all.
@@ -14,6 +15,7 @@ import { systemPrompt, userPrompt, turnContext } from "./lib/prompt.mjs";
 import { runChat } from "./lib/chat.mjs";
 import { runOpenRouter } from "./lib/openrouter.mjs";
 import { FOLDERS, cleanText, createSignals, nodeForCwd } from "./lib/signals.mjs";
+import { pollHermes, watchFizz } from "./lib/sources.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 // OPENROUTER_API_KEY lives in stackmap/.env (gitignored); never logged, never sent to the page.
@@ -36,6 +38,10 @@ const modelLabels = () => ({ map: mapViaOpenRouter() ? MAP_MODEL.split("/").pop(
 // Deep mode decides what to look up, so it thinks more. STACKMAP_EFFORT overrides both.
 const effortFor = (deep) => process.env.STACKMAP_EFFORT ?? (deep ? "medium" : "low");
 const MAX_CHATS = 3;
+// Signal sources besides the hook. Fizz: on when the folder exists ("" turns it off).
+// Hermes: off unless a status URL is set — the server's only request to the outside.
+const FIZZ_DIR = process.env.STACKMAP_FIZZ_DIR ?? join(homedir(), "fizz", "salida");
+const HERMES_STATUS_URL = process.env.STACKMAP_HERMES_STATUS_URL ?? "";
 const ALLOWED_HOSTS = new Set([`${HOST}:${PORT}`, `localhost:${PORT}`]);
 const ALLOWED_ORIGINS = new Set([...ALLOWED_HOSTS].map((h) => `http://${h}`));
 
@@ -57,6 +63,11 @@ const SECURITY_HEADERS = {
 
 let activeChats = 0;
 const signals = createSignals();
+function addSignal({ node, kind, text }) {
+  const signal = signals.add({ node, kind, text: cleanText(text) });
+  console.log(`[signal] ${signal.kind} on ${node}`);
+  return signal;
+}
 
 function send(res, status, body, type = "text/plain; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store", ...SECURITY_HEADERS });
@@ -158,8 +169,7 @@ async function handleSignal(req, res) {
   const text = cleanText(body?.text);
   if (!node || !ids.has(node)) return send(res, 400, "Unknown node");
   if (!text) return send(res, 400, "Text required");
-  const signal = signals.add({ node, kind: body.kind, text });
-  console.log(`[signal] ${signal.kind} on ${node}`);
+  const signal = addSignal({ node, kind: body.kind, text });
   return send(res, 202, JSON.stringify({ id: signal.id, node }), "application/json");
 }
 
@@ -213,6 +223,16 @@ server.listen(PORT, HOST, () => {
   console.log(`stackmap on http://${HOST}:${PORT} — ${nodes.length} nodes, ${edges.length} edges, ${issues.length} issues`);
   const ids = new Set(nodes.map((n) => n.id));
   for (const [folder, id] of Object.entries(FOLDERS)) if (!ids.has(id)) console.warn(`[signal] ${folder} points at ${id}, which is not on the map`);
+  const sources = ["hook POSTs"];
+  if (FIZZ_DIR && existsSync(FIZZ_DIR)) {
+    watchFizz({ dir: FIZZ_DIR, add: addSignal });
+    sources.push(`Fizz status files in ${FIZZ_DIR}`);
+  }
+  if (HERMES_STATUS_URL) {
+    pollHermes({ url: HERMES_STATUS_URL, add: addSignal });
+    sources.push(`Hermes ${HERMES_STATUS_URL} every 5 min`);
+  }
+  console.log(`signals: ${sources.join("; ")}`);
   const map = mapViaOpenRouter() ? `${MAP_MODEL} via OpenRouter` : `claude ${MODEL}, no tools, effort ${effortFor(false)}${OPENROUTER_KEY ? "" : " (no OPENROUTER_API_KEY in .env)"}`;
   console.log(`chat: map only → ${map}; deep → claude ${MODEL}, Read/Grep/Glob in ${READ_DIRS.join(", ")}, effort ${effortFor(true)}`);
 });
