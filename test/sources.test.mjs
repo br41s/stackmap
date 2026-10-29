@@ -73,3 +73,15 @@ test("a bot's card gets its own status file; the fleet gets the root one and unc
   assert.deepEqual(await fizzStatus(dir, "fizz-bot-coach"), []);
   assert.deepEqual(await fizzStatus("", "fizz-bot-seodesk"), []);
 });
+
+test("status files stay within a total budget, newest lines kept, and a document cap", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "stackmap-budget-"));
+  for (const f of ["a", "b", "c"]) {
+    await mkdir(join(dir, f));
+    await writeFile(join(dir, f, "estado.md"), ["old", "mid", "new"].map((l) => `${f}-${l}`).join("\n"));
+  }
+  const tight = await fizzStatus(dir, FIZZ_FLEET, { budget: 10 }); // 5 characters a line
+  assert.deepEqual(tight.map((d) => d.lines), [["a-mid", "a-new"]]);
+  assert.equal((await fizzStatus(dir, FIZZ_FLEET, { maxDocs: 2 })).length, 2);
+  assert.equal((await fizzStatus(dir, FIZZ_FLEET)).length, 3);
+});
