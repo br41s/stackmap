@@ -108,10 +108,12 @@ or `info`; `text` becomes one line of plain text (markdown stripped), at most 14
 `detail`, the message behind it, stays plain text with its line breaks, at most 2,000. The page
 listens on `GET /api/signals` (SSE: the last 50 and each new one, without details) and fills a
 node's Activity card from `GET /api/activity?node=<id>` (its signals and those of its
-descendants, newest first, with details; for a Fizz bot, its `estado.md` lines).
+descendants, newest first, with details; for a Fizz bot, its `estado.md` lines — at most 20
+files and 256k characters in all, newest lines kept).
 
 Signals of the last 14 days are saved to `.activity/activity.jsonl` (gitignored; trimmed at
-start; `STACKMAP_ACTIVITY_FILE` moves it, `""` keeps them in memory only), so a restart keeps
+start, every entry re-checked and re-cleaned like a live signal — unknown kinds and nodes
+dropped; `STACKMAP_ACTIVITY_FILE` moves it, `""` keeps them in memory only), so a restart keeps
 the history. They hold the first 2,000 characters of each Claude Code answer: local only, never
 in `data/` or the chat prompt.
 

@@ -65,7 +65,9 @@ const SECURITY_HEADERS = {
 };
 
 let activeChats = 0;
-const signals = createSignals(ACTIVITY_FILE ? { history: loadActivity(ACTIVITY_FILE, DAYS), onAdd: saveTo(ACTIVITY_FILE) } : {});
+const signals = createSignals(ACTIVITY_FILE
+  ? { history: loadActivity(ACTIVITY_FILE, DAYS, { nodes: new Set(loadStack(DATA).nodes.map((n) => n.id)) }), onAdd: saveTo(ACTIVITY_FILE) }
+  : {});
 function addSignal({ node, kind, text, detail }) {
   const signal = signals.add({ node, kind, text: cleanText(text), detail: cleanDetail(detail || text) });
   console.log(`[signal] ${signal.kind} on ${node}`);

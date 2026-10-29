@@ -17,7 +17,8 @@ Read `README.md` for the run commands and the data format.
   details, plus a bot's `estado.md`). No framework, no build.
 - `lib/signals.mjs` — agent signals: the folder → node table (`FOLDERS`), text/detail
   cleaning and the 14-day history. `lib/activity.mjs` — saves it to `.activity/activity.jsonl`
-  (gitignored) and reloads it trimmed at start. `scripts/signal-hook.mjs` — the Claude Code Stop/Notification hook
+  (gitignored) and reloads it trimmed at start, trusting nothing in the file (same cleaning as a
+  live signal; unknown kinds/nodes dropped). `scripts/signal-hook.mjs` — the Claude Code Stop/Notification hook
   that posts them (800 ms timeout, always exits 0). `lib/sources.mjs` — the other sources:
   the Fizz `estado.md` watcher (new lines → pings, `FIZZ_FOLDERS`) and the opt-in Hermes
   `/api/status` poller (changes → pings).
