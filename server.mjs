@@ -14,7 +14,7 @@ import { loadStack } from "./lib/stack.mjs";
 import { systemPrompt, userPrompt, turnContext } from "./lib/prompt.mjs";
 import { runChat } from "./lib/chat.mjs";
 import { runOpenRouter } from "./lib/openrouter.mjs";
-import { DAYS, FOLDERS, cleanDetail, cleanText, createSignals, nodeForCwd } from "./lib/signals.mjs";
+import { AGENT_HOME, DAYS, FOLDERS, cleanDetail, cleanText, createSignals, nodeForCwd } from "./lib/signals.mjs";
 import { fizzStatus, pollHermes, watchFizz } from "./lib/sources.mjs";
 import { loadActivity, saveTo } from "./lib/activity.mjs";
 
@@ -196,7 +196,8 @@ function streamSignals(req, res) {
 }
 
 // A node's activity card: the signals of the node and everything inside it (newest first, with
-// their details) and, for a Fizz bot, its status files.
+// their details) and, for a Fizz bot, its status files. An agent's home node (its desk in the
+// office) also lists everything that agent sent, wherever it landed.
 async function activityFor(res, id) {
   const { nodes } = loadStack(DATA);
   if (!nodes.some((n) => n.id === id)) return send(res, 404, "Unknown node");
@@ -209,7 +210,7 @@ async function activityFor(res, id) {
     stack.push(...(children.get(cur) ?? []));
   }
   const status = await fizzStatus(FIZZ_DIR && existsSync(FIZZ_DIR) ? FIZZ_DIR : "", id);
-  return send(res, 200, JSON.stringify({ node: id, days: DAYS, signals: signals.forNodes(ids), status }), "application/json");
+  return send(res, 200, JSON.stringify({ node: id, days: DAYS, signals: signals.forNodes(ids, 300, Object.keys(AGENT_HOME).find((a) => AGENT_HOME[a] === id)), status }), "application/json");
 }
 
 const server = createServer((req, res) => {

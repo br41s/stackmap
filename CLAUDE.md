@@ -27,8 +27,10 @@ Read `README.md` for the run commands and the data format.
   go in focus mode. Both pure and tested (`test/cinematic.test.mjs`).
 - `public/office-layout.js` — the 3D office as pure data: desks (`OFFICE_AGENTS`, ids match
   `AGENTS` in `lib/signals.mjs`), stations (children of `layer-products` / `layer-hosting`),
-  node → object lookup, and `officeStates()` (where each agent is, from signals + time; hold
-  times in `HOLD_MS`). `public/office.js` — draws it with three.js (procedural shapes, DOM
+  node → object lookup, and `officeStates()` (where each agent is, from signals + time: a
+  `working` signal holds it at the station until its `done`/`waiting`, `HOLD_MS` has the
+  linger and the safety caps). An agent's home node (`AGENT_HOME` in `lib/signals.mjs`) also
+  lists all of that agent's signals in `/api/activity`. `public/office.js` — draws it with three.js (procedural shapes, DOM
   labels and bubbles); app.js loads it on the first open, calls `show()` / `hide()` (hide stops
   the frame loop completely) and feeds it the same SSE signals. Tested in `test/office.test.mjs`;
   the renderer is not (needs a GPU) — check it by eye after changing it.

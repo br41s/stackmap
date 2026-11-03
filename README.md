@@ -32,9 +32,13 @@ product — with a floating chat that answers questions about it.
   one desk per agent (Claude Code, Hermes, Buzz/Fizz, and free desks for Gemini and ChatGPT),
   one workstation per project, one rack per hosting platform. When a signal arrives its agent
   walks to the station the node belongs to, types, and says the signal's text in a bubble;
-  two agents at one station collaborate; after a while (12 s info, 20 s done, 90 s waiting) it
-  walks back. Click a desk or station to open the same Activity card and chat focus as on the
-  map. Drag rotates a little, right-drag (or Shift-drag) pans, the wheel zooms. Closed, it
+  two agents at one station collaborate. The task decides when it walks back: a `working`
+  signal (a prompt was sent) keeps it there until its `done` (it lingers 8 s so the result can
+  be read) or `waiting` (hand up until the next signal); only a note (`info`) is brief, 12 s,
+  and a session that never reports back is given up on after 15 min (`HOLD_MS` in
+  `public/office-layout.js`). Bubbles that would overlap stack up instead. Click a desk or station
+  to open the same Activity card and chat focus as on the map; an agent's desk card lists
+  everything that agent sent, wherever it landed. Drag rotates a little, right-drag (or Shift-drag) pans, the wheel zooms. Closed, it
   costs nothing: the render loop stops and three.js is not even loaded until the first open.
 - **Local only:** the server binds to `127.0.0.1`.
 
@@ -112,8 +116,8 @@ npm test           # merge, edge lifting, prompt, signals, 3D office layout, ser
 
 `POST /api/signal` with a JSON body `{node | cwd, agent?, kind, text, detail}`: `node` is a map id, or `cwd`
 is a folder that `FOLDERS` in `lib/signals.mjs` maps to one (longest match; the rest of the
-workspace → `vscode-workspace`, anything else → `claude-code`). `kind` is `done`, `waiting`
-or `info`; `text` becomes one line of plain text (markdown stripped), at most 140 characters;
+workspace → `vscode-workspace`, anything else → `claude-code`). `kind` is `working` (a task started and is
+still open), `done`, `waiting` or `info`; `text` becomes one line of plain text (markdown stripped), at most 140 characters;
 `detail`, the message behind it, stays plain text with its line breaks, at most 2,000. `agent` says
 who sent it — `claude-code`, `hermes`, `buzz`, `gemini` or `chatgpt` (`AGENTS` in
 `lib/signals.mjs`; the 3D office seats one avatar for each). Anything else is ignored, and without
@@ -139,10 +143,12 @@ dropped; `STACKMAP_ACTIVITY_FILE` moves it, `""` keeps them in memory only), so 
 the history. They hold the first 2,000 characters of each Claude Code answer: local only, never
 in `data/` or the chat prompt.
 
-Claude Code sessions send them through `scripts/signal-hook.mjs` (Stop → done, with the first
-line of the last answer as text and its first 2,000 characters as detail; Notification →
-waiting, with the message). Register it once in `~/.claude/settings.json`
-under `hooks.Stop` and `hooks.Notification`:
+Claude Code sessions send them through `scripts/signal-hook.mjs` (UserPromptSubmit → working,
+with the first line of the prompt as text; Stop → done, with the first line of the last answer
+as text and its first 2,000 characters as detail; Notification → waiting, with the message).
+Register it once in `~/.claude/settings.json` under `hooks.UserPromptSubmit`, `hooks.Stop` and
+`hooks.Notification` (without the first, the office still works, but an agent only shows up when
+it finishes and goes home 8 s later):
 
 ```json
 { "matcher": "", "hooks": [{ "type": "command", "command": "node /Users/brais/VSCODE/stackmap/scripts/signal-hook.mjs" }] }

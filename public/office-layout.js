@@ -23,10 +23,13 @@ export const ZONES = [
 export const SPACING = { desk: 5.5, project: 4.4, rack: 2.8, rows: 4.8 };
 const DESK_Z = -9;
 
-// How long an agent stays at a station after its last signal before walking back.
-// A finished turn is a short visit, a request for the user stays until it is old news.
-export const HOLD_MS = { done: 20_000, waiting: 90_000, info: 12_000 };
-export const holdMs = (signal) => HOLD_MS[signal?.kind] ?? HOLD_MS.info;
+// How long a signal keeps its agent at the station, by kind. The task decides, not a timer:
+// `working` (a task started) and `waiting` (it needs the user) stay until the agent's next
+// signal; the large value is only a safety net for a session that died without saying so.
+// `done` is a short linger so the result can be read before the agent walks home; `info` is
+// a note, gone quickly. Pass your own table to officeStates() to change any of them.
+export const HOLD_MS = { working: 15 * 60_000, waiting: 15 * 60_000, done: 8_000, info: 12_000 };
+export const holdMs = (signal, hold = HOLD_MS) => hold[signal?.kind] ?? hold.info ?? HOLD_MS.info;
 
 const round = (n) => Math.round(n * 100) / 100;
 
@@ -109,9 +112,10 @@ export const slotOffset = (i, n, gap = 1.2) => round((i - (n - 1) / 2) * gap);
 //   idle           at its own desk (no signal inside its hold time)
 //   working        at the station / desk its latest signal names, with that signal's text
 //   waiting        same, but the signal asks for the user (kind "waiting")
+//   done           same, just finished: the result stays up for the linger, then it walks home
 //   collaborating  working while someone else is at the same station or desk
 // Pure: the renderer walks avatars to `target`, so "walking" is just the gap between the two.
-export function officeStates({ layout, locator, signals, now }) {
+export function officeStates({ layout, locator, signals, now, hold = HOLD_MS }) {
   const mine = new Map(layout.desks.map((d) => [d.agent, d]));
   const latest = new Map();
   for (const s of signals) {
@@ -122,9 +126,9 @@ export function officeStates({ layout, locator, signals, now }) {
   const states = layout.desks.map((desk) => {
     const s = latest.get(desk.agent);
     const home = { agent: desk.agent, mode: "idle", key: `desk:${desk.agent}`, node: desk.node, kind: null, text: "", signalId: null, base: desk.stand };
-    if (!s || now - s.at >= holdMs(s) || now < s.at) return home;
+    if (!s || now - s.at >= holdMs(s, hold) || now < s.at) return home;
     const place = locator.resolve(s.node) ?? { key: home.key, stand: desk.stand };
-    return { ...home, mode: s.kind === "waiting" ? "waiting" : "working", key: place.key, node: s.node, kind: s.kind, text: s.text, signalId: s.id, base: place.stand };
+    return { ...home, mode: s.kind === "waiting" ? "waiting" : s.kind === "done" ? "done" : "working", key: place.key, node: s.node, kind: s.kind, text: s.text, signalId: s.id, base: place.stand };
   });
 
   const groups = new Map();
@@ -139,10 +143,13 @@ export function officeStates({ layout, locator, signals, now }) {
 }
 
 // One step of walking towards a target: returns the new position and whether it is there.
+// Already there, or no distance to walk (a zero or negative step), never divides by zero.
 export function stepToward(pos, target, distance) {
   const dx = target.x - pos.x;
   const dz = target.z - pos.z;
   const left = Math.hypot(dx, dz);
+  if (left === 0) return { pos: { x: target.x, z: target.z }, arrived: true, heading: 0 };
+  if (distance <= 0) return { pos: { x: pos.x, z: pos.z }, arrived: false, heading: Math.atan2(dx, dz) };
   if (left <= distance) return { pos: { x: target.x, z: target.z }, arrived: true, heading: Math.atan2(dx, dz) };
   return { pos: { x: pos.x + (dx / left) * distance, z: pos.z + (dz / left) * distance }, arrived: false, heading: Math.atan2(dx, dz) };
 }

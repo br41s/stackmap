@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Claude Code hook → stackmap signal. Register it for Stop and Notification in
+// Claude Code hook → stackmap signal. Register it for UserPromptSubmit, Stop and Notification in
 // ~/.claude/settings.json: `node /Users/brais/VSCODE/stackmap/scripts/signal-hook.mjs`.
 // Reads the hook's JSON on stdin and posts {cwd, kind, text, detail} to the local server, which
 // maps the folder to a node: text is the ticker line, detail the message behind it, agent says
@@ -17,6 +17,8 @@ const clip = (text) => (typeof text === "string" ? text.trim().slice(0, 2000) : 
 
 // Which hook events become a ping, and what they say. null = stay quiet.
 function signalFor(hook) {
+  // A task starts: the office sends the agent to its station and keeps it there until the Stop.
+  if (hook.hook_event_name === "UserPromptSubmit") return { kind: "working", text: `Working on: ${firstLine(hook.prompt) || "a new task"}` };
   if (hook.hook_event_name === "Notification") return { kind: "waiting", text: firstLine(hook.message) || "Needs you", detail: clip(hook.message) };
   if (hook.hook_event_name === "Stop" && !hook.stop_hook_active) {
     const answer = hook.last_assistant_message || lastAssistantText(hook.transcript_path);
