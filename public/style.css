@@ -138,7 +138,30 @@ a { color: var(--accent); }
 .search li .kind { font: 11px var(--mono); color: var(--muted); margin-left: auto; white-space: nowrap; }
 .search li .path { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tools { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.views { margin-left: auto; display: flex; background: var(--surface); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 10px; padding: 2px; }
+.views + .tools { margin-left: 0; }
+.views button { border: 0; background: transparent; box-shadow: none; font-size: 13px; padding: 5px 11px; border-radius: 8px; color: var(--muted); }
+.views button[aria-pressed="true"] { background: var(--chip); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-strong); }
 .tools button { background: var(--surface); backdrop-filter: blur(16px); font-size: 13px; }
+
+/* ---- 3D office (public/office.js) ---- */
+#office { position: fixed; inset: 0; overflow: hidden; }
+.office-canvas { display: block; touch-action: none; }
+.office-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.office-label { position: absolute; left: 0; top: 0; white-space: nowrap; font: 600 10.5px var(--mono); letter-spacing: 0.04em; color: var(--tag); opacity: 0.6; text-shadow: 0 0 6px var(--bg), 0 0 2px var(--bg); }
+.office-label.desk { font-size: 11.5px; }
+.office-label.hot { opacity: 1; }
+.office-tag { position: absolute; left: 0; top: 0; display: flex; flex-direction: column-reverse; align-items: center; gap: 5px; }
+.office-tag .name { font: 600 11px var(--mono); padding: 2px 9px; border-radius: 999px; background: var(--surface); border: 1px solid color-mix(in srgb, var(--tag) 55%, transparent); color: var(--text); white-space: nowrap; }
+.office-tag.busy .name { box-shadow: 0 0 12px color-mix(in srgb, var(--tag) 70%, transparent); border-color: var(--tag); }
+.office-tag .bubble { max-width: 240px; padding: 5px 10px; border-radius: 10px 10px 10px 2px; background: var(--surface-solid); border: 1px solid var(--accent); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; animation: rise 0.3s ease-out; }
+.office-tag .bubble.done { border-color: #38d989; }
+.office-tag .bubble.waiting { border-color: #ffc04d; }
+.office-tag .bubble.together { border-style: dashed; }
+.office-hint { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); font: 11px var(--mono); color: var(--muted); pointer-events: none; white-space: nowrap; }
+body.view-office #cy { visibility: hidden; pointer-events: none; }
+body.view-office .tools, body.view-office #legend { display: none; }
+@media (max-width: 760px) { .office-hint { display: none; } }
 
 /* ---- legend ---- */
 .legend {

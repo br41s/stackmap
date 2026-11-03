@@ -56,6 +56,9 @@ const VENDOR = {
   "cytoscape-fcose.js": "cytoscape-fcose/cytoscape-fcose.js",
   "marked.umd.js": "marked/lib/marked.umd.js",
   "purify.min.js": "dompurify/dist/purify.min.js",
+  // three 0.187 ships no .min.js: three.module.js imports ./three.core.js, so both go out.
+  "three.module.js": "three/build/three.module.js",
+  "three.core.js": "three/build/three.core.js",
 };
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".json": "application/json" };
 const SECURITY_HEADERS = {
@@ -68,9 +71,9 @@ let activeChats = 0;
 const signals = createSignals(ACTIVITY_FILE
   ? { history: loadActivity(ACTIVITY_FILE, DAYS, { nodes: new Set(loadStack(DATA).nodes.map((n) => n.id)) }), onAdd: saveTo(ACTIVITY_FILE) }
   : {});
-function addSignal({ node, kind, text, detail }) {
-  const signal = signals.add({ node, kind, text: cleanText(text), detail: cleanDetail(detail || text) });
-  console.log(`[signal] ${signal.kind} on ${node}`);
+function addSignal({ node, agent, kind, text, detail }) {
+  const signal = signals.add({ node, agent, kind, text: cleanText(text), detail: cleanDetail(detail || text) });
+  console.log(`[signal] ${signal.kind} on ${node} by ${signal.agent}`);
   return signal;
 }
 
@@ -159,7 +162,7 @@ async function handleChat(req, res) {
 }
 
 // A ping from a local agent: {node} or {cwd} (mapped through FOLDERS), a kind, one line of text
-// and optionally the message behind it (detail).
+// and optionally the message behind it (detail) and who sent it (agent; inferred from the node).
 // No Origin allowed: a browser always sends one on a cross-site POST, a hook's fetch never does.
 async function handleSignal(req, res) {
   if (req.headers.origin) return send(res, 403, "Signals come from local scripts, not pages");
@@ -175,7 +178,7 @@ async function handleSignal(req, res) {
   const text = cleanText(body?.text);
   if (!node || !ids.has(node)) return send(res, 400, "Unknown node");
   if (!text) return send(res, 400, "Text required");
-  const signal = addSignal({ node, kind: body.kind, text, detail: body.detail });
+  const signal = addSignal({ node, agent: body.agent, kind: body.kind, text, detail: body.detail });
   return send(res, 202, JSON.stringify({ id: signal.id, node }), "application/json");
 }
 
@@ -249,11 +252,11 @@ server.listen(PORT, HOST, () => {
   for (const [folder, id] of Object.entries(FOLDERS)) if (!ids.has(id)) console.warn(`[signal] ${folder} points at ${id}, which is not on the map`);
   const sources = ["hook POSTs"];
   if (FIZZ_DIR && existsSync(FIZZ_DIR)) {
-    watchFizz({ dir: FIZZ_DIR, add: addSignal });
+    watchFizz({ dir: FIZZ_DIR, add: (s) => addSignal({ agent: "buzz", ...s }) });
     sources.push(`Fizz status files in ${FIZZ_DIR}`);
   }
   if (HERMES_STATUS_URL) {
-    pollHermes({ url: HERMES_STATUS_URL, add: addSignal });
+    pollHermes({ url: HERMES_STATUS_URL, add: (s) => addSignal({ agent: "hermes", ...s }) });
     sources.push(`Hermes ${HERMES_STATUS_URL} every 5 min`);
   }
   console.log(`signals: ${sources.join("; ")}`);
