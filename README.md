@@ -39,7 +39,8 @@ product — with a floating chat that answers questions about it.
   `public/office-layout.js`). Bubbles that would overlap stack up instead. Click a desk or station
   to open the same Activity card and chat focus as on the map; an agent's desk card lists
   everything that agent sent, wherever it landed. Drag rotates a little, right-drag (or Shift-drag) pans, the wheel zooms. Closed, it
-  costs nothing: the render loop stops and three.js is not even loaded until the first open.
+  costs nothing: the render loop stops and three.js is not even loaded until the first open; with
+  the window unfocused it drops to 12 fps (`BLUR_FPS` in `public/office.js`, 0 pauses it).
 - **Local only:** the server binds to `127.0.0.1`.
 
 ## Run
