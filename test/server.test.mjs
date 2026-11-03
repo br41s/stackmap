@@ -135,3 +135,12 @@ test("signals carry the agent: the one named, else inferred from the node; an un
   assert.equal(by(hermes, "agent test inferred"), "hermes");
   assert.equal(by(card, "agent test unknown"), "claude-code");
 });
+
+test("an agent's desk card lists its signals wherever they landed; a task start is a kind of its own", async () => {
+  const post = (body) => call("/api/signal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  assert.equal((await post({ node: "proj-flywell", agent: "claude-code", kind: "working", text: "desk card test" })).status, 202);
+  const desk = JSON.parse((await call("/api/activity?node=claude-code")).body);
+  assert.deepEqual(desk.signals.filter((s) => s.text === "desk card test").map((s) => [s.node, s.kind]), [["proj-flywell", "working"]]);
+  const plain = JSON.parse((await call("/api/activity?node=cc-hooks")).body);
+  assert.equal(plain.signals.some((s) => s.text === "desk card test"), false);
+});

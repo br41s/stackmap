@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { AGENTS, agentForNode, cleanAgent, createSignals } from "../lib/signals.mjs";
+import { AGENTS, AGENT_HOME, agentForNode, cleanAgent, createSignals } from "../lib/signals.mjs";
 import { loadStack } from "../lib/stack.mjs";
 import { HOLD_MS, OFFICE_AGENTS, createLocator, holdMs, layoutOffice, officeStates, pushSignal, slotOffset, stepToward } from "../public/office-layout.js";
 
@@ -11,7 +11,7 @@ const stack = loadStack(fileURLToPath(new URL("../data", import.meta.url)));
 const layout = layoutOffice(stack);
 const locator = createLocator(stack, layout);
 const NOW = 1_000_000;
-const sig = (over) => ({ id: "s", node: "proj-finview", agent: "claude-code", kind: "done", text: "shipped", at: NOW - 1000, ...over });
+const sig = (over) => ({ id: "s", node: "proj-finview", agent: "claude-code", kind: "working", text: "shipped", at: NOW - 1000, ...over });
 const states = (signals, now = NOW) => officeStates({ layout, locator, signals, now });
 
 // ---------- agent field ----------
@@ -43,8 +43,19 @@ test("createSignals: the agent given wins, a bad one is replaced, saved entries 
   assert.ok(signals.forNodes(["proj-finview"]).every((s) => AGENTS.includes(s.agent)));
 });
 
-test("the office seats exactly the agents the server knows", () => {
+test("the office seats exactly the agents the server knows, and the desk opens the agent's home node", () => {
   assert.deepEqual(OFFICE_AGENTS.map((a) => a.id), AGENTS);
+  for (const a of OFFICE_AGENTS) assert.equal(AGENT_HOME[a.id], a.nodes.find((id) => AGENT_HOME[a.id] === id), a.id); // no home = no desk node
+});
+
+test("the card of an agent's home lists what it sent anywhere, plus what is inside the node", () => {
+  const signals = createSignals();
+  signals.add({ node: "proj-finview", agent: "claude-code", kind: "done", text: "elsewhere" });
+  signals.add({ node: "cc-hooks", agent: "claude-code", kind: "working", text: "inside" });
+  signals.add({ node: "proj-finview", agent: "hermes", kind: "info", text: "not mine" });
+  const texts = (list) => list.map((s) => s.text);
+  assert.deepEqual(texts(signals.forNodes(["claude-code", "cc-hooks"], 300, "claude-code")), ["inside", "elsewhere"]);
+  assert.deepEqual(texts(signals.forNodes(["claude-code", "cc-hooks"])), ["inside"]); // a plain node card is unchanged
 });
 
 // ---------- layout ----------
@@ -113,14 +124,27 @@ test("a signal sends its agent to the station with the signal's text; the others
   assert.equal(s.hermes.mode, "idle");
 });
 
-test("the agent walks back after its hold time, which depends on the kind", () => {
-  for (const kind of Object.keys(HOLD_MS)) {
-    const at = NOW - 1000;
-    assert.equal(states([sig({ kind, at })], at + HOLD_MS[kind] - 1)["claude-code"].mode === "idle", false, `${kind} still there`);
-    assert.equal(states([sig({ kind, at })], at + HOLD_MS[kind])["claude-code"].mode, "idle", `${kind} back at the desk`);
-  }
-  assert.ok(holdMs({ kind: "waiting" }) > holdMs({ kind: "done" }));
+test("the task decides when the agent walks back: it stays while working, goes home after done", () => {
+  const start = NOW - 10 * 60_000; // ten minutes into the task: no timer has sent it home
+  assert.equal(states([sig({ id: "a", at: start })])["claude-code"].mode, "working");
+  assert.equal(states([sig({ id: "a", at: start }), sig({ id: "b", kind: "waiting", at: NOW - 60_000 })])["claude-code"].mode, "waiting");
+  // the Stop arrives: the result stays up for the linger, then the agent is home
+  const finished = [sig({ id: "a", at: start }), sig({ id: "b", kind: "done", text: "all green", at: NOW })];
+  const done = states(finished, NOW + HOLD_MS.done - 1)["claude-code"];
+  assert.equal(done.mode, "done");
+  assert.equal(done.text, "all green");
+  assert.equal(states(finished, NOW + HOLD_MS.done)["claude-code"].mode, "idle");
+});
+
+test("a task that never reports back is given up on; a note is brief; hold times can be replaced", () => {
+  const at = NOW - 1000;
+  assert.equal(states([sig({ at })], at + HOLD_MS.working - 1)["claude-code"].mode, "working");
+  assert.equal(states([sig({ at })], at + HOLD_MS.working)["claude-code"].mode, "idle");
+  assert.equal(states([sig({ kind: "info", at })], at + HOLD_MS.info)["claude-code"].mode, "idle");
+  assert.ok(HOLD_MS.working > HOLD_MS.done && HOLD_MS.waiting > HOLD_MS.done);
   assert.equal(holdMs({ kind: "nonsense" }), HOLD_MS.info);
+  const quick = { ...HOLD_MS, working: 5_000 };
+  assert.equal(officeStates({ layout, locator, signals: [sig({ at })], now: at + 5_000, hold: quick })["claude-code"].mode, "idle");
 });
 
 test("a request for the user is 'waiting'; a node with no station keeps the agent at its desk, working", () => {
@@ -169,5 +193,8 @@ test("walking: steps toward the target, never past it", () => {
   const b = stepToward(a.pos, { x: 3, z: 4 }, 10);
   assert.deepEqual(b.pos, { x: 3, z: 4 });
   assert.equal(b.arrived, true);
+  // seated already, or a zero / negative step (the first frame of the loop): never NaN
+  for (const step of [0, -0.05, 3]) assert.deepEqual(stepToward({ x: 2, z: 2 }, { x: 2, z: 2 }, step).pos, { x: 2, z: 2 });
+  assert.deepEqual(stepToward({ x: 0, z: 0 }, { x: 3, z: 4 }, -1).pos, { x: 0, z: 0 });
   assert.deepEqual([slotOffset(0, 1), slotOffset(0, 2), slotOffset(1, 2)], [0, -0.6, 0.6]);
 });

@@ -144,7 +144,7 @@ function makeAvatar(agent) {
 
 // ---------- the office ----------
 
-export function createOffice(container, { stack, signals = [], onPick = () => {} }) {
+export function createOffice(container, { stack, signals = [], hold, onPick = () => {} }) {
   const layout = layoutOffice(stack);
   const locator = createLocator(stack, layout);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
@@ -345,7 +345,7 @@ export function createOffice(container, { stack, signals = [], onPick = () => {}
   let lastStates = 0;
 
   function recompute(now = Date.now()) {
-    states = officeStates({ layout, locator, signals: signalList, now });
+    states = officeStates({ layout, locator, signals: signalList, now, hold });
     lastStates = now;
     for (const o of objects.values()) o.active = null;
     for (const a of avatars) {
@@ -373,7 +373,8 @@ export function createOffice(container, { stack, signals = [], onPick = () => {}
 
   function frame(t) {
     raf = requestAnimationFrame(frame);
-    const dt = Math.min((t - last) / 1000 || 0, 0.1);
+    // rAF's timestamp can be older than the performance.now() the loop started with: never negative.
+    const dt = Math.min(Math.max((t - last) / 1000 || 0, 0), 0.1);
     last = t;
     const now = Date.now();
     if (now - lastStates > 250) recompute(now);
@@ -410,8 +411,8 @@ export function createOffice(container, { stack, signals = [], onPick = () => {}
         a.bubble.className = `bubble ${st.kind}${st.mode === "collaborating" ? " together" : ""}`;
       }
       a.tag.classList.toggle("busy", st.mode !== "idle");
-      placeLabel(a.tag, a.pos.x, 2.6, a.pos.z);
     }
+    placeTags();
 
     for (const o of objects.values()) {
       const want = o.active ? 0.85 : o.key === selectedKey ? 0.6 : o.hover ? 0.4 : 0;
@@ -423,6 +424,33 @@ export function createOffice(container, { stack, signals = [], onPick = () => {}
       placeLabel(o.text, o.x, 0.05, o.z + (o.key.startsWith("desk:") ? -1.2 : 1.1), 14);
     }
     renderer.render(scene, camera);
+  }
+
+  // Names and bubbles over the avatars. Agents that gather at one station would pile their
+  // bubbles on top of each other, so from the lowest on screen up, each is lifted above any
+  // tag it overlaps. All measuring comes first, then all writing: one layout per frame.
+  function placeTags() {
+    const tags = avatars.map((a) => {
+      tmp.set(a.pos.x, 2.6, a.pos.z).project(camera);
+      const { width: tw, height: th } = a.tag.getBoundingClientRect();
+      return { a, tw, th, x: (tmp.x * 0.5 + 0.5) * w, y: (-tmp.y * 0.5 + 0.5) * h, inView: tmp.z < 1 && Math.abs(tmp.x) < 1.15 && Math.abs(tmp.y) < 1.15 };
+    }).sort((p, q) => q.y - p.y);
+    const placed = [];
+    const clash = (t) => placed.find((p) => Math.abs(t.x - p.x) < (t.tw + p.tw) / 2 + 4 && t.y > p.y - p.th - 4 && t.y - t.th < p.y + 4);
+    const TOP = 60; // below the top bar
+    for (const t of tags.filter((x) => x.inView)) {
+      const home = t.y;
+      for (let pass = 0, hit; pass < tags.length && (hit = clash(t)); pass++) t.y = hit.y - hit.th - 4;
+      if (t.y - t.th < TOP && t.y !== home) { // no room above: stack downwards instead
+        t.y = home;
+        for (let pass = 0, hit; pass < tags.length && (hit = clash(t)); pass++) t.y = hit.y + t.th + 4;
+      }
+      placed.push(t);
+    }
+    for (const t of tags) {
+      t.a.tag.style.visibility = t.inView ? "visible" : "hidden";
+      if (t.inView) t.a.tag.style.transform = `translate(${t.x.toFixed(1)}px, ${t.y.toFixed(1)}px) translate(-50%, -100%)`;
+    }
   }
 
   const turn = (from, to, k) => {
@@ -448,6 +476,8 @@ export function createOffice(container, { stack, signals = [], onPick = () => {}
       left.rotation.x = -1.2 + Math.sin(sec * 17 + k) * 0.22;
       right.rotation.x = -1.2 + Math.sin(sec * 17 + k + 2) * 0.22;
       a.head.rotation.y = st.mode === "collaborating" ? Math.sin(sec * 1.6 + k) * 0.5 : 0;
+    } else if (st.mode === "done") {
+      bob = Math.abs(Math.sin(sec * 5 + k)) * 0.08; // a little hop: the task is finished
     } else if (st.mode === "waiting") {
       right.rotation.z = -2.7 + Math.sin(sec * 7) * 0.25;
       bob = Math.abs(Math.sin(sec * 4)) * 0.12;

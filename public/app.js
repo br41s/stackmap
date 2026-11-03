@@ -9,7 +9,7 @@ import { buildIndex, ancestry, descendantCount, visibleNodeIds, liftEdges, repre
 import { initChat, openChat } from "./chat.js";
 import { createFocus } from "./focus.js";
 import { narrate } from "./narrate.js";
-import { pushSignal } from "./office-layout.js";
+import { OFFICE_AGENTS, pushSignal } from "./office-layout.js";
 
 const LAYER_COLORS = {
   "layer-hosting": "#5b9dff",
@@ -601,7 +601,7 @@ function buildStatus() {
 // Pings from local agents. A live one makes its node — or the collapsed group standing in for
 // it — glow for a moment; every one lands in the ticker, and a click there flies to the node
 // with that ping open in its activity card. The recent ones sent on connect only fill the ticker.
-const SIGNAL_COLORS = { done: "#38d989", waiting: "#ffc04d", info: "#6aa8ff" };
+const SIGNAL_COLORS = { done: "#38d989", waiting: "#ffc04d", info: "#6aa8ff", working: "#6aa8ff" };
 const TICKER_SIZE = 4;
 
 function pulse(id, kind) {
@@ -691,7 +691,9 @@ function setupSignals() {
     ticker.prepend(item);
     while (ticker.children.length > TICKER_SIZE) ticker.lastChild.remove();
     if (live) pulse(s.node, s.kind);
-    if (live && state.selected && ancestry(state.index, s.node).includes(state.selected)) refreshActivity();
+    // The card of a node, or of an agent's desk (everything that agent sent), is open: refresh it.
+    const atDesk = OFFICE_AGENTS.some((a) => a.id === s.agent && a.nodes.includes(state.selected));
+    if (live && state.selected && (atDesk || ancestry(state.index, s.node).includes(state.selected))) refreshActivity();
   };
   const feed = new EventSource("/api/signals");
   feed.addEventListener("recent", (ev) => JSON.parse(ev.data).forEach((s) => show(s, false)));

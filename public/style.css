@@ -253,7 +253,7 @@ body.view-office .tools, body.view-office #legend { display: none; }
 .signal .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; align-self: center; }
 .signal.done .dot { background: #38d989; box-shadow: 0 0 8px #38d989; }
 .signal.waiting .dot { background: #ffc04d; box-shadow: 0 0 8px #ffc04d; }
-.signal.info .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.signal.info .dot, .signal.working .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .signal strong { flex: none; font-weight: 600; }
 .signal .text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .signal .muted { flex: none; font: 11px var(--mono); }
@@ -273,7 +273,7 @@ body.view-office .tools, body.view-office #legend { display: none; }
 .activity .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; align-self: center; }
 .activity .done .dot { background: #38d989; }
 .activity .waiting .dot { background: #ffc04d; }
-.activity .info .dot { background: var(--accent); }
+.activity .info .dot, .activity .working .dot { background: var(--accent); }
 .activity .muted { flex: none; font: 11px var(--mono); }
 .activity .who { flex: none; font-weight: 600; }
 .activity .text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
