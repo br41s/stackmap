@@ -2,8 +2,11 @@
 // Claude Code hook → stackmap signal. Register it for Stop and Notification in
 // ~/.claude/settings.json: `node /Users/brais/VSCODE/stackmap/scripts/signal-hook.mjs`.
 // Reads the hook's JSON on stdin and posts {cwd, kind, text, detail} to the local server, which
-// maps the folder to a node: text is the ticker line, detail the message behind it. Never blocks the agent: 800 ms timeout, every failure ignored (the
-// server not running is the normal case), always exits 0.
+// maps the folder to a node: text is the ticker line, detail the message behind it, agent says
+// who sent it. Never blocks the agent: 800 ms timeout, every failure ignored (the server not
+// running is the normal case), always exits 0.
+// Another agent (Gemini, ChatGPT, an adapter…) posts the same body to /api/signal with its own
+// id: {node, agent: "gemini" | "chatgpt", kind, text, detail} — see "Agent signals" in the README.
 import { openSync, readSync, fstatSync, closeSync } from "node:fs";
 
 const ENDPOINT = `http://127.0.0.1:${process.env.STACKMAP_PORT ?? 4317}/api/signal`;
@@ -53,7 +56,7 @@ async function main() {
   await fetch(ENDPOINT, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ cwd: hook.cwd, ...signal }),
+    body: JSON.stringify({ cwd: hook.cwd, agent: "claude-code", ...signal }),
     signal: AbortSignal.timeout(800),
   });
 }
