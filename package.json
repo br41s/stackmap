@@ -16,6 +16,7 @@
     "cytoscape": "^3.34.3",
     "cytoscape-fcose": "^2.2.0",
     "dompurify": "^3.4.16",
-    "marked": "^18.1.0"
+    "marked": "^18.1.0",
+    "three": "0.187.0"
   }
 }

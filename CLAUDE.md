@@ -25,6 +25,13 @@ Read `README.md` for the run commands and the data format.
 - `public/graph-model.js` — pure tree/edge-lifting logic, shared by the browser and tests.
 - `public/narrate.js` — relations → briefing sentences; `public/orbit.js` — where neighbours
   go in focus mode. Both pure and tested (`test/cinematic.test.mjs`).
+- `public/office-layout.js` — the 3D office as pure data: desks (`OFFICE_AGENTS`, ids match
+  `AGENTS` in `lib/signals.mjs`), stations (children of `layer-products` / `layer-hosting`),
+  node → object lookup, and `officeStates()` (where each agent is, from signals + time; hold
+  times in `HOLD_MS`). `public/office.js` — draws it with three.js (procedural shapes, DOM
+  labels and bubbles); app.js loads it on the first open, calls `show()` / `hide()` (hide stops
+  the frame loop completely) and feeds it the same SSE signals. Tested in `test/office.test.mjs`;
+  the renderer is not (needs a GPU) — check it by eye after changing it.
 - `public/focus.js` — focus mode: snapshots the overview, flies nodes and camera, flowing
   light. Fades/resizes go through style classes + Cytoscape `transition-*` (app.js); only
   motion is animated, one `node.animation()` per flight — never `node.stop()`, which would
@@ -50,6 +57,11 @@ Read `README.md` for the run commands and the data format.
   2026-10-07: map only ~20–25k in / 0.6–1.7k out per question; Deep ~65k with one lookup.
 - Server stays bound to 127.0.0.1 with the Host and Origin checks; `npm test` covers them.
   Signal POSTs are the inverse: no Origin allowed (local scripts only).
+- three is pinned (0.187.0) and served as `three.module.js` + `three.core.js` (the module
+  imports the core by relative path; this version has no `.min.js`). `office.js` imports it by
+  absolute path — an import map would be inline script, which the CSP forbids.
+- Signals carry an `agent` (known ids only, else inferred from the node). Live office state
+  stays in the browser: never in `data/`, never in the chat prompt.
 - Signals stay in `.activity/` (gitignored, 14 days), out of `data/` and out of the chat prompt
   (the cached index must not change per question). The SSE feed stays brief (no details); the
   Activity card fetches them. A renamed project id must be updated in `FOLDERS` / `FIZZ_FOLDERS` —

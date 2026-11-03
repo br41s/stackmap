@@ -2,11 +2,14 @@
 // turns every click into a camera move. A node → focus mode (focus.js): it grows, its
 // relations fly into orbit, the HUD types out a briefing. An open group → the camera frames
 // it. Search, chat links and HUD chips all travel the same way. Agent signals
-// (/api/signals) make their node glow and land in a ticker.
+// (/api/signals) make their node glow and land in a ticker. A switch in the top bar swaps the
+// map for the 3D office (office.js, loaded the first time it is opened): same stack, same signal
+// feed, same HUD and chat — only the picture changes.
 import { buildIndex, ancestry, descendantCount, visibleNodeIds, liftEdges, representative } from "./graph-model.js";
 import { initChat, openChat } from "./chat.js";
 import { createFocus } from "./focus.js";
 import { narrate } from "./narrate.js";
+import { pushSignal } from "./office-layout.js";
 
 const LAYER_COLORS = {
   "layer-hosting": "#5b9dff",
@@ -34,7 +37,7 @@ const edgeColor = (kind) => EDGE_GROUPS[edgeGroup(kind)].color;
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const $ = (sel) => document.querySelector(sel);
-const state = { stack: null, index: null, expanded: new Set(), selected: null, laidOut: false, lifted: new Map() };
+const state = { stack: null, index: null, expanded: new Set(), selected: null, laidOut: false, lifted: new Map(), view: "map", office: null, signalLog: [] };
 let cy;
 let focus;
 
@@ -282,6 +285,7 @@ function toggle(id) {
 
 // Every click lands here. A node flies into focus; an open group is framed.
 function select(id) {
+  if (state.view === "office") return selectInOffice(id);
   const el = cy.getElementById(id);
   if (el.empty()) return reveal(id);
   state.selected = id;
@@ -299,6 +303,7 @@ function select(id) {
 
 function clearSelection() {
   state.selected = null;
+  state.office?.select(null);
   focus.exit();
   highlight();
   showDetails();
@@ -314,12 +319,54 @@ function goBack() {
 // Make a node visible (expand its ancestors) and fly to it.
 async function reveal(id) {
   if (!node(id)) return;
+  if (state.view === "office") return selectInOffice(id);
   const missing = ancestry(state.index, id).slice(0, -1).filter((a) => !state.expanded.has(a));
   if (missing.length) {
     missing.forEach((a) => state.expanded.add(a));
     await render();
   }
   select(id);
+}
+
+// In the office a click only selects: the HUD (activity card, Ask Claude, chat focus) works off
+// state.selected exactly as on the map, and the graph is left alone until the user goes back.
+function selectInOffice(id) {
+  if (!node(id)) return;
+  state.selected = id;
+  state.office.select(id);
+  showDetails();
+}
+
+// Swap the map for the office and back. The office loads three.js on first use; the map stays
+// in the page (hidden, not destroyed), so coming back costs nothing.
+let switching = false;
+async function setView(next) {
+  if (switching || next === state.view) return;
+  switching = true;
+  try {
+    if (next === "office") {
+      if (!state.office) {
+        const { createOffice } = await import("./office.js");
+        state.office = createOffice($("#office"), { stack: state.stack, signals: state.signalLog, onPick: (id) => select(id) });
+      }
+      state.view = "office";
+      document.body.classList.add("view-office");
+      state.office.show();
+      state.office.select(state.selected);
+    } else {
+      state.view = "map";
+      document.body.classList.remove("view-office");
+      state.office.hide();
+      if (state.selected) select(state.selected);
+    }
+  } catch (err) {
+    console.error(err);
+    fill($("#status"), `Oficina 3D not available: ${err.message}`);
+  } finally {
+    $("#view-map").setAttribute("aria-pressed", String(state.view === "map"));
+    $("#view-office").setAttribute("aria-pressed", String(state.view === "office"));
+    switching = false;
+  }
 }
 
 // ---------- HUD ----------
@@ -635,6 +682,8 @@ function setupSignals() {
   const show = (s, live) => {
     if (seen.has(s.id) || !node(s.node)) return;
     seen.add(s.id);
+    state.signalLog = pushSignal(state.signalLog, s);
+    state.office?.signal(s);
     const time = new Date(s.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const item = h("li", { class: `signal ${s.kind}` },
       h("button", { class: "card", title: `${s.kind} · fly to ${node(s.node).label}`, onclick: () => { item.remove(); activity.focus = s.id; reveal(s.node); } },
@@ -720,7 +769,10 @@ async function main() {
     if (ev.key === "Escape") clearSelection();
     else if (ev.key === "Backspace" && focus.active()) { ev.preventDefault(); goBack(); }
     else if (ev.key === "/") { ev.preventDefault(); $("#search").focus(); }
+    else if ((ev.key === "v" || ev.key === "V") && !ev.metaKey && !ev.ctrlKey && !ev.altKey) setView(state.view === "map" ? "office" : "map");
   });
+  $("#view-map").addEventListener("click", () => setView("map"));
+  $("#view-office").addEventListener("click", () => setView("office"));
 
   setupSearch();
   buildLegend();

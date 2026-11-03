@@ -28,6 +28,14 @@ product — with a floating chat that answers questions about it.
   to fly there with that ping open in the node's **Activity** card: its pings of the last 14
   days (and those of everything inside it), each opening to the full message, plus a bot's
   `estado.md`. Green = done, amber = waiting on you. See [Agent signals](#agent-signals).
+- **3D office:** the switch in the top bar (or `V`) swaps the map for an isometric diorama —
+  one desk per agent (Claude Code, Hermes, Buzz/Fizz, and free desks for Gemini and ChatGPT),
+  one workstation per project, one rack per hosting platform. When a signal arrives its agent
+  walks to the station the node belongs to, types, and says the signal's text in a bubble;
+  two agents at one station collaborate; after a while (12 s info, 20 s done, 90 s waiting) it
+  walks back. Click a desk or station to open the same Activity card and chat focus as on the
+  map. Drag rotates a little, right-drag (or Shift-drag) pans, the wheel zooms. Closed, it
+  costs nothing: the render loop stops and three.js is not even loaded until the first open.
 - **Local only:** the server binds to `127.0.0.1`.
 
 ## Run
@@ -46,6 +54,7 @@ npm start          # http://127.0.0.1:4317
 | `Backspace` | back to the previous focus |
 | `Esc` / click empty space | fly back out |
 | `/` | search (lands in focus on the result) |
+| `V` | switch between the map and the 3D office |
 | `[[node-id]]` in a chat answer | click to fly to that node |
 
 Motion follows the OS "reduce motion" setting: with it on, every move is instant.
@@ -96,17 +105,30 @@ Run it by hand: Claude desktop → Scheduled → "Stackmap: weekly refresh PR" �
 
 ```bash
 npm run check      # merge + list dangling edges, unknown parents, cycles, duplicates
-npm test           # merge, edge lifting, prompt, signals, server request guards
+npm test           # merge, edge lifting, prompt, signals, 3D office layout, server request guards
 ```
 
 ## Agent signals
 
-`POST /api/signal` with a JSON body `{node | cwd, kind, text, detail}`: `node` is a map id, or `cwd`
+`POST /api/signal` with a JSON body `{node | cwd, agent?, kind, text, detail}`: `node` is a map id, or `cwd`
 is a folder that `FOLDERS` in `lib/signals.mjs` maps to one (longest match; the rest of the
 workspace → `vscode-workspace`, anything else → `claude-code`). `kind` is `done`, `waiting`
 or `info`; `text` becomes one line of plain text (markdown stripped), at most 140 characters;
-`detail`, the message behind it, stays plain text with its line breaks, at most 2,000. The page
-listens on `GET /api/signals` (SSE: the last 50 and each new one, without details) and fills a
+`detail`, the message behind it, stays plain text with its line breaks, at most 2,000. `agent` says
+who sent it — `claude-code`, `hermes`, `buzz`, `gemini` or `chatgpt` (`AGENTS` in
+`lib/signals.mjs`; the 3D office seats one avatar for each). Anything else is ignored, and without
+one the agent is inferred from the node (`hermes*` → hermes, `buzz*` / `fizz*` → buzz, otherwise
+claude-code); the hook, the Fizz watcher and the Hermes poller name theirs. Any script can post as
+another agent, e.g. a Gemini or ChatGPT adapter:
+
+```bash
+curl -s -X POST http://127.0.0.1:4317/api/signal -H 'content-type: application/json' \
+  -d '{"node":"proj-finview","agent":"gemini","kind":"done","text":"Reviewed the importer PR"}'
+```
+
+The page
+listens on `GET /api/signals` (SSE: the last 50 and each new one, without details; the map and the
+office share this one connection) and fills a
 node's Activity card from `GET /api/activity?node=<id>` (its signals and those of its
 descendants, newest first, with details; for a Fizz bot, its `estado.md` lines — at most 20
 files and 256k characters in all, newest lines kept).

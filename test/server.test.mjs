@@ -107,5 +107,31 @@ test("no files outside public/ or the vendor allowlist", async () => {
   assert.notEqual((await call("/%2e%2e/server.mjs")).status, 200);
   assert.equal((await call("/vendor/../../package.json")).status, 404);
   assert.equal((await call("/vendor/cytoscape.min.js")).status, 200);
+  assert.equal((await call("/vendor/three/build/three.module.js")).status, 404);
   assert.equal((await call("/%E0%A4%A")).status, 400);
+});
+
+test("three.js is served from the vendor allowlist, with the core file its module imports", async () => {
+  for (const file of ["three.module.js", "three.core.js"]) {
+    const res = await call(`/vendor/${file}`);
+    assert.equal(res.status, 200, file);
+    assert.match(res.headers["content-type"], /javascript/);
+    assert.match(res.headers["content-security-policy"], /default-src 'self'/);
+  }
+  assert.match((await call("/vendor/three.module.js")).body, /from '\.\/three\.core\.js'/); // the relative import the vendor map must satisfy
+  assert.equal((await call("/office.js")).status, 200);
+  assert.equal((await call("/office-layout.js")).status, 200);
+});
+
+test("signals carry the agent: the one named, else inferred from the node; an unknown one is ignored", async () => {
+  const post = (body) => call("/api/signal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  assert.equal((await post({ node: "proj-chatmemo", agent: "gemini", kind: "waiting", text: "agent test named" })).status, 202);
+  assert.equal((await post({ node: "hermes-gateway", kind: "info", text: "agent test inferred" })).status, 202);
+  assert.equal((await post({ node: "proj-chatmemo", agent: "evil\" onclick", kind: "info", text: "agent test unknown" })).status, 202);
+  const card = JSON.parse((await call("/api/activity?node=layer-products")).body);
+  const hermes = JSON.parse((await call("/api/activity?node=hermes")).body);
+  const by = (list, text) => list.signals.find((s) => s.text === text)?.agent;
+  assert.equal(by(card, "agent test named"), "gemini");
+  assert.equal(by(hermes, "agent test inferred"), "hermes");
+  assert.equal(by(card, "agent test unknown"), "claude-code");
 });

@@ -10,6 +10,7 @@
 <body>
   <div class="stars" aria-hidden="true"></div>
   <div id="cy" aria-label="Stack map"></div>
+  <div id="office" class="office" hidden aria-label="Oficina 3D"></div>
   <div class="vignette" aria-hidden="true"></div>
 
   <div id="intro" class="intro" aria-hidden="true">
@@ -22,6 +23,10 @@
     <div class="search">
       <input id="search" type="search" placeholder="Find anything…  ( / )" autocomplete="off" spellcheck="false" aria-label="Search the map">
       <ul id="search-results" role="listbox" hidden></ul>
+    </div>
+    <div class="views" role="group" aria-label="Vista">
+      <button id="view-map" type="button" aria-pressed="true" title="Mapa (Grafo) · V">Mapa</button>
+      <button id="view-office" type="button" aria-pressed="false" title="Oficina 3D · V">Oficina 3D</button>
     </div>
     <nav class="tools">
       <button id="btn-expand" title="Expand every group">Expand all</button>
