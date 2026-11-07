@@ -25,18 +25,26 @@ Read `README.md` for the run commands and the data format.
 - `public/graph-model.js` — pure tree/edge-lifting logic, shared by the browser and tests.
 - `public/narrate.js` — relations → briefing sentences; `public/orbit.js` — where neighbours
   go in focus mode. Both pure and tested (`test/cinematic.test.mjs`).
-- `public/office-layout.js` — the 3D office as pure data: desks (`OFFICE_AGENTS`, ids match
-  `AGENTS` in `lib/signals.mjs`), stations (children of `layer-products` / `layer-hosting`),
-  node → object lookup, and `officeStates()` (where each agent is, from signals + time: a
-  `working` signal holds it at the station until its `done`/`waiting`, `HOLD_MS` has the
-  linger and the safety caps). An agent's home node (`AGENT_HOME` in `lib/signals.mjs`) also
-  lists all of that agent's signals in `/api/activity`. `routeBetween()` walks avatars along the lanes between buildings (footprints in `FOOTPRINT`; a test
-  checks no route crosses one). `public/office.js` — draws it as a pastel village with three.js
-  (rounded procedural shapes, canvas textures, a warm sun with shadows, DOM cards and speech
-  bubbles; the ▶ Demo button feeds it fake local signals) — no models or images, no add-ons:
-  post-processing would need an import map, which the CSP forbids; app.js loads it on the first open, calls `show()` / `hide()` (hide stops
-  the frame loop completely) and feeds it the same SSE signals. Tested in `test/office.test.mjs`;
-  the renderer is not (needs a GPU) — check it by eye after changing it.
+- `public/village.js` — the island as pure geometry: outline, mountains, river, streets, the walking
+  graph (Dijkstra), `terrainAllows()`. `public/office-layout.js` — the village as pure data: houses
+  (`OFFICE_AGENTS`, ids match `AGENTS` in `lib/signals.mjs`) round the plaza; a building for every
+  project and what is inside it, and for hosting platforms and their projects / databases /
+  services (`collectStations`, `styleFor`: style by node kind and id); node → building lookup; `routeBetween()`
+  (shortest way along the streets: a test checks no route enters a building); `officeStates()` (where
+  each agent is, from signals + time: a `working` signal holds it at its building until its
+  `done`/`waiting`, `HOLD_MS` has the linger and the safety caps). An agent's home node (`AGENT_HOME`
+  in `lib/signals.mjs`) also lists all of that agent's signals in `/api/activity`.
+- `public/sky.js` — sun position over Bangkok and `skyState()` (colours, light, lamps, stars,
+  weather → numbers); `lib/weather.mjs` — Bangkok's weather from Open-Meteo, polled by `server.mjs`
+  and served at `/api/weather` (`STACKMAP_WEATHER=off` disables it). Both pure and tested (`test/sky.test.mjs`).
+- `public/office.js` (scene, sky, camera, UI), `public/office-world.js` (land, river, mountains, roads,
+  scenery) and `public/office-parts.js` (building styles, trees, characters, `bake()` that merges
+  static shapes into a few meshes) — draw it with three.js: rounded procedural shapes, canvas textures,
+  a sun with shadows, DOM cards and speech bubbles; the ▶ Demo button feeds it fake local signals. No
+  models or images, no add-ons (post-processing would need an import map, which the CSP forbids).
+  app.js loads it on the first open, calls `show()` / `hide()` (hide stops the frame loop completely)
+  and feeds it the same SSE signals. Tested through the pure modules; the renderer needs a GPU, so
+  check it by eye after changing it (all hours and weathers are in the sky button).
 - `public/focus.js` — focus mode: snapshots the overview, flies nodes and camera, flowing
   light. Fades/resizes go through style classes + Cytoscape `transition-*` (app.js); only
   motion is animated, one `node.animation()` per flight — never `node.stop()`, which would
@@ -70,5 +78,8 @@ Read `README.md` for the run commands and the data format.
 - Signals stay in `.activity/` (gitignored, 14 days), out of `data/` and out of the chat prompt
   (the cached index must not change per question). The SSE feed stays brief (no details); the
   Activity card fetches them. A renamed project id must be updated in `FOLDERS` / `FIZZ_FOLDERS` —
-  `npm test` fails. The Hermes poller is the server's only outbound request: public probe only,
-  opt-in by env var, never an authenticated endpoint.
+  `npm test` fails. The server's outbound requests are exactly two, both public and unauthenticated:
+  the Hermes status probe (opt-in by env var) and Bangkok's weather from open-meteo.com (on by default,
+  `STACKMAP_WEATHER=off` disables it; it sends only Bangkok's fixed coordinates, never anything from
+  this machine or the map). Never add a third, and never an authenticated endpoint. The page itself
+  makes none (the CSP) — it asks `/api/weather`.

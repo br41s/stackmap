@@ -1,7 +1,10 @@
-// The 3D office, as pure data: where each agent's desk and each project / infrastructure
-// station stands, and where every agent should be right now given the signals. No DOM, no
-// WebGL — office.js draws what this says; Node tests it. Units are metres on the floor plane:
-// x runs east, z runs towards the camera (south).
+// The 3D office, as pure data: the village (where each agent's house and every project, service
+// and hosting building stands, the roads between them) and where every agent should be right now
+// given the signals. No DOM, no WebGL — office.js draws what this says; Node tests it. Units are
+// metres on the ground plane: x runs east, z runs south (towards the default camera). The ground
+// itself — island, mountains, river, roads, walking graph — is in village.js.
+import { PLAZA, buildTerrain, connect, distToSegment, hash, nearestNode, nearestRoad, rng, shortestPath, terrainAllows } from "./village.js";
+export { hash, rng };
 
 // One desk per agent. `nodes` are the map ids a desk opens when clicked (the first one on the
 // map wins); an agent with none on the map has a reserved desk — seated, dimmed, not clickable.
@@ -14,17 +17,6 @@ export const OFFICE_AGENTS = [
   { id: "chatgpt", label: "ChatGPT", color: "#38d989", nodes: ["ext-chatgpt", "ext-openai"] },
 ];
 
-// Which map nodes become stations: the children of `parent` of that `kind`.
-export const ZONES = [
-  { zone: "project", parent: "layer-products", kind: "project" }, // workstations
-  { zone: "infra", parent: "layer-hosting", kind: "platform" },   // server racks
-];
-
-export const SPACING = { desk: 5.5, project: 4.4, rack: 2.8, rows: 4.8 };
-// What each kind of building covers on the floor (width × depth around its position): nobody
-// walks through them. routeBetween() keeps to the lanes between, and a test checks it.
-export const FOOTPRINT = { desk: { w: 4.2, d: 2.8 }, project: { w: 3.4, d: 2.4 }, rack: { w: 1.9, d: 1.9 } };
-const DESK_Z = -9;
 
 // How long a signal keeps its agent at the station, by kind. The task decides, not a timer:
 // `working` (a task started) and `waiting` (it needs the user) stay until the agent's next
@@ -36,89 +28,212 @@ export const holdMs = (signal, hold = HOLD_MS) => hold[signal?.kind] ?? hold.inf
 
 const round = (n) => Math.round(n * 100) / 100;
 
-// ---------- layout ----------
+// ---------- buildings: which map nodes get one, and in what style ----------
 
-export function layoutOffice(stack, { agents = OFFICE_AGENTS, zones = ZONES } = {}) {
+// What each style covers on the ground (a circle: nobody walks through it, and a test checks it).
+export const STYLE_RADIUS = { home: 2.3, cottage: 1.9, townhouse: 1.6, shop: 1.9, barn: 2.3, aframe: 1.7, thai: 2.1, greenhouse: 1.8, warehouse: 2.3, tank: 1.3, yurt: 1.4, kiosk: 1.0, clock: 1.3, windmill: 1.6, silo: 1.2, lighthouse: 1.4 };
+const POOLS = {
+  project: ["cottage", "townhouse", "shop", "barn", "aframe", "thai", "greenhouse", "shop", "cottage", "thai"],
+  platform: ["silo", "lighthouse", "silo", "lighthouse", "silo"],
+  annex: {
+    service: ["shop", "cottage", "aframe", "greenhouse", "kiosk", "townhouse"], tool: ["yurt", "kiosk", "windmill"], agent: ["yurt", "cottage"],
+    "cron-job": ["clock", "windmill"], hook: ["kiosk"], config: ["kiosk"], doc: ["kiosk", "greenhouse"], server: ["warehouse"], project: ["cottage", "thai"],
+  },
+  hosting: { project: ["warehouse", "barn", "aframe", "greenhouse"], server: ["warehouse"], database: ["tank"], service: ["warehouse", "shop", "cottage", "aframe"] },
+};
+// The style of a building, chosen by the kind of node and its id, so it never changes.
+export function styleFor({ node, kind, zone }) {
+  const seed = hash(node);
+  const pool = zone === "project" ? POOLS.project : zone === "platform" ? POOLS.platform : zone === "annex" ? POOLS.annex[kind] ?? ["cottage"] : POOLS.hosting[kind] ?? ["warehouse"];
+  const style = pool[seed % pool.length];
+  const scale = zone === "annex" ? 0.8 : zone === "hosting" ? 0.85 : zone === "platform" ? 1.1 : 1;
+  return { style, scale, radius: Math.round(STYLE_RADIUS[style] * scale * 100) / 100 };
+}
+
+const HOSTING_KINDS = new Set(["project", "server", "database", "service"]);
+
+// Every project with the services, tools and jobs inside it as annexes beside it; every hosting
+// platform with its projects, databases and services around it. Parents come before children.
+export function collectStations(stack) {
+  const byId = new Map(stack.nodes.map((n) => [n.id, n]));
+  const kids = new Map();
+  for (const n of stack.nodes) if (n.parent) kids.set(n.parent, [...(kids.get(n.parent) ?? []), n]);
+  const size = (id) => 1 + (kids.get(id) ?? []).reduce((sum, k) => sum + size(k.id), 0);
+  const out = [];
+  const add = (n, zone, parentStation, depth) => out.push({ node: n.id, label: n.label, kind: n.kind, zone, parentStation, depth, weight: size(n.id) });
+  for (const top of stack.nodes.filter((n) => n.parent === "layer-products" && n.kind === "project")) {
+    add(top, "project", null, 1);
+    for (const c of kids.get(top.id) ?? []) add(c, "annex", top.id, 2);
+  }
+  const walk = (n, parentStation, depth) => {
+    for (const c of kids.get(n.id) ?? []) {
+      if (depth + 1 > 3 || !HOSTING_KINDS.has(c.kind)) continue;
+      add(c, "hosting", parentStation, depth + 1);
+      walk(c, c.id, depth + 1);
+    }
+  };
+  for (const p of stack.nodes.filter((n) => n.parent === "layer-hosting" && n.kind === "platform")) {
+    add(p, "platform", null, 1);
+    walk(p, p.id, 1);
+  }
+  void byId;
+  return out;
+}
+
+// ---------- the village ----------
+
+export function layoutOffice(stack, { agents = OFFICE_AGENTS } = {}) {
+  const terrain = buildTerrain();
+  const graph = terrain.graph;
   const ids = new Set(stack.nodes.map((n) => n.id));
+  const r = rng(4242);
+  const placed = []; // { x, z, r }
 
-  const deskX = (i) => (i - (agents.length - 1) / 2) * SPACING.desk;
+  // The walk from a door to the street must not cross another building.
+  const doorClear = (x, z, radius) => {
+    const road = nearestRoad(terrain, { x, z }, 40);
+    if (!road) return false;
+    const len = Math.hypot(road.x - x, road.z - z) || 1;
+    const stand = { x: x + ((road.x - x) / len) * (radius + 0.95), z: z + ((road.z - z) / len) * (radius + 0.95) };
+    return placed.every((q) => distToSegment(q, stand, road).d >= q.r + 0.4);
+  };
+  const clear = (x, z, radius) =>
+    terrainAllows(terrain, x, z, radius) && placed.every((q) => Math.hypot(x - q.x, z - q.z) >= q.r + radius + 1.0) && !nearestRoad(terrain, { x, z }, radius + 1.2) && doorClear(x, z, radius);
+
+  // building plots along every street, a few metres back, with gaps and wobble
+  const slots = [];
+  for (const road of terrain.roads.filter((rd) => rd.id !== "plaza")) {
+    let along = r() * 3;
+    for (let i = 1; i < road.points.length; i++) {
+      const a = road.points[i - 1];
+      const b = road.points[i];
+      const len = Math.hypot(b.x - a.x, b.z - a.z);
+      const tx = (b.x - a.x) / len;
+      const tz = (b.z - a.z) / len;
+      along -= len;
+      if (along > 0) continue;
+      along += 5.4 + r() * 2.2;
+      for (const side of [-1, 1]) {
+        if (r() < 0.1) continue;
+        const slide = (r() - 0.5) * 1.4;
+        // a plot at the street, one side closer than the other, and a second row behind
+        for (const back of [(side > 0 ? 3.9 : 4.7) + r() * 0.9, 10.4 + r() * 1.4]) {
+          const shift = back > 8 ? 3.1 : 0; // the second row sits between the buildings in front
+          slots.push({ x: Math.round((a.x - tz * side * back + tx * (slide + shift)) * 100) / 100, z: Math.round((a.z + tx * side * back + tz * (slide + shift)) * 100) / 100 });
+        }
+      }
+    }
+  }
+
+  // The closest plot to `near` where `radius` fits; failing that, anywhere round `near` that is
+  // close enough to a street to walk from.
+  const findSpot = (radius, near, jitter = 0) => {
+    let best = null;
+    for (const s of slots) {
+      const d = Math.hypot(s.x - near.x, s.z - near.z) + (jitter ? r() * jitter : 0);
+      if ((!best || d < best.d) && clear(s.x, s.z, radius)) best = { d, x: s.x, z: s.z };
+    }
+    if (best) return best;
+    for (let ring = 3; ring < 40; ring += 1.6) {
+      for (let k = 0; k < 24; k++) {
+        const t = (k / 24) * Math.PI * 2 + ring;
+        const x = near.x + Math.cos(t) * ring;
+        const z = near.z + Math.sin(t) * ring;
+        if (clear(x, z, radius) && nearestRoad(terrain, { x, z }, 16)) return { x, z };
+      }
+    }
+    throw new Error(`no room left in the village for a building of radius ${radius} (${placed.length} placed, ${slots.length} plots)`);
+  };
+
+  // A building: its centre, which way its door faces (the nearest street), and the doorstep.
+  const build = (x, z, radius, facing) => {
+    placed.push({ x, z, r: radius });
+    const road = facing ?? nearestRoad(terrain, { x, z }, 40);
+    const dx = road.x - x;
+    const dz = road.z - z;
+    const len = Math.hypot(dx, dz) || 1;
+    const ux = dx / len;
+    const uz = dz / len;
+    const stand = { x: Math.round((x + ux * (radius + 0.95)) * 100) / 100, z: Math.round((z + uz * (radius + 0.95)) * 100) / 100 };
+    const index = connect(graph, stand);
+    return { rot: Math.round(Math.atan2(ux, uz) * 100) / 100, stand: { ...stand, side: { x: Math.round(uz * 100) / 100, z: Math.round(-ux * 100) / 100 } }, graphNode: index };
+  };
+
+  // agents' houses: round the plaza, spread as far apart as the streets allow
+  const homeR = STYLE_RADIUS.home;
+  const ringR = PLAZA.r + homeR + 3.6;
+  const angles = [];
+  for (let deg = 0; deg < 360; deg += 6) {
+    const t = (deg * Math.PI) / 180;
+    if (clear(PLAZA.x + Math.cos(t) * ringR, PLAZA.z + Math.sin(t) * ringR, homeR)) angles.push(t);
+  }
+  const apart = (a, b) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+  const chosen = [];
+  for (const _ of agents) {
+    const pool = angles.filter((a) => !chosen.includes(a));
+    if (!pool.length) throw new Error("no room round the plaza for every agent");
+    chosen.push(chosen.length ? pool.reduce((best, a) => (Math.min(...chosen.map((c) => apart(a, c))) > Math.min(...chosen.map((c) => apart(best, c))) ? a : best)) : pool[Math.floor(pool.length / 4)]);
+  }
+  chosen.sort((a, b) => a - b);
   const desks = agents.map((a, i) => {
     const node = a.nodes.find((id) => ids.has(id)) ?? null;
-    const x = round(deskX(i));
-    return { agent: a.id, label: a.label, color: a.color, node, reserved: node === null, x, z: DESK_Z, stand: { x, z: DESK_Z + 2 } };
+    const t = chosen[i];
+    const x = Math.round((PLAZA.x + Math.cos(t) * ringR) * 100) / 100;
+    const z = Math.round((PLAZA.z + Math.sin(t) * ringR) * 100) / 100;
+    const b = build(x, z, homeR, nearestRoad(terrain, { x, z }, 12));
+    return { agent: a.id, label: a.label, color: a.color, node, reserved: node === null, x, z, style: "home", scale: 1, radius: homeR, ...b };
   });
 
-  const pick = ({ parent, kind }) => stack.nodes.filter((n) => n.parent === parent && n.kind === kind);
-
-  // Projects: a grid, wider than tall; a short last row is left-aligned.
-  const projects = pick(zones.find((z) => z.zone === "project") ?? {});
-  const cols = Math.max(1, Math.ceil(Math.sqrt(projects.length * 1.6)));
-  const rows = Math.ceil(projects.length / cols);
-  const gridZ0 = DESK_Z + 6;
-  const stations = projects.map((n, i) => {
-    const x = round((i % cols - (cols - 1) / 2) * SPACING.project); // columns line up row to row, so the gaps between them are streets
-    const z = round(gridZ0 + Math.floor(i / cols) * SPACING.rows);
-    return { node: n.id, label: n.label, zone: "project", x, z, stand: { x, z: round(z + 1.7) } };
-  });
-
-  // Infrastructure: one row of racks south of the grid, people stand in front of them (south).
-  const infra = pick(zones.find((z) => z.zone === "infra") ?? {});
-  const rackZ = round(gridZ0 + Math.max(rows, 1) * SPACING.rows + 2);
-  infra.forEach((n, i) => {
-    const x = round((i - (infra.length - 1) / 2) * SPACING.rack);
-    stations.push({ node: n.id, label: n.label, zone: "infra", x, z: rackZ, stand: { x, z: round(rackZ + 1.8) } });
-  });
-
-  const xs = [...desks, ...stations].map((o) => o.x);
-  const margin = 4;
-  const bounds = {
-    minX: round(Math.min(...xs, 0) - margin),
-    maxX: round(Math.max(...xs, 0) + margin),
-    minZ: round(DESK_Z - margin),
-    maxZ: round(Math.max(rackZ, DESK_Z + 2) + margin),
+  // projects near the middle of town, big ones first; their services beside them
+  const all = collectStations(stack);
+  const byParent = new Map();
+  for (const e of all) if (e.parentStation) byParent.set(e.parentStation, [...(byParent.get(e.parentStation) ?? []), e]);
+  const stations = [];
+  const put = (e, near, jitter) => {
+    const st = styleFor(e);
+    const spot = findSpot(st.radius, near, jitter);
+    const b = build(spot.x, spot.z, st.radius);
+    const rec = { ...e, ...st, x: spot.x, z: spot.z, ...b };
+    stations.push(rec);
+    for (const c of (byParent.get(e.node) ?? []).sort((p, q) => q.weight - p.weight || p.node.localeCompare(q.node))) put(c, rec, 0);
+    return rec;
   };
-  return { bounds, desks, stations, lanes: laneNetwork(desks, stations, rows > 0 ? gridZ0 : null) };
+  const projects = all.filter((e) => e.zone === "project").sort((a, b) => b.weight - a.weight || a.node.localeCompare(b.node));
+  projects.forEach((e) => put(e, { x: PLAZA.x - 6, z: PLAZA.z + 6 }, 6));
+  // hosting along the southern streets, platforms spread out with everything of theirs near them
+  const platforms = all.filter((e) => e.zone === "platform");
+  platforms.forEach((e, i) => put(e, { x: -34 + (i * 72) / Math.max(platforms.length - 1, 1), z: 30 + (i % 2) * 8 }, 3));
+
+  // the camera frames the island
+  const reach = terrain.outline.reduce((m, p) => ({ x0: Math.min(m.x0, p.x), x1: Math.max(m.x1, p.x), z0: Math.min(m.z0, p.z), z1: Math.max(m.z1, p.z) }), { x0: 0, x1: 0, z0: 0, z1: 0 });
+  const bounds = { minX: Math.round(reach.x0), maxX: Math.round(reach.x1), minZ: Math.round(reach.z0), maxZ: Math.round(reach.z1) };
+  return { bounds, desks, stations, terrain, graph };
 }
 
 // ---------- where people may walk ----------
 
-// Open ground between the buildings: horizontal lanes (the yard in front of the agents' houses,
-// the gap after each row of projects, the front of the racks) joined by vertical corridors (the
-// gaps between project columns and one past each end of the racks). Pure geometry of the layout.
-function laneNetwork(desks, stations, gridZ0) {
-  const projects = stations.filter((s) => s.zone === "project");
-  const racks = stations.filter((s) => s.zone === "infra");
-  const rows = [...new Set(projects.map((p) => p.z))].sort((a, b) => a - b);
-  const z = [round(DESK_Z + 3.3), ...rows.map((r) => round(r + 2.4)), ...racks.map((r) => r.stand.z).slice(0, 1)];
-  const free = (x) => projects.every((p) => Math.abs(x - p.x) >= FOOTPRINT.project.w / 2 + 0.4);
-  const gaps = [...new Set(projects.flatMap((p) => [round(p.x - 2.2), round(p.x + 2.2)]))].filter(free).sort((a, b) => a - b);
-  const reach = Math.max(0, ...projects.map((p) => Math.abs(p.x) + 2.2), ...racks.map((r) => Math.abs(r.x) + FOOTPRINT.rack.w / 2 + 1.2));
-  return { z, rackLane: racks.length ? racks[0].stand.z : null, corridors: gaps.length ? gaps : [0], outer: round(reach) };
-}
-
-// The corners to walk, in order, from `from` to `to` (not including `from`): step onto the
-// nearest lane, along it to a corridor, down the corridor to the other lane, along it, and in.
-// A rack's front is only reachable round the outside, past the end of the racks.
+// The corners to walk, in order, from `from` to `to` (not including `from`): onto the nearest
+// road point, along the roads the short way, and off to the door. Corners that barely turn are dropped.
 export function routeBetween(layout, from, to) {
-  const { z: lanes, corridors, outer, rackLane } = layout.lanes;
-  const nearest = (v) => lanes.reduce((best, l) => (Math.abs(l - v) < Math.abs(best - v) ? l : best));
-  const fromLane = nearest(from.z);
-  const toLane = nearest(to.z);
+  const g = layout.graph;
+  const a = nearestNode(g, from);
+  const b = nearestNode(g, to);
+  const nodes = shortestPath(g, a, b).map((i) => g.nodes[i]);
+  const pts = [...nodes, to];
   const out = [];
-  const go = (x, z) => {
-    const last = out.at(-1) ?? from;
-    if (Math.hypot(last.x - x, last.z - z) > 0.05) out.push({ x: round(x), z: round(z) });
-  };
-  go(from.x, fromLane);
-  if (fromLane !== toLane) {
-    const pool = fromLane === rackLane || toLane === rackLane ? [-outer, outer] : corridors;
-    const cost = (c) => Math.abs(from.x - c) + Math.abs(to.x - c);
-    const corridor = pool.reduce((best, c) => (cost(c) < cost(best) ? c : best));
-    go(corridor, fromLane);
-    go(corridor, toLane);
+  let last = from;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    const next = pts[i + 1];
+    const far = Math.hypot(p.x - last.x, p.z - last.z);
+    if (far < 0.05) continue;
+    const prev = out.length ? out.at(-1) : from;
+    const turns = next ? Math.abs(Math.atan2(p.x - prev.x, p.z - prev.z) - Math.atan2(next.x - p.x, next.z - p.z)) : 1;
+    if (!next || far >= 3 || (turns > 0.16 && turns < 6.1)) {
+      out.push({ x: Math.round(p.x * 100) / 100, z: Math.round(p.z * 100) / 100 });
+      last = p;
+    }
   }
-  go(to.x, toLane);
-  go(to.x, to.z);
   return out;
 }
 
@@ -188,7 +303,10 @@ export function officeStates({ layout, locator, signals, now, hold = HOLD_MS }) 
     const i = group.indexOf(st);
     const { base, ...out } = st;
     if (group.length > 1 && st.mode === "working") out.mode = "collaborating";
-    return [st.agent, { ...out, target: { x: round(base.x + slotOffset(i, group.length)), z: base.z } }];
+    // side by side along the front of the building, never towards its walls
+    const off = slotOffset(i, group.length);
+    const side = base.side ?? { x: 1, z: 0 };
+    return [st.agent, { ...out, target: { x: round(base.x + side.x * off), z: round(base.z + side.z * off) } }];
   }));
 }
 
@@ -203,3 +321,4 @@ export function stepToward(pos, target, distance) {
   if (left <= distance) return { pos: { x: target.x, z: target.z }, arrived: true, heading: Math.atan2(dx, dz) };
   return { pos: { x: pos.x + (dx / left) * distance, z: pos.z + (dz / left) * distance }, arrived: false, heading: Math.atan2(dx, dz) };
 }
+
