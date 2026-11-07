@@ -21,6 +21,9 @@ export const ZONES = [
 ];
 
 export const SPACING = { desk: 5.5, project: 4.4, rack: 2.8, rows: 4.8 };
+// What each kind of building covers on the floor (width × depth around its position): nobody
+// walks through them. routeBetween() keeps to the lanes between, and a test checks it.
+export const FOOTPRINT = { desk: { w: 4.2, d: 2.8 }, project: { w: 3.4, d: 2.4 }, rack: { w: 1.9, d: 1.9 } };
 const DESK_Z = -9;
 
 // How long a signal keeps its agent at the station, by kind. The task decides, not a timer:
@@ -28,7 +31,7 @@ const DESK_Z = -9;
 // signal; the large value is only a safety net for a session that died without saying so.
 // `done` is a short linger so the result can be read before the agent walks home; `info` is
 // a note, gone quickly. Pass your own table to officeStates() to change any of them.
-export const HOLD_MS = { working: 15 * 60_000, waiting: 15 * 60_000, done: 8_000, info: 12_000 };
+export const HOLD_MS = { working: 15 * 60_000, waiting: 15 * 60_000, done: 12_000, info: 12_000 };
 export const holdMs = (signal, hold = HOLD_MS) => hold[signal?.kind] ?? hold.info ?? HOLD_MS.info;
 
 const round = (n) => Math.round(n * 100) / 100;
@@ -42,29 +45,28 @@ export function layoutOffice(stack, { agents = OFFICE_AGENTS, zones = ZONES } = 
   const desks = agents.map((a, i) => {
     const node = a.nodes.find((id) => ids.has(id)) ?? null;
     const x = round(deskX(i));
-    return { agent: a.id, label: a.label, color: a.color, node, reserved: node === null, x, z: DESK_Z, stand: { x, z: DESK_Z + 1.5 } };
+    return { agent: a.id, label: a.label, color: a.color, node, reserved: node === null, x, z: DESK_Z, stand: { x, z: DESK_Z + 2 } };
   });
 
   const pick = ({ parent, kind }) => stack.nodes.filter((n) => n.parent === parent && n.kind === kind);
 
-  // Projects: a centred grid, wider than tall.
+  // Projects: a grid, wider than tall; a short last row is left-aligned.
   const projects = pick(zones.find((z) => z.zone === "project") ?? {});
   const cols = Math.max(1, Math.ceil(Math.sqrt(projects.length * 1.6)));
   const rows = Math.ceil(projects.length / cols);
   const gridZ0 = DESK_Z + 6;
   const stations = projects.map((n, i) => {
-    const inRow = Math.min(cols, projects.length - Math.floor(i / cols) * cols);
-    const x = round((i % cols - (inRow - 1) / 2) * SPACING.project);
+    const x = round((i % cols - (cols - 1) / 2) * SPACING.project); // columns line up row to row, so the gaps between them are streets
     const z = round(gridZ0 + Math.floor(i / cols) * SPACING.rows);
-    return { node: n.id, label: n.label, zone: "project", x, z, stand: { x, z: round(z + 1.5) } };
+    return { node: n.id, label: n.label, zone: "project", x, z, stand: { x, z: round(z + 1.7) } };
   });
 
-  // Infrastructure: one row of racks south of the grid, people stand on the grid side.
+  // Infrastructure: one row of racks south of the grid, people stand in front of them (south).
   const infra = pick(zones.find((z) => z.zone === "infra") ?? {});
   const rackZ = round(gridZ0 + Math.max(rows, 1) * SPACING.rows + 2);
   infra.forEach((n, i) => {
     const x = round((i - (infra.length - 1) / 2) * SPACING.rack);
-    stations.push({ node: n.id, label: n.label, zone: "infra", x, z: rackZ, stand: { x, z: round(rackZ - 1.6) } });
+    stations.push({ node: n.id, label: n.label, zone: "infra", x, z: rackZ, stand: { x, z: round(rackZ + 1.8) } });
   });
 
   const xs = [...desks, ...stations].map((o) => o.x);
@@ -73,9 +75,51 @@ export function layoutOffice(stack, { agents = OFFICE_AGENTS, zones = ZONES } = 
     minX: round(Math.min(...xs, 0) - margin),
     maxX: round(Math.max(...xs, 0) + margin),
     minZ: round(DESK_Z - margin),
-    maxZ: round(Math.max(rackZ, DESK_Z + 1.5) + margin),
+    maxZ: round(Math.max(rackZ, DESK_Z + 2) + margin),
   };
-  return { bounds, desks, stations };
+  return { bounds, desks, stations, lanes: laneNetwork(desks, stations, rows > 0 ? gridZ0 : null) };
+}
+
+// ---------- where people may walk ----------
+
+// Open ground between the buildings: horizontal lanes (the yard in front of the agents' houses,
+// the gap after each row of projects, the front of the racks) joined by vertical corridors (the
+// gaps between project columns and one past each end of the racks). Pure geometry of the layout.
+function laneNetwork(desks, stations, gridZ0) {
+  const projects = stations.filter((s) => s.zone === "project");
+  const racks = stations.filter((s) => s.zone === "infra");
+  const rows = [...new Set(projects.map((p) => p.z))].sort((a, b) => a - b);
+  const z = [round(DESK_Z + 3.3), ...rows.map((r) => round(r + 2.4)), ...racks.map((r) => r.stand.z).slice(0, 1)];
+  const free = (x) => projects.every((p) => Math.abs(x - p.x) >= FOOTPRINT.project.w / 2 + 0.4);
+  const gaps = [...new Set(projects.flatMap((p) => [round(p.x - 2.2), round(p.x + 2.2)]))].filter(free).sort((a, b) => a - b);
+  const reach = Math.max(0, ...projects.map((p) => Math.abs(p.x) + 2.2), ...racks.map((r) => Math.abs(r.x) + FOOTPRINT.rack.w / 2 + 1.2));
+  return { z, rackLane: racks.length ? racks[0].stand.z : null, corridors: gaps.length ? gaps : [0], outer: round(reach) };
+}
+
+// The corners to walk, in order, from `from` to `to` (not including `from`): step onto the
+// nearest lane, along it to a corridor, down the corridor to the other lane, along it, and in.
+// A rack's front is only reachable round the outside, past the end of the racks.
+export function routeBetween(layout, from, to) {
+  const { z: lanes, corridors, outer, rackLane } = layout.lanes;
+  const nearest = (v) => lanes.reduce((best, l) => (Math.abs(l - v) < Math.abs(best - v) ? l : best));
+  const fromLane = nearest(from.z);
+  const toLane = nearest(to.z);
+  const out = [];
+  const go = (x, z) => {
+    const last = out.at(-1) ?? from;
+    if (Math.hypot(last.x - x, last.z - z) > 0.05) out.push({ x: round(x), z: round(z) });
+  };
+  go(from.x, fromLane);
+  if (fromLane !== toLane) {
+    const pool = fromLane === rackLane || toLane === rackLane ? [-outer, outer] : corridors;
+    const cost = (c) => Math.abs(from.x - c) + Math.abs(to.x - c);
+    const corridor = pool.reduce((best, c) => (cost(c) < cost(best) ? c : best));
+    go(corridor, fromLane);
+    go(corridor, toLane);
+  }
+  go(to.x, toLane);
+  go(to.x, to.z);
+  return out;
 }
 
 // ---------- which object a map node belongs to ----------
@@ -99,6 +143,11 @@ export function createLocator(stack, layout) {
 
 // ---------- who is where ----------
 
+// Who sent a signal: the agent it names, else the one its node belongs to — the same rule as
+// agentForNode() in lib/signals.mjs (a test keeps them equal), so a server that predates the
+// agent field still moves the right avatar.
+export const agentOf = (s) => s.agent ?? (/^(hermes|zb-hermes)/.test(s.node) ? "hermes" : /^(buzz|fizz)/.test(s.node) ? "buzz" : "claude-code");
+
 // The signals list as the page keeps it: oldest first, one entry per id, at most `cap`.
 export function pushSignal(list, signal, cap = 60) {
   if (!signal || list.some((s) => s.id === signal.id)) return list;
@@ -119,8 +168,9 @@ export function officeStates({ layout, locator, signals, now, hold = HOLD_MS }) 
   const mine = new Map(layout.desks.map((d) => [d.agent, d]));
   const latest = new Map();
   for (const s of signals) {
-    if (!mine.has(s.agent)) continue; // an agent nobody sits for
-    if (!latest.has(s.agent) || s.at >= latest.get(s.agent).at) latest.set(s.agent, s);
+    const who = agentOf(s);
+    if (!mine.has(who)) continue; // an agent nobody sits for
+    if (!latest.has(who) || s.at >= latest.get(who).at) latest.set(who, s);
   }
 
   const states = layout.desks.map((desk) => {

@@ -144,31 +144,34 @@ a { color: var(--accent); }
 .views button[aria-pressed="true"] { background: var(--chip); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-strong); }
 .tools button { background: var(--surface); backdrop-filter: blur(16px); font-size: 13px; }
 
-/* ---- 3D office (public/office.js) ---- */
-#office { position: fixed; inset: 0; overflow: hidden; }
+/* ---- 3D office (public/office.js): a sunny little village, so light where the rest is dark ---- */
+#office { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, #8fcbef 0%, #bfe3f5 38%, #f9e6cf 78%, #ffd5b0 100%); }
 .office-canvas { display: block; touch-action: none; }
 .office-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.office-label { position: absolute; left: 0; top: 0; white-space: nowrap; font: 600 10.5px var(--mono); letter-spacing: 0.04em; color: var(--tag); opacity: 0.62; text-shadow: 0 0 6px var(--bg), 0 0 2px var(--bg); }
-.office-label.desk { font-size: 11.5px; }
-.office-label.hot { opacity: 1; }
-.office-zone { position: absolute; left: 0; top: 0; white-space: nowrap; font: 600 10px var(--mono); letter-spacing: 0.3em; color: var(--tag); opacity: 0.55; text-shadow: 0 0 8px var(--bg); }
+.office-label { position: absolute; left: 0; top: 0; white-space: nowrap; font: 700 10px var(--font); color: #4a3a32; background: rgba(255, 250, 240, 0.86); border: 1.5px solid var(--tag); border-radius: 999px; padding: 1px 9px; opacity: 0.8; box-shadow: 0 2px 6px rgba(80, 50, 30, 0.18); }
+.office-label.desk { font-size: 12px; }
+.office-label.hot { opacity: 1; background: #fffaf0; }
+.office-zone { position: absolute; left: 0; top: 0; white-space: nowrap; font: 800 10px var(--font); letter-spacing: 0.18em; color: #fff; background: #b98b62; border-radius: 6px; padding: 2px 8px; box-shadow: 0 2px 0 #8f633c; }
 .office-tag { position: absolute; left: 0; top: 0; display: flex; flex-direction: column-reverse; align-items: center; gap: 6px; }
-/* a translucent card: the agent, what it is doing, and what it says */
-.office-tag .name, .office-tag .bubble { background: rgba(9, 14, 30, 0.62); backdrop-filter: blur(12px) saturate(1.3); -webkit-backdrop-filter: blur(12px) saturate(1.3); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45); }
-.office-tag .name { display: flex; align-items: center; gap: 7px; font: 11px var(--mono); padding: 3px 10px 3px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--tag) 45%, transparent); color: var(--text); white-space: nowrap; }
-.office-tag .name i { width: 7px; height: 7px; border-radius: 50%; background: var(--tag); box-shadow: 0 0 8px var(--tag); }
-.office-tag .name b { font-weight: 600; }
-.office-tag .name em { font-style: normal; color: var(--muted); }
-.office-tag.busy .name { border-color: var(--tag); box-shadow: 0 0 16px color-mix(in srgb, var(--tag) 55%, transparent), 0 6px 22px rgba(0, 0, 0, 0.45); }
-.office-tag.busy .name em { color: var(--tag); }
-.office-tag .bubble { max-width: 240px; padding: 6px 11px; border-radius: 12px 12px 12px 3px; border: 1px solid var(--accent); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; animation: rise 0.3s ease-out; }
-.office-tag .bubble.done { border-color: #38d989; }
-.office-tag .bubble.waiting { border-color: #ffc04d; }
+/* cards: the character's name and what it is doing, and what it says, as a speech bubble */
+.office-tag .name, .office-tag .bubble { background: rgba(255, 252, 245, 0.92); color: #3d2f2a; box-shadow: 0 4px 14px rgba(80, 50, 30, 0.25); }
+.office-tag .name { display: flex; align-items: center; gap: 7px; font: 600 12px var(--font); padding: 3px 11px 3px 8px; border-radius: 999px; border: 2px solid var(--tag); white-space: nowrap; }
+.office-tag .name i { width: 9px; height: 9px; border-radius: 50%; background: var(--tag); }
+.office-tag .name b { font-weight: 800; }
+.office-tag .name em { font-style: normal; color: #8a766b; font-size: 11px; }
+.office-tag.busy .name em { color: #3d2f2a; }
+.office-tag .bubble { position: relative; max-width: 240px; padding: 7px 12px; border-radius: 14px; border: 2px solid #6aa8ff; font: 600 12.5px/1.35 var(--font); overflow-wrap: anywhere; animation: rise 0.3s ease-out; }
+.office-tag .bubble::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 11px; height: 11px; background: inherit; border: inherit; border-top: 0; border-left: 0; transform: translateX(-50%) rotate(45deg); border-radius: 0 0 3px 0; }
+.office-tag .bubble.done { border-color: #3fbf7a; }
+.office-tag .bubble.waiting { border-color: #f0a63a; }
 .office-tag .bubble.together { border-style: dashed; }
-.office-hint { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); font: 11px var(--mono); color: var(--muted); pointer-events: none; white-space: nowrap; }
+.office-hint { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; font: 600 11px var(--font); color: #6b5648; background: rgba(255, 250, 240, 0.8); border-radius: 999px; padding: 4px 6px 4px 14px; white-space: nowrap; }
+.office-hint button { pointer-events: auto; font: 700 12px var(--font); color: #fff; background: #ff7a59; border: 0; border-radius: 999px; padding: 4px 12px; box-shadow: 0 2px 0 #d9573a; }
+.office-hint button:hover { box-shadow: 0 2px 0 #d9573a, 0 0 12px rgba(255, 122, 89, 0.5); }
 body.view-office #cy { visibility: hidden; pointer-events: none; }
 body.view-office .tools, body.view-office #legend { display: none; }
-@media (max-width: 760px) { .office-hint { display: none; } }
+body.view-office .vignette { opacity: 0.22; }
+@media (max-width: 760px) { .office-hint span { display: none; } }
 
 /* ---- legend ---- */
 .legend {
