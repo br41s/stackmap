@@ -40,21 +40,29 @@ const POOLS = {
     "cron-job": ["clock", "windmill"], hook: ["kiosk"], config: ["kiosk"], doc: ["kiosk", "greenhouse"], server: ["warehouse"], project: ["cottage", "thai"],
   },
   hosting: { project: ["warehouse", "barn", "aframe", "greenhouse"], server: ["warehouse"], database: ["tank"], service: ["warehouse", "shop", "cottage", "aframe"] },
+  // an agent's own workshops: the services, servers and bots it runs, next to its house
+  workshop: { service: ["greenhouse", "shop", "aframe", "townhouse"], server: ["warehouse"], bot: ["yurt", "aframe", "kiosk"], repo: ["townhouse", "barn"], "mcp-server": ["kiosk", "windmill"] },
 };
 // The style of a building, chosen by the kind of node and its id, so it never changes.
 export function styleFor({ node, kind, zone }) {
   const seed = hash(node);
-  const pool = zone === "project" ? POOLS.project : zone === "platform" ? POOLS.platform : zone === "annex" ? POOLS.annex[kind] ?? ["cottage"] : POOLS.hosting[kind] ?? ["warehouse"];
+  const pool = zone === "project" ? POOLS.project : zone === "platform" ? POOLS.platform : zone === "annex" ? POOLS.annex[kind] ?? ["cottage"] : zone === "workshop" ? POOLS.workshop[kind] ?? ["cottage"] : POOLS.hosting[kind] ?? ["warehouse"];
   const style = pool[seed % pool.length];
-  const scale = zone === "annex" ? 0.8 : zone === "hosting" ? 0.85 : zone === "platform" ? 1.1 : 1;
+  const scale = zone === "annex" ? 0.8 : zone === "hosting" || zone === "workshop" ? 0.85 : zone === "platform" ? 1.1 : 1;
   return { style, scale, radius: Math.round(STYLE_RADIUS[style] * scale * 100) / 100 };
 }
 
 const HOSTING_KINDS = new Set(["project", "server", "database", "service"]);
+// What an agent runs besides its house gets a workshop beside it, so activity on those nodes
+// (the Hermes gateway, a Fizz bot, the workspace…) makes the agent walk there instead of staying
+// at the door. Everything of these kinds below the agent's home, and a few named places that sit
+// elsewhere in the tree.
+const WORKSHOP_KINDS = new Set(["service", "server", "bot"]);
+const WORKSHOP_EXTRA = { "claude-code": ["vscode-workspace", "mcp-hub", "hf-hub"], buzz: ["fizz"] };
 
 // Every project with the services, tools and jobs inside it as annexes beside it; every hosting
 // platform with its projects, databases and services around it. Parents come before children.
-export function collectStations(stack) {
+export function collectStations(stack, agents = OFFICE_AGENTS) {
   const byId = new Map(stack.nodes.map((n) => [n.id, n]));
   const kids = new Map();
   for (const n of stack.nodes) if (n.parent) kids.set(n.parent, [...(kids.get(n.parent) ?? []), n]);
@@ -77,6 +85,29 @@ export function collectStations(stack) {
     walk(p, p.id, 1);
   }
   void byId;
+
+  const taken = new Set(out.map((e) => e.node));
+  for (const agent of agents) {
+    const home = agent.nodes.find((id) => byId.has(id));
+    if (!home) continue;
+    const mine = new Map(); // node → depth below the home
+    const walkHome = (id, d) => {
+      for (const c of kids.get(id) ?? []) {
+        if (d + 1 <= 3 && WORKSHOP_KINDS.has(c.kind) && !taken.has(c.id)) mine.set(c.id, d + 1);
+        if (d + 1 < 3) walkHome(c.id, d + 1);
+      }
+    };
+    walkHome(home, 0);
+    for (const id of WORKSHOP_EXTRA[agent.id] ?? []) if (byId.has(id) && !taken.has(id)) mine.set(id, 1);
+    const nearest = (id) => { // the closest ancestor that has a workshop of its own
+      for (let cur = byId.get(id)?.parent; cur; cur = byId.get(cur)?.parent) if (mine.has(cur)) return cur;
+      return null;
+    };
+    for (const [id, depth] of [...mine].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))) {
+      const n = byId.get(id);
+      out.push({ node: n.id, label: n.label, kind: n.kind, zone: "workshop", agent: agent.id, parentStation: nearest(id), depth, weight: size(n.id) });
+    }
+  }
   return out;
 }
 
@@ -89,13 +120,20 @@ export function layoutOffice(stack, { agents = OFFICE_AGENTS } = {}) {
   const r = rng(4242);
   const placed = []; // { x, z, r }
 
-  // The walk from a door to the street must not cross another building.
-  const doorClear = (x, z, radius) => {
+  // The walk from a door to the street (to the road point the doorstep is joined to) must not
+  // cross another building, and no building may be put across a walk already made.
+  const paths = [];
+  const doorPath = (x, z, radius) => {
     const road = nearestRoad(terrain, { x, z }, 40);
-    if (!road) return false;
+    if (!road) return null;
     const len = Math.hypot(road.x - x, road.z - z) || 1;
     const stand = { x: x + ((road.x - x) / len) * (radius + 0.95), z: z + ((road.z - z) / len) * (radius + 0.95) };
-    return placed.every((q) => distToSegment(q, stand, road).d >= q.r + 0.4);
+    return { stand, to: graph.nodes[nearestNode(graph, stand, true)] };
+  };
+  const doorClear = (x, z, radius) => {
+    const path = doorPath(x, z, radius);
+    if (!path) return false;
+    return placed.every((q) => distToSegment(q, path.stand, path.to).d >= q.r + 0.4) && paths.every((p) => distToSegment({ x, z }, p.stand, p.to).d >= radius + 0.35);
   };
   const clear = (x, z, radius) =>
     terrainAllows(terrain, x, z, radius) && placed.every((q) => Math.hypot(x - q.x, z - q.z) >= q.r + radius + 1.0) && !nearestRoad(terrain, { x, z }, radius + 1.2) && doorClear(x, z, radius);
@@ -155,6 +193,7 @@ export function layoutOffice(stack, { agents = OFFICE_AGENTS } = {}) {
     const ux = dx / len;
     const uz = dz / len;
     const stand = { x: Math.round((x + ux * (radius + 0.95)) * 100) / 100, z: Math.round((z + uz * (radius + 0.95)) * 100) / 100 };
+    paths.push({ stand, to: graph.nodes[nearestNode(graph, stand, true)] });
     const index = connect(graph, stand);
     return { rot: Math.round(Math.atan2(ux, uz) * 100) / 100, stand: { ...stand, side: { x: Math.round(uz * 100) / 100, z: Math.round(-ux * 100) / 100 } }, graphNode: index };
   };
@@ -185,7 +224,7 @@ export function layoutOffice(stack, { agents = OFFICE_AGENTS } = {}) {
   });
 
   // projects near the middle of town, big ones first; their services beside them
-  const all = collectStations(stack);
+  const all = collectStations(stack, agents);
   const byParent = new Map();
   for (const e of all) if (e.parentStation) byParent.set(e.parentStation, [...(byParent.get(e.parentStation) ?? []), e]);
   const stations = [];
@@ -198,6 +237,8 @@ export function layoutOffice(stack, { agents = OFFICE_AGENTS } = {}) {
     for (const c of (byParent.get(e.node) ?? []).sort((p, q) => q.weight - p.weight || p.node.localeCompare(q.node))) put(c, rec, 0);
     return rec;
   };
+  // each agent's workshops, beside its house, before the town fills the streets round the plaza
+  for (const e of all.filter((x) => x.zone === "workshop" && !x.parentStation)) put(e, desks.find((d) => d.agent === e.agent), 2);
   const projects = all.filter((e) => e.zone === "project").sort((a, b) => b.weight - a.weight || a.node.localeCompare(b.node));
   projects.forEach((e) => put(e, { x: PLAZA.x - 6, z: PLAZA.z + 6 }, 6));
   // hosting along the southern streets, platforms spread out with everything of theirs near them
