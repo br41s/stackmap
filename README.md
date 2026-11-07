@@ -33,7 +33,9 @@ product — with a floating chat that answers questions about it.
   and free houses for Gemini and ChatGPT), a building for every project and for the services,
   tools and jobs inside it (cottages, shops, townhouses, barns, A-frames, stilt houses, greenhouses,
   windmills, clock towers, yurts, kiosks…, chosen by kind), silos and lighthouses for the hosting
-  platforms with their projects, databases and services around them, winding streets, a river
+  platforms with their projects, databases and services around them, a workshop beside each
+  agent's house for what it runs (Hermes' gateway and dashboard, every Fizz bot, the workspace,
+  mcp-hub…) so its activity makes it walk there, winding streets, a river
   with bridges and a waterfall, mountains to the north, forest, flowers, lamps, birds.
   When a signal arrives its agent (a chibi character) walks along the streets to the building the
   node belongs to, types on a laptop, and says the signal's text in a speech bubble; the windows

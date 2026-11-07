@@ -135,8 +135,11 @@ test("a node resolves to its nearest building or house, through the tree", () =>
   assert.equal(locator.resolve("zb-hermes-eu-hermes").key, "station:zb-hermes-eu-hermes"); // Hermes' service on Zeabur has its own building
   assert.equal(locator.resolve("hermes-gateway-x-not-real"), null);
   assert.equal(locator.resolve("zeabur").key, "station:zeabur");
-  assert.equal(locator.resolve("hermes-gateway").key, "desk:hermes");
-  assert.equal(locator.resolve("fizz-bot-seodesk").key, "desk:buzz");
+  assert.equal(locator.resolve("hermes").key, "desk:hermes"); // the agent's own node is its house
+  assert.equal(locator.resolve("hermes-gateway").key, "station:hermes-gateway"); // what it runs has a workshop
+  assert.equal(locator.resolve("hermes-weekly-upstream-sync").key, "desk:hermes"); // anything else of its is its house
+  assert.equal(locator.resolve("fizz-bot-seodesk").key, "station:fizz-bot-seodesk");
+  assert.equal(locator.resolve("vscode-workspace").key, "station:vscode-workspace");
   assert.equal(locator.resolve("cc-hooks").key, "desk:claude-code");
   assert.equal(locator.resolve("brais"), null);
   assert.equal(locator.resolve("not-on-the-map"), null);
@@ -188,7 +191,7 @@ test("a task that never reports back is given up on; a note is brief; hold times
 
 test("a request for the user is 'waiting'; a node with no station keeps the agent at its desk, working", () => {
   assert.equal(states([sig({ kind: "waiting", node: "proj-finview" })])["claude-code"].mode, "waiting");
-  const own = states([sig({ agent: "hermes", node: "hermes-gateway" })]).hermes;
+  const own = states([sig({ agent: "hermes", node: "hermes" })]).hermes;
   assert.equal(own.mode, "working");
   assert.deepEqual(own.target, xz(layout.desks.find((d) => d.agent === "hermes").stand));
   assert.deepEqual(states([sig({ node: "brais" })])["claude-code"].target, xz(layout.desks[0].stand));
@@ -211,7 +214,7 @@ test("two agents at one station collaborate and stand apart; a visitor at a desk
   const building = layout.stations.find((x) => x.node === "proj-finview");
   for (const who of ["claude-code", "hermes"]) assert.ok(Math.hypot(s[who].target.x - building.x, s[who].target.z - building.z) > building.radius, "never inside the building");
 
-  const visit = states([sig({ node: "hermes-gateway" })]);
+  const visit = states([sig({ node: "hermes" })]);
   assert.equal(visit["claude-code"].mode, "collaborating"); // Claude Code is at Hermes' desk
   assert.equal(visit.hermes.mode, "idle");
   assert.ok(Math.hypot(visit["claude-code"].target.x - visit.hermes.target.x, visit["claude-code"].target.z - visit.hermes.target.z) >= 1);

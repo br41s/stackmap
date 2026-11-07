@@ -29,7 +29,9 @@ Read `README.md` for the run commands and the data format.
   graph (Dijkstra), `terrainAllows()`. `public/office-layout.js` — the village as pure data: houses
   (`OFFICE_AGENTS`, ids match `AGENTS` in `lib/signals.mjs`) round the plaza; a building for every
   project and what is inside it, and for hosting platforms and their projects / databases /
-  services (`collectStations`, `styleFor`: style by node kind and id); node → building lookup; `routeBetween()`
+  services, and an agent's own workshops — the services, servers and bots below its home node plus a
+  few named places (`WORKSHOP_KINDS` / `WORKSHOP_EXTRA`), so activity on them is a walk and not
+  a stay at the door (`collectStations`, `styleFor`: style by node kind and id); node → building lookup; `routeBetween()`
   (shortest way along the streets: a test checks no route enters a building); `officeStates()` (where
   each agent is, from signals + time: a `working` signal holds it at its building until its
   `done`/`waiting`, `HOLD_MS` has the linger and the safety caps). An agent's home node (`AGENT_HOME`
