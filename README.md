@@ -28,15 +28,18 @@ product — with a floating chat that answers questions about it.
   to fly there with that ping open in the node's **Activity** card: its pings of the last 14
   days (and those of everything inside it), each opening to the full message, plus a bot's
   `estado.md`. Green = done, amber = waiting on you. See [Agent signals](#agent-signals).
-- **3D office:** the switch in the top bar (or `V`) swaps the map for an isometric diorama —
-  one desk per agent (Claude Code, Hermes, Buzz/Fizz, and free desks for Gemini and ChatGPT),
-  one workstation per project, one rack per hosting platform. When a signal arrives its agent
-  walks to the station the node belongs to, types, and says the signal's text in a bubble;
-  two agents at one station collaborate. The task decides when it walks back: a `working`
-  signal (a prompt was sent) keeps it there until its `done` (it lingers 8 s so the result can
+- **3D office:** the switch in the top bar (or `V`) swaps the map for a cosy little village on a
+  floating island — one house per agent (Claude Code, Hermes, Buzz/Fizz, and free houses for
+  Gemini and ChatGPT), one shop per project, one silo per hosting platform, sand lanes between
+  them. When a signal arrives its agent (a chibi character) walks along the lanes to the shop the
+  node belongs to, types on a laptop, and says the signal's text in a speech bubble; the shop's
+  windows light up and a gear spins over its roof while someone works there; two agents at one
+  shop pair up. The **▶ Demo** button plays made-up signals (local to the page) to see it all
+  without waiting for an agent. The task decides when it walks back: a `working`
+  signal (a prompt was sent) keeps it there until its `done` (it lingers 12 s so the result can
   be read) or `waiting` (hand up until the next signal); only a note (`info`) is brief, 12 s,
   and a session that never reports back is given up on after 15 min (`HOLD_MS` in
-  `public/office-layout.js`). Bubbles that would overlap stack up instead. Click a desk or station
+  `public/office-layout.js`). Bubbles that would overlap stack up instead. Click a house, shop or silo
   to open the same Activity card and chat focus as on the map; an agent's desk card lists
   everything that agent sent, wherever it landed. Drag rotates a little, right-drag (or Shift-drag) pans, the wheel zooms. Closed, it
   costs nothing: the render loop stops and three.js is not even loaded until the first open; with
@@ -149,7 +152,7 @@ with the first line of the prompt as text; Stop → done, with the first line of
 as text and its first 2,000 characters as detail; Notification → waiting, with the message).
 Register it once in `~/.claude/settings.json` under `hooks.UserPromptSubmit`, `hooks.Stop` and
 `hooks.Notification` (without the first, the office still works, but an agent only shows up when
-it finishes and goes home 8 s later):
+it finishes and goes home 12 s later):
 
 ```json
 { "matcher": "", "hooks": [{ "type": "command", "command": "node /Users/brais/VSCODE/stackmap/scripts/signal-hook.mjs" }] }

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { AGENTS, AGENT_HOME, agentForNode, cleanAgent, createSignals } from "../lib/signals.mjs";
 import { loadStack } from "../lib/stack.mjs";
-import { HOLD_MS, OFFICE_AGENTS, createLocator, holdMs, layoutOffice, officeStates, pushSignal, slotOffset, stepToward } from "../public/office-layout.js";
+import { FOOTPRINT, HOLD_MS, OFFICE_AGENTS, agentOf, createLocator, holdMs, layoutOffice, officeStates, pushSignal, routeBetween, slotOffset, stepToward } from "../public/office-layout.js";
 
 const stack = loadStack(fileURLToPath(new URL("../data", import.meta.url)));
 const layout = layoutOffice(stack);
@@ -197,4 +197,50 @@ test("walking: steps toward the target, never past it", () => {
   for (const step of [0, -0.05, 3]) assert.deepEqual(stepToward({ x: 2, z: 2 }, { x: 2, z: 2 }, step).pos, { x: 2, z: 2 });
   assert.deepEqual(stepToward({ x: 0, z: 0 }, { x: 3, z: 4 }, -1).pos, { x: 0, z: 0 });
   assert.deepEqual([slotOffset(0, 1), slotOffset(0, 2), slotOffset(1, 2)], [0, -0.6, 0.6]);
+});
+
+// ---------- walking around the buildings ----------
+
+test("nobody walks through a building: every route between every pair of stands keeps to the lanes", () => {
+  const rects = [
+    ...layout.desks.map((d) => ({ ...d, ...FOOTPRINT.desk })),
+    ...layout.stations.map((st) => ({ ...st, ...FOOTPRINT[st.zone === "infra" ? "rack" : "project"] })),
+  ];
+  const stands = [...layout.desks.map((d) => d.stand), ...layout.stations.map((st) => st.stand)];
+  const crosses = (a, b, r) => {
+    const [x0, x1] = [Math.min(a.x, b.x), Math.max(a.x, b.x)];
+    const [z0, z1] = [Math.min(a.z, b.z), Math.max(a.z, b.z)];
+    return x1 > r.x - r.w / 2 && x0 < r.x + r.w / 2 && z1 > r.z - r.d / 2 && z0 < r.z + r.d / 2;
+  };
+  for (const from of stands) {
+    for (const to of stands) {
+      const route = routeBetween(layout, from, to);
+      assert.deepEqual(route.length ? route.at(-1) : from, to);
+      let prev = from;
+      for (const next of route) {
+        assert.ok(prev.x === next.x || prev.z === next.z, "walks along the grid only");
+        for (const r of rects) assert.equal(crosses(prev, next, r), false, `${JSON.stringify(from)} → ${JSON.stringify(to)} crosses a building at ${r.x},${r.z}`);
+        prev = next;
+      }
+    }
+  }
+});
+
+test("a short trip stays short: the same lane needs no corridor; a rack is entered from the front", () => {
+  const [a, b] = layout.stations.filter((st) => st.zone === "project" && st.z === layout.stations[0].z);
+  assert.equal(routeBetween(layout, a.stand, b.stand).length <= 3, true);
+  const rack = layout.stations.find((st) => st.zone === "infra");
+  assert.ok(rack.stand.z > rack.z, "people stand south of a rack, where the camera sees them");
+  const project = layout.stations.find((st) => st.zone === "project");
+  assert.ok(project.stand.z > project.z);
+});
+
+test("a signal without an agent field still moves the right avatar (a server that predates it)", () => {
+  for (const node of ["hermes-gateway", "zb-hermes-eu", "fizz-bot-seodesk", "buzz-relay", "proj-finview", "cc-hooks"]) {
+    assert.equal(agentOf({ node }), agentForNode(node), node);
+  }
+  assert.equal(agentOf({ node: "hermes", agent: "gemini" }), "gemini");
+  const bare = { id: "x", node: "proj-finview", kind: "working", text: "t", at: NOW - 1000 };
+  assert.equal(states([bare])["claude-code"].mode, "working");
+  assert.equal(states([{ ...bare, node: "hermes-gateway" }]).hermes.mode, "working");
 });

@@ -1,45 +1,110 @@
-// The 3D office: an isometric diorama of the stack, a floating island in the same starfield as
-// the map. Agents hover at their desks and walk to the project or infrastructure station a
-// signal names, with a speech bubble of what they report. Everything that decides *where*
-// lives in office-layout.js (pure, tested); this file only draws it with plain three.js —
-// procedural PBR shapes, a generated reflection environment and canvas textures: no models, no
-// image files, no build step, no post-processing add-ons (they would need an import map, which
-// the CSP forbids). Loaded on demand by app.js, so the map never pays for three.js until the
-// office is opened. Names and bubbles are DOM cards positioned over the canvas: sharp text,
-// readable by screen readers. The frame loop stops completely while the office is hidden or the
-// tab is in the background, and slows down while the window is simply unfocused.
+// The 3D office, drawn as a cosy little village on a floating island, in the spirit of a
+// cosy town-builder: soft pastel colours, rounded toy-like shapes, warm low sun with soft
+// shadows, trees and flowers. Each agent has a house, each project a small shop, each hosting
+// platform a silo; the agents are chibi characters who walk along the lanes to the shop a
+// signal names, type on a laptop there, and say what they are doing in a speech bubble.
+// Everything that decides *where* (layout, lanes, who is where) lives in office-layout.js
+// (pure, tested); this file only draws it with plain three.js — procedural shapes and canvas
+// textures: no models, no image files, no build step, no post-processing add-ons (they would
+// need an import map, which the CSP forbids). Loaded on demand by app.js, so the map never pays
+// for three.js until the office is opened. Names and bubbles are DOM cards over the canvas. The
+// frame loop stops completely while the office is hidden or the tab is in the background, and
+// slows down while the window is simply unfocused.
 import * as THREE from "/vendor/three.module.js";
-import { OFFICE_AGENTS, createLocator, layoutOffice, officeStates, pushSignal, stepToward } from "./office-layout.js";
+import { FOOTPRINT, OFFICE_AGENTS, createLocator, layoutOffice, officeStates, pushSignal, routeBetween, stepToward } from "./office-layout.js";
 
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const WALK_SPEED = 3.2; // metres per second
-const BLUR_FPS = 12;    // frame rate while the window is unfocused but still visible; 0 pauses it
-const ACCENT = "#6aa8ff";
-const PROJECT_COLOR = "#38d989"; // layer-products
-const INFRA_COLOR = "#5b9dff";   // layer-hosting
-const AGENT_ZONE_COLOR = "#b47cff";
+const WALK_SPEED = 3; // metres per second
+const BLUR_FPS = 12;  // frame rate while the window is unfocused but still visible; 0 pauses it
 const DEFAULT_AZIMUTH = Math.PI / 4;
 const DEFAULT_ELEVATION = 0.62;
-const HEAD_Y = 1.78;
-const BODY_Y = 0.92;
+const SELECT_COLOR = "#ff7a59";
 
-// ---------- materials and textures ----------
+const PALETTE = {
+  grass: "#9fd682", soil: "#b98b62", soilDark: "#9a7050", sand: "#f2e0b8", wood: "#c8915a", woodDark: "#8f633c",
+  stone: "#d9d3c7", cream: "#fff3dc", leaf: "#6fbf73", leafDark: "#58a862", trunk: "#a1714a", glass: "#ffe6a8",
+};
+const WALLS = ["#fff1da", "#ffe6c9", "#f7ead4", "#eaf3df", "#fde4ea", "#e4eefb"];
+const ROOFS = ["#e8795f", "#f2b34c", "#6fb7c9", "#c98bd1", "#7fc47e", "#e98fa6", "#8a9be0"];
+const SILOS = ["#a9d6f5", "#bfe8cf", "#d8c7f0", "#ffd7b0"];
 
-// Stylised PBR: a base colour, how rough and how metallic, and optionally a glow.
-const pbr = (color, { rough = 0.55, metal = 0.2, emissive = null, glow = 1, emissiveMap = null } = {}) =>
-  new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, emissive: emissive ?? 0x000000, emissiveIntensity: emissive || emissiveMap ? glow : 0, emissiveMap });
-const box = (w, h, d, material, x = 0, y = 0, z = 0) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+const hash = (str) => [...str].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
+const pick = (list, seed) => list[seed % list.length];
+function rng(seed) { // a small seeded generator: the same village every time
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---------- materials, geometry, textures ----------
+
+const mat = (color, { rough = 0.85, metal = 0, emissive = null, glow = 1 } = {}) =>
+  new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, emissive: emissive ?? 0x000000, emissiveIntensity: emissive ? glow : 0 });
+
+function shadowed(mesh, { cast = true, receive = true } = {}) {
+  mesh.castShadow = cast;
+  mesh.receiveShadow = receive;
+  return mesh;
+}
+// A box with rounded edges and corners: an extruded rectangle whose bevel is the rounding.
+function rbox(w, h, d, r, material, x = 0, y = 0, z = 0) {
+  const k = Math.max(0.005, Math.min(r, w / 2 - 0.005, h / 2 - 0.005, d / 2 - 0.005));
+  const shape = new THREE.Shape();
+  shape.moveTo(-(w / 2 - k), -(h / 2 - k));
+  shape.lineTo(w / 2 - k, -(h / 2 - k));
+  shape.lineTo(w / 2 - k, h / 2 - k);
+  shape.lineTo(-(w / 2 - k), h / 2 - k);
+  shape.closePath();
+  const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(d - 2 * k, 0.001), bevelEnabled: true, bevelThickness: k, bevelSize: k, bevelSegments: 3, curveSegments: 1 });
+  g.translate(0, 0, -(d - 2 * k) / 2);
+  const m = shadowed(new THREE.Mesh(g, material));
   m.position.set(x, y, z);
-  m.castShadow = m.receiveShadow = true;
   return m;
-};
-const cyl = (rt, rb, h, material, x = 0, y = 0, z = 0, seg = 20) => {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), material);
+}
+function sphere(r, material, x = 0, y = 0, z = 0, sx = 1, sy = 1, sz = 1, cast = true) {
+  const m = shadowed(new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14), material), { cast });
   m.position.set(x, y, z);
-  m.castShadow = m.receiveShadow = true;
+  m.scale.set(sx, sy, sz);
   return m;
-};
+}
+function cylinder(rt, rb, h, material, x = 0, y = 0, z = 0, seg = 24) {
+  const m = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), material));
+  m.position.set(x, y, z);
+  return m;
+}
+// A rounded slab of land seen from above: the shape of an island, extruded up.
+function slabGeometry(w, d, radius, thickness) {
+  const r = Math.min(radius, w / 2, d / 2);
+  const s = new THREE.Shape();
+  s.moveTo(-w / 2 + r, -d / 2);
+  s.lineTo(w / 2 - r, -d / 2);
+  s.quadraticCurveTo(w / 2, -d / 2, w / 2, -d / 2 + r);
+  s.lineTo(w / 2, d / 2 - r);
+  s.quadraticCurveTo(w / 2, d / 2, w / 2 - r, d / 2);
+  s.lineTo(-w / 2 + r, d / 2);
+  s.quadraticCurveTo(-w / 2, d / 2, -w / 2, d / 2 - r);
+  s.lineTo(-w / 2, -d / 2 + r);
+  s.quadraticCurveTo(-w / 2, -d / 2, -w / 2 + r, -d / 2);
+  const g = new THREE.ExtrudeGeometry(s, { depth: thickness, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.12, bevelSegments: 3, curveSegments: 10 });
+  g.rotateX(-Math.PI / 2); // shape y → -z (north), extrusion → up
+  return g;
+}
+// A gable roof: a triangle extruded along the ridge, with soft edges.
+function roofMesh(w, rise, d, material) {
+  const s = new THREE.Shape();
+  s.moveTo(-w / 2, 0);
+  s.lineTo(w / 2, 0);
+  s.lineTo(0, rise);
+  s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: true, bevelThickness: 0.07, bevelSize: 0.07, bevelSegments: 2, curveSegments: 1 });
+  g.translate(0, 0, -d / 2);
+  return shadowed(new THREE.Mesh(g, material));
+}
 
 function canvasTexture(size, draw, { repeat = false } = {}) {
   const c = document.createElement("canvas");
@@ -50,322 +115,316 @@ function canvasTexture(size, draw, { repeat = false } = {}) {
   if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
 }
-
-// What a monitor shows: a title bar and rows of "code" in the desk's colour, the same picture
-// for the same colour so every project is not a different texture.
-const screens = new Map();
-function screenTexture(color) {
-  if (!screens.has(color)) {
-    screens.set(color, canvasTexture(128, (g, s) => {
-      g.fillStyle = "#05080f";
-      g.fillRect(0, 0, s, s);
-      g.fillStyle = color;
-      g.globalAlpha = 0.9;
-      g.fillRect(6, 6, s - 12, 9);
-      let seed = [...color].reduce((n, ch) => n * 31 + ch.charCodeAt(0), 7);
-      const rand = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
-      for (let y = 24; y < s - 8; y += 9) {
-        g.globalAlpha = 0.35 + rand() * 0.5;
-        const indent = Math.floor(rand() * 3) * 10;
-        g.fillRect(8 + indent, y, 14 + rand() * (s - 40 - indent), 4);
-      }
-    }));
-  }
-  return screens.get(color);
-}
-
-// The floor: one tile with a bevel and a faint highlight, repeated.
-const tileTexture = () => canvasTexture(256, (g, s) => {
-  g.fillStyle = "#070c1c";
+const grassTexture = () => canvasTexture(256, (g, s) => {
+  g.fillStyle = PALETTE.grass;
   g.fillRect(0, 0, s, s);
-  const edge = g.createLinearGradient(0, 0, s, s);
-  edge.addColorStop(0, "#152448");
-  edge.addColorStop(1, "#0c1632");
-  g.fillStyle = edge;
-  g.fillRect(5, 5, s - 10, s - 10);
-  g.strokeStyle = "rgba(120, 160, 255, 0.28)";
+  const r = rng(11);
+  for (let i = 0; i < 46; i++) { // soft mottling, wrapped so the tile repeats without seams
+    const x = r() * s, y = r() * s, rad = 14 + r() * 30;
+    g.fillStyle = r() < 0.5 ? "rgba(122,190,100,0.35)" : "rgba(190,232,140,0.28)";
+    for (const [ox, oy] of [[0, 0], [s, 0], [-s, 0], [0, s], [0, -s]]) { g.beginPath(); g.arc(x + ox, y + oy, rad, 0, 7); g.fill(); }
+  }
+  g.strokeStyle = "rgba(90,160,80,0.4)";
   g.lineWidth = 2;
-  g.strokeRect(5, 5, s - 10, s - 10);
-  g.fillStyle = "rgba(160, 190, 255, 0.5)";
-  for (const [x, y] of [[14, 14], [s - 14, 14], [14, s - 14], [s - 14, s - 14]]) g.fillRect(x - 1.5, y - 1.5, 3, 3);
+  for (let i = 0; i < 90; i++) {
+    const x = r() * s, y = r() * s;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - 0.5) * 6, y - 5 - r() * 6); g.stroke();
+  }
 }, { repeat: true });
-
 const dotTexture = () => canvasTexture(64, (g, s) => {
   const r = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
   r.addColorStop(0, "rgba(255,255,255,1)");
-  r.addColorStop(0.35, "rgba(255,255,255,0.35)");
+  r.addColorStop(0.5, "rgba(255,255,255,0.55)");
   r.addColorStop(1, "rgba(255,255,255,0)");
   g.fillStyle = r;
   g.fillRect(0, 0, s, s);
 });
+// What a laptop shows: a title bar and rows of text.
+const screenTexture = () => canvasTexture(128, (g, s) => {
+  g.fillStyle = "#2c3350";
+  g.fillRect(0, 0, s, s);
+  g.fillStyle = "#ff9f5a";
+  g.fillRect(8, 8, s - 16, 10);
+  const r = rng(5);
+  for (let y = 28; y < s - 10; y += 12) {
+    g.fillStyle = ["#9be3b4", "#8fc7ff", "#ffe08a", "#f6a6c9"][Math.floor(r() * 4)];
+    g.fillRect(10 + Math.floor(r() * 3) * 12, y, 20 + r() * 70, 5);
+  }
+});
 
-// A small studio to reflect: a night-blue dome with a few bright neon strips. Baked once into
-// an environment map so the metals have something to mirror; it is never drawn itself.
+// A bright sky to reflect, baked once into an environment map (never drawn itself).
 function makeEnvironment(renderer) {
   const env = new THREE.Scene();
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(40, 32, 16), new THREE.MeshBasicMaterial({
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(40, 32, 16), new THREE.MeshBasicMaterial({
     side: THREE.BackSide,
     map: canvasTexture(64, (g, s) => {
       const v = g.createLinearGradient(0, 0, 0, s);
-      v.addColorStop(0, "#1c2250");
-      v.addColorStop(0.5, "#0b1030");
-      v.addColorStop(1, "#04060c");
+      v.addColorStop(0, "#8ec9f0");
+      v.addColorStop(0.55, "#e9f3f8");
+      v.addColorStop(1, "#f6d9b4");
       g.fillStyle = v;
       g.fillRect(0, 0, s, s);
     }),
-  }));
-  env.add(dome);
-  for (const [color, x, y, z, ry] of [[0x2fd4e8, -22, 14, -10, 0.9], [0xff79c6, 22, 12, 8, -0.8], [0xffd9b0, 0, 28, 0, 0]]) {
-    const strip = new THREE.Mesh(new THREE.PlaneGeometry(26, 3), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(5), side: THREE.DoubleSide }));
-    strip.position.set(x, y, z);
-    strip.rotation.y = ry;
-    if (y > 20) strip.rotation.x = Math.PI / 2;
-    env.add(strip);
-  }
+  })));
   const pmrem = new THREE.PMREMGenerator(renderer);
-  const texture = pmrem.fromScene(env, 0.03).texture;
+  const texture = pmrem.fromScene(env, 0.04).texture;
   pmrem.dispose();
   return texture;
 }
 
-// ---------- things in the room ----------
+// ---------- buildings ----------
 
-// Blinking status lights: every rack LED shares one of three materials, so blinking them is
-// three assignments a frame.
-const leds = [
-  { mat: pbr("#031018", { emissive: "#2fd4e8", glow: 2.4 }), speed: 1.7, phase: 0 },
-  { mat: pbr("#03120a", { emissive: "#38d989", glow: 2.4 }), speed: 0.9, phase: 2 },
-  { mat: pbr("#120a03", { emissive: "#ffc04d", glow: 2.4 }), speed: 2.6, phase: 4 },
-];
-
-function chair() {
+// A cottage or a shop: rounded walls, a gable roof, a door, glowing windows with flower boxes.
+// Its windows have a material of their own so they can light up while someone works inside.
+function makeBuilding({ w, d, h, wall, roof, accent, shop, ridgeX, chimney }) {
   const g = new THREE.Group();
-  const fabric = pbr("#161d38", { rough: 0.8, metal: 0.05 });
-  const metal = pbr("#1b2340", { rough: 0.35, metal: 0.8 });
-  g.add(cyl(0.38, 0.34, 0.12, fabric, 0, 0.55, 0, 24));
-  const back = box(0.74, 0.8, 0.1, fabric, 0, 1.0, 0.36);
-  back.rotation.x = -0.12;
-  g.add(back, cyl(0.04, 0.04, 0.45, metal, 0, 0.3, 0, 8));
-  for (let i = 0; i < 5; i++) {
-    const leg = box(0.5, 0.05, 0.06, metal, 0, 0.07, 0);
-    leg.rotation.y = (i / 5) * Math.PI * 2;
-    leg.position.set(Math.sin(leg.rotation.y) * 0.22, 0.07, Math.cos(leg.rotation.y) * 0.22);
-    g.add(leg);
+  const wallM = mat(wall);
+  const roofM = mat(roof, { rough: 0.7 });
+  const wood = mat(PALETTE.wood, { rough: 0.8 });
+  const woodDark = mat(PALETTE.woodDark, { rough: 0.8 });
+  const glass = mat("#fff4cf", { rough: 0.3, emissive: PALETTE.glass, glow: 0.35 });
+  g.add(rbox(w, h, d, 0.16, wallM, 0, h / 2, 0));
+  g.add(rbox(w + 0.15, 0.16, d + 0.15, 0.06, mat(PALETTE.stone, { rough: 0.95 }), 0, 0.08, 0)); // foundation
+  const rise = Math.min(1.1, w * 0.3);
+  const rf = ridgeX ? roofMesh(d + 0.55, rise, w + 0.55, roofM) : roofMesh(w + 0.55, rise, d + 0.55, roofM);
+  if (ridgeX) rf.rotation.y = Math.PI / 2;
+  rf.position.y = h - 0.02;
+  g.add(rf);
+  if (chimney) {
+    g.add(rbox(0.34, 0.8, 0.34, 0.05, mat("#c9694f", { rough: 0.9 }), w / 2 - 0.55, h + rise * 0.55, -d / 4));
+    g.add(rbox(0.42, 0.08, 0.42, 0.03, mat(PALETTE.stone), w / 2 - 0.55, h + rise * 0.55 + 0.42, -d / 4));
   }
-  return g;
-}
-
-// An agent's desk: a wide monitor showing its colour, a glowing edge, a lamp and a chair.
-function makeDesk(color, reserved) {
-  const g = new THREE.Group();
-  const top = pbr("#1a2342", { rough: 0.35, metal: 0.5 });
-  const frame = pbr("#0d1226", { rough: 0.3, metal: 0.8 });
-  const screen = pbr("#06090f", { emissiveMap: screenTexture(color), emissive: "#ffffff", glow: reserved ? 0.18 : 1.3, rough: 0.2, metal: 0 });
-  const accent = pbr("#050810", { emissive: color, glow: reserved ? 0.4 : 2.2 });
-  g.add(box(3.5, 0.14, 1.7, top, 0, 0.82, 0));
-  g.add(box(3.5, 0.03, 0.03, accent, 0, 0.78, 0.85)); // glowing front edge
-  for (const x of [-1.55, 1.55]) g.add(box(0.12, 0.76, 1.5, frame, x, 0.4, 0));
-  g.add(box(2.0, 1.0, 0.09, frame, 0, 1.55, -0.4), box(1.86, 0.86, 0.02, screen, 0, 1.55, -0.34), box(0.14, 0.45, 0.14, frame, 0, 1.08, -0.4));
-  g.add(box(1.05, 0.04, 0.34, pbr("#0f152b", { rough: 0.5, metal: 0.4 }), 0, 0.91, 0.3), box(1.0, 0.012, 0.05, accent, 0, 0.935, 0.2));
-  // a desk lamp
-  const lampBulb = pbr("#150f05", { emissive: "#ffd9a0", glow: reserved ? 0.3 : 2.0 });
-  g.add(cyl(0.12, 0.14, 0.04, frame, -1.4, 0.92, 0.2, 16), cyl(0.02, 0.02, 0.55, frame, -1.4, 1.2, 0.2, 8), box(0.3, 0.06, 0.12, lampBulb, -1.32, 1.5, 0.2));
-  const seat = chair();
-  seat.position.z = 1.55;
-  g.add(seat);
-  return g;
-}
-
-// A project's workstation: a smaller desk, a monitor and one prop that varies per project.
-function makeWorkstation(color, variant) {
-  const g = new THREE.Group();
-  const top = pbr("#182140", { rough: 0.4, metal: 0.4 });
-  const frame = pbr("#0d1226", { rough: 0.3, metal: 0.8 });
-  const screen = pbr("#06090f", { emissiveMap: screenTexture(color), emissive: "#ffffff", glow: 1.2, rough: 0.2, metal: 0 });
-  g.add(box(2.4, 0.12, 1.3, top, 0, 0.72, 0));
-  for (const x of [-1.1, 1.1]) g.add(box(0.1, 0.68, 1.1, frame, x, 0.36, 0));
-  g.add(box(1.35, 0.86, 0.07, frame, 0, 1.3, -0.25), box(1.25, 0.76, 0.02, screen, 0, 1.3, -0.205), box(0.1, 0.3, 0.1, frame, 0, 0.92, -0.25));
-  g.add(box(0.7, 0.03, 0.24, pbr("#0f152b", { rough: 0.5, metal: 0.4 }), 0, 0.79, 0.25));
-  const leaf = pbr("#1f7a4d", { rough: 0.8, metal: 0 });
-  if (variant === 0) { // a plant
-    g.add(cyl(0.1, 0.08, 0.16, pbr("#e8eeff", { rough: 0.6, metal: 0 }), 0.9, 0.86, 0.1, 12));
-    const bush = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), leaf);
-    bush.position.set(0.9, 1.08, 0.1);
-    bush.castShadow = true;
-    g.add(bush);
-  } else if (variant === 1) { // a stack of books
-    g.add(box(0.36, 0.06, 0.26, pbr(color, { rough: 0.6, metal: 0 }), 0.85, 0.81, 0.12), box(0.32, 0.06, 0.24, pbr("#e8eeff", { rough: 0.6, metal: 0 }), 0.85, 0.87, 0.12));
-  } else { // a mug
-    g.add(cyl(0.07, 0.07, 0.13, pbr("#e8eeff", { rough: 0.4, metal: 0 }), -0.85, 0.84, 0.15, 12));
+  const front = d / 2;
+  // door, step and a little lamp beside it
+  g.add(rbox(0.62, 1.15, 0.12, 0.05, woodDark, 0, 0.62, front + 0.02));
+  g.add(sphere(0.045, mat("#ffd45e", { metal: 0.6, rough: 0.4 }), 0.18, 0.6, front + 0.1));
+  g.add(rbox(0.95, 0.09, 0.42, 0.04, mat(PALETTE.stone, { rough: 0.95 }), 0, 0.06, front + 0.2));
+  g.add(sphere(0.09, mat("#fff0b8", { emissive: "#ffd98a", glow: 1.4 }), -0.55, 1.05, front + 0.08, 1, 1, 1, false));
+  // windows with frames and flower boxes
+  const sides = w > 2.6 ? [-1, 1] : [1];
+  for (const s of sides) {
+    const wx = s * (w / 2 - 0.62);
+    g.add(rbox(0.74, 0.74, 0.08, 0.06, wood, wx, h * 0.58, front + 0.0));
+    g.add(rbox(0.56, 0.56, 0.08, 0.05, glass, wx, h * 0.58, front + 0.04));
+    g.add(rbox(0.05, 0.56, 0.1, 0.01, wood, wx, h * 0.58, front + 0.07), rbox(0.56, 0.05, 0.1, 0.01, wood, wx, h * 0.58, front + 0.07));
+    g.add(rbox(0.7, 0.15, 0.22, 0.04, wood, wx, h * 0.58 - 0.46, front + 0.12));
+    for (const k of [-0.2, 0, 0.2]) g.add(sphere(0.08, mat(pick(["#ff8fa8", "#ffd45e", "#ffffff", "#c98bd1"], hash(`${wx}${k}`))), wx + k, h * 0.58 - 0.34, front + 0.14, 1, 1, 1, false));
   }
-  const seat = chair();
-  seat.scale.setScalar(0.85);
-  seat.position.z = 1.35;
-  g.add(seat);
-  return g;
-}
-
-// A server rack: dark brushed metal, a row of units and blinking status lights.
-function makeRack(color) {
-  const g = new THREE.Group();
-  const shell = pbr("#0d1328", { rough: 0.32, metal: 0.9 });
-  const unit = pbr("#121a36", { rough: 0.4, metal: 0.7 });
-  const trim = pbr("#040810", { emissive: color, glow: 2.2 });
-  g.add(box(1.5, 2.7, 1.1, shell, 0, 1.35, 0));
-  g.add(box(1.56, 0.1, 1.16, unit, 0, 2.74, 0), box(1.56, 0.1, 1.16, unit, 0, 0.05, 0));
-  g.add(box(1.0, 0.03, 0.03, trim, 0, 2.62, 0.56)); // glowing top edge
-  for (let i = 0; i < 6; i++) {
-    const y = 0.42 + i * 0.37;
-    g.add(box(1.3, 0.3, 0.06, unit, 0, y, 0.56));
-    for (let k = 0; k < 3; k++) {
-      const led = leds[(i + k) % leds.length];
-      g.add(box(0.07, 0.05, 0.03, led.mat, -0.5 + k * 0.14, y + 0.05, 0.6));
+  if (shop) { // a striped awning over the front
+    const slats = 6;
+    for (let i = 0; i < slats; i++) {
+      const sw = (w - 0.3) / slats;
+      const slat = rbox(sw * 0.96, 0.06, 0.62, 0.03, mat(i % 2 ? "#ffffff" : accent, { rough: 0.8 }), -(w - 0.3) / 2 + sw * (i + 0.5), h * 0.86, front + 0.3);
+      slat.rotation.x = 0.4;
+      g.add(slat);
     }
-    g.add(box(0.5, 0.025, 0.02, pbr("#05080f", { rough: 0.8, metal: 0 }), 0.3, y - 0.02, 0.6)); // vent slot
   }
+  return { group: g, glass, top: h + rise };
+}
+
+// An agent's house: cream walls, a roof in the agent's colour, a pennant on the roof.
+function makeHome(def) {
+  const free = def.reserved;
+  const b = makeBuilding({ w: 3.4, d: 2.5, h: 1.9, wall: free ? "#ece7dc" : "#fff3dc", roof: free ? "#bdb5a8" : def.color, accent: def.color, shop: false, ridgeX: false, chimney: !free });
+  const g = b.group;
+  const pole = cylinder(0.025, 0.025, 0.9, mat(PALETTE.woodDark), 0, b.top + 0.35, 0, 6);
+  const flag = rbox(0.5, 0.28, 0.03, 0.02, mat(free ? "#d9d3c7" : def.color), 0.27, b.top + 0.65, 0);
+  g.add(pole, flag);
+  // a bench and a plant by the door
+  g.add(rbox(1.0, 0.1, 0.4, 0.04, mat(PALETTE.wood), -1.3, 0.42, 1.55), rbox(0.08, 0.4, 0.34, 0.02, mat(PALETTE.woodDark), -1.7, 0.2, 1.55), rbox(0.08, 0.4, 0.34, 0.02, mat(PALETTE.woodDark), -0.9, 0.2, 1.55));
+  g.add(cylinder(0.14, 0.11, 0.24, mat("#e8a07a"), 1.45, 0.12, 1.5, 12), sphere(0.2, mat(PALETTE.leaf), 1.45, 0.4, 1.5));
+  return { group: g, glass: b.glass, top: b.top + 1 };
+}
+
+function makeShop(node, i) {
+  const seed = hash(node);
+  const wall = pick(WALLS, seed);
+  const roof = pick(ROOFS, seed >> 3);
+  const b = makeBuilding({ w: 3.0, d: 2.1, h: 1.7, wall, roof, accent: roof, shop: true, ridgeX: seed % 3 === 0, chimney: seed % 2 === 0 });
+  const g = b.group;
+  const v = i % 3;
+  const wood = mat(PALETTE.wood);
+  if (v === 0) { // barrels
+    g.add(cylinder(0.2, 0.2, 0.42, wood, 1.25, 0.21, 1.45, 14), cylinder(0.17, 0.17, 0.36, wood, 1.62, 0.18, 1.35, 14));
+  } else if (v === 1) { // crates
+    g.add(rbox(0.42, 0.38, 0.42, 0.04, wood, 1.3, 0.19, 1.45), rbox(0.34, 0.3, 0.34, 0.04, mat(PALETTE.woodDark), 1.32, 0.53, 1.45));
+  } else { // a potted tree
+    g.add(cylinder(0.17, 0.13, 0.3, mat("#e8a07a"), 1.35, 0.15, 1.45, 12), sphere(0.3, mat(PALETTE.leafDark), 1.35, 0.55, 1.45));
+  }
+  return { group: g, glass: b.glass, top: b.top + 0.6 };
+}
+
+// A server silo: a pastel tower with a stripe, a round window and a cone roof.
+function makeSilo(index) {
+  const g = new THREE.Group();
+  const body = pick(SILOS, index);
+  const roof = pick(ROOFS, index + 2);
+  g.add(cylinder(0.8, 0.85, 2.1, mat(body), 0, 1.05, 0, 28));
+  g.add(cylinder(0.86, 0.86, 0.14, mat("#ffffff", { rough: 0.8 }), 0, 0.7, 0, 28), cylinder(0.84, 0.84, 0.14, mat("#ffffff", { rough: 0.8 }), 0, 1.45, 0, 28));
+  const cone = shadowed(new THREE.Mesh(new THREE.ConeGeometry(0.98, 0.9, 28), mat(roof, { rough: 0.7 })));
+  cone.position.y = 2.55;
+  g.add(cone, sphere(0.07, mat("#fff0b8", { emissive: "#ffd98a", glow: 1.2 }), 0, 3.05, 0, 1, 1, 1, false));
+  const glass = mat("#fff4cf", { rough: 0.3, emissive: PALETTE.glass, glow: 0.35 });
+  const win = shadowed(new THREE.Mesh(new THREE.CircleGeometry(0.24, 20), glass), { cast: false });
+  win.position.set(0, 1.1, 0.835);
+  g.add(win, rbox(0.55, 0.9, 0.12, 0.05, mat(PALETTE.woodDark), 0, 0.47, 0.83));
+  g.add(rbox(0.6, 0.16, 0.34, 0.04, mat(PALETTE.stone), 0, 0.08, 1.0));
+  return { group: g, glass, top: 3.2 };
+}
+
+// ---------- scenery ----------
+
+function makeTree(r) {
+  const g = new THREE.Group();
+  const s = 0.8 + r() * 0.5;
+  g.add(cylinder(0.12 * s, 0.17 * s, 0.9 * s, mat(PALETTE.trunk), 0, 0.45 * s, 0, 8));
+  const greens = [PALETTE.leaf, PALETTE.leafDark, "#82cf7d"];
+  const pine = r() < 0.3;
+  if (pine) {
+    for (let i = 0; i < 3; i++) {
+      const cone = shadowed(new THREE.Mesh(new THREE.ConeGeometry((0.7 - i * 0.15) * s, 0.8 * s, 10), mat(i % 2 ? PALETTE.leafDark : PALETTE.leaf)));
+      cone.position.y = (1.1 + i * 0.5) * s;
+      g.add(cone);
+    }
+  } else {
+    g.add(sphere(0.62 * s, mat(pick(greens, Math.floor(r() * 9))), 0, 1.35 * s, 0), sphere(0.42 * s, mat(pick(greens, Math.floor(r() * 9))), 0.38 * s, 1.0 * s, 0.15 * s), sphere(0.38 * s, mat(pick(greens, Math.floor(r() * 9))), -0.34 * s, 1.1 * s, -0.12 * s));
+  }
+  g.rotation.y = r() * 6.28;
   return g;
 }
 
-// A glowing ring on the floor under a desk or station: hover, selection and "someone is working here".
-function makeRing(radius) {
-  const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 0.86, radius, 56), new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.06;
-  return ring;
+function makeLamp() {
+  const g = new THREE.Group();
+  g.add(cylinder(0.045, 0.06, 1.5, mat(PALETTE.woodDark), 0, 0.75, 0, 8));
+  g.add(sphere(0.16, mat("#fff0b8", { emissive: "#ffd98a", glow: 1.5 }), 0, 1.62, 0, 1, 1, 1, false));
+  g.add(cylinder(0.01, 0.2, 0.12, mat(PALETTE.woodDark), 0, 1.86, 0, 8));
+  return g;
 }
 
-// ---------- avatars ----------
+function makeCloud(r) {
+  const g = new THREE.Group();
+  const m = mat("#ffffff", { rough: 1, emissive: "#ffffff", glow: 0.25 });
+  const n = 4 + Math.floor(r() * 3);
+  for (let i = 0; i < n; i++) g.add(sphere(1.1 + r() * 0.9, m, (i - n / 2) * 1.5 + r(), r() * 0.5, r() * 1.2 - 0.6, 1, 0.62, 1, false));
+  return g;
+}
 
-// A little hovering robot: glossy body, a floating head with a dark visor and lit eyes, a glow
-// pad under it. Each agent has its own colour and its own accessory, so they read apart from
-// far away.
+// ---------- characters ----------
+
+// A chibi character: a big round head with a face, a small round body, little feet — and an
+// accessory that tells the agents apart. Colour is the agent's, softened.
 function makeAvatar(agent) {
   const g = new THREE.Group();
   const mats = [];
   const track = (m) => (mats.push(m), m);
-  const shell = track(pbr(agent.color, { rough: 0.28, metal: 0.35, emissive: agent.color, glow: 0.22 }));
-  const light = track(pbr("#060912", { emissive: agent.color, glow: 2.6 }));
-  const visor = track(pbr("#05070f", { rough: 0.12, metal: 0.9 }));
-  const dark = track(pbr("#0b1020", { rough: 0.4, metal: 0.7 }));
+  const color = new THREE.Color(agent.color).lerp(new THREE.Color("#ffffff"), 0.12);
+  const skin = track(mat(color, { rough: 0.6 }));
+  const light = track(mat(color.clone().lerp(new THREE.Color("#ffffff"), 0.55), { rough: 0.6 }));
+  const ink = track(mat("#2b2230", { rough: 0.4 }));
+  const white = track(mat("#ffffff", { rough: 0.5 }));
+  const blush = track(mat("#ff9fb4", { rough: 0.9 }));
+  const dark = track(mat(color.clone().multiplyScalar(0.55), { rough: 0.7 }));
 
   const body = new THREE.Group();
-  body.position.y = BODY_Y;
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.27, 0.46, 6, 16), shell);
-  torso.castShadow = true;
-  const belt = new THREE.Mesh(new THREE.TorusGeometry(0.275, 0.025, 8, 28), light);
-  belt.rotation.x = Math.PI / 2;
-  belt.position.y = -0.12;
-  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), light);
-  chest.position.set(0, 0.1, 0.27);
-  body.add(torso, belt, chest);
+  body.position.y = 0.55;
+  body.add(sphere(0.3, skin, 0, 0, 0, 1, 1.05, 0.9), sphere(0.2, light, 0, -0.04, 0.17, 1, 1.2, 0.5, false)); // round body and a light belly
   g.add(body);
-
-  // the hover pad: a dark disc with a glowing rim, floating just above the floor
-  const pad = new THREE.Group();
-  pad.position.y = 0.16;
-  const disc = cyl(0.3, 0.22, 0.08, dark, 0, 0, 0, 24);
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.02, 8, 32), light);
-  rim.rotation.x = Math.PI / 2;
-  pad.add(disc, rim);
-  g.add(pad);
-
   const head = new THREE.Group();
-  head.position.y = HEAD_Y;
+  head.position.y = 1.1;
+  head.add(sphere(0.4, skin, 0, 0, 0, 1.04, 0.96, 1));
+  for (const s of [-1, 1]) {
+    head.add(sphere(0.052, ink, s * 0.15, 0.02, 0.37, 1, 1.25, 0.6, false), sphere(0.016, white, s * 0.15 + 0.014, 0.05, 0.4, 1, 1, 1, false)); // eye and its glint
+    head.add(sphere(0.07, blush, s * 0.25, -0.09, 0.32, 1.3, 0.7, 0.4, false)); // cheek
+  }
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.011, 6, 12, Math.PI), ink);
+  mouth.position.set(0, -0.07, 0.385);
+  mouth.rotation.z = Math.PI;
+  head.add(mouth);
   g.add(head);
-  const ball = (r, m = shell) => {
-    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), m);
-    s.castShadow = true;
-    return s;
-  };
-  const face = (r, y = 0) => { // a dark visor with two lit eyes, on the front of a head of radius r
-    const v = ball(r * 0.82, visor);
-    v.scale.set(1, 0.62, 0.5);
-    v.position.set(0, y, r * 0.62);
-    head.add(v);
-    for (const s of [-1, 1]) {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(r * 0.1, 8, 6), light);
-      eye.position.set(s * r * 0.32, y, r * 0.92);
-      head.add(eye);
-    }
-  };
+
   switch (agent.id) {
-    case "claude-code": { // a starburst above the head, like its mark
-      head.add(ball(0.3));
-      face(0.3);
+    case "claude-code": // a little spark of three crossed strokes on top
       for (let i = 0; i < 3; i++) {
-        const ray = box(0.04, 0.34, 0.04, light, 0, 0.5, 0);
+        const ray = rbox(0.06, 0.3, 0.06, 0.025, white, 0, 0.5, 0);
         ray.rotation.z = (i * Math.PI) / 3;
-        ray.castShadow = false;
         head.add(ray);
       }
       break;
-    }
-    case "hermes": { // winged
-      head.add(ball(0.29));
-      face(0.29);
+    case "hermes": // a winged cap
+      head.add(sphere(0.36, light, 0, 0.14, 0, 1.02, 0.55, 1, false));
       for (const s of [-1, 1]) {
-        for (let k = 0; k < 3; k++) {
-          const feather = box(0.34 - k * 0.07, 0.035, 0.1, light, s * (0.42 + k * 0.03), 0.06 - k * 0.07, -0.02);
-          feather.rotation.z = s * (0.35 - k * 0.08);
-          feather.castShadow = false;
-          head.add(feather);
-        }
+        const wing = sphere(0.1, white, s * 0.42, 0.22, 0, 0.5, 1.3, 0.4);
+        wing.rotation.z = -s * 0.5;
+        head.add(wing);
       }
       break;
-    }
-    case "buzz": { // antennae
-      head.add(ball(0.29));
-      face(0.29);
+    case "buzz": // bee: antennae and stripes
       for (const s of [-1, 1]) {
-        const stalk = cyl(0.015, 0.015, 0.34, dark, s * 0.11, 0.42, 0, 6);
-        stalk.rotation.z = -s * 0.32;
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), light);
-        tip.position.set(s * 0.2, 0.58, 0);
-        head.add(stalk, tip);
+        const stalk = cylinder(0.012, 0.012, 0.3, ink, s * 0.12, 0.5, 0, 6);
+        stalk.rotation.z = -s * 0.3;
+        head.add(stalk, sphere(0.05, dark, s * 0.2, 0.66, 0, 1, 1, 1, false));
+      }
+      for (const y of [-0.08, 0.1]) {
+        const stripe = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.035, 8, 24), ink);
+        stripe.rotation.x = Math.PI / 2;
+        stripe.position.y = y;
+        body.add(stripe);
       }
       break;
-    }
-    case "gemini": { // twin heads
+    case "gemini": // twin buns
+      for (const s of [-1, 1]) head.add(sphere(0.15, dark, s * 0.27, 0.36, 0));
+      break;
+    case "chatgpt": // a leaf sprout
       for (const s of [-1, 1]) {
-        const twin = ball(0.2);
-        twin.position.set(s * 0.2, 0, 0);
-        head.add(twin);
-        for (const e of [-1, 1]) {
-          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), light);
-          eye.position.set(s * 0.2 + e * 0.06, 0.02, 0.18);
-          head.add(eye);
-        }
+        const leaf = sphere(0.14, track(mat("#7fd6a0")), s * 0.12, 0.5, 0, 1.6, 0.6, 0.4);
+        leaf.rotation.z = -s * 0.7;
+        head.add(leaf);
       }
+      head.add(cylinder(0.015, 0.02, 0.18, dark, 0, 0.42, 0, 6));
       break;
-    }
-    case "chatgpt": { // a halo
-      head.add(ball(0.3));
-      face(0.3);
-      const halo = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.03, 10, 32), light);
-      halo.rotation.x = Math.PI / 2;
-      halo.position.y = 0.5;
-      head.add(halo);
-      break;
-    }
-    default:
-      head.add(ball(0.3));
-      face(0.3);
   }
-  // Arms are small capsules that swing from the shoulder.
+
   const arms = [-1, 1].map((s) => {
     const pivot = new THREE.Group();
-    pivot.position.set(s * 0.4, 1.28, 0);
-    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.055, 0.3, 4, 8), shell);
-    arm.position.y = -0.2;
-    arm.castShadow = true;
+    pivot.position.set(s * 0.33, 0.7, 0.02);
+    const arm = sphere(0.09, skin, 0, -0.17, 0, 1, 1.9, 1);
     pivot.add(arm);
     g.add(pivot);
     return pivot;
   });
-  return { group: g, body, head, arms, pad, materials: mats };
+  const feet = [-1, 1].map((s) => {
+    const foot = sphere(0.12, dark, s * 0.15, 0.1, 0.05, 1, 0.7, 1.35);
+    g.add(foot);
+    return foot;
+  });
+
+  // a laptop for when it works, stars for when it is done
+  const laptop = new THREE.Group();
+  laptop.add(rbox(0.5, 0.04, 0.34, 0.015, mat("#cfd3dc", { metal: 0.5, rough: 0.4 }), 0, 0, 0));
+  const lid = rbox(0.5, 0.34, 0.03, 0.012, mat("#cfd3dc", { metal: 0.5, rough: 0.4 }), 0, 0.17, -0.17);
+  lid.rotation.x = -0.25;
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.28), new THREE.MeshStandardMaterial({ color: "#ffffff", emissive: "#ffffff", emissiveMap: screenTexture(), emissiveIntensity: 0.9, roughness: 0.3 }));
+  screen.position.set(0, 0, 0.02);
+  lid.add(screen);
+  laptop.add(lid);
+  laptop.position.set(0, 0.82, 0.46);
+  laptop.visible = false;
+  g.add(laptop);
+  const stars = new THREE.Group();
+  const star = mat("#ffd45e", { emissive: "#ffd45e", glow: 0.9, rough: 0.5 });
+  for (let i = 0; i < 4; i++) {
+    const s = sphere(0.07, star, Math.cos((i / 4) * 6.28) * 0.6, 0, Math.sin((i / 4) * 6.28) * 0.6, 1, 1, 1, false);
+    stars.add(s);
+  }
+  stars.position.y = 1.75;
+  stars.visible = false;
+  g.add(stars);
+
+  g.scale.setScalar(1.38);
+  return { group: g, body, head, arms, feet, laptop, stars, materials: mats };
 }
 
-// ---------- the office ----------
+// ---------- the village ----------
 
 export function createOffice(container, { stack, signals = [], hold, onPick = () => {} }) {
   const layout = layoutOffice(stack);
@@ -373,8 +432,8 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.setClearColor(0x000000, 0);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap; // three 0.187 removed PCFSoftShadowMap: this one is soft now
   renderer.domElement.className = "office-canvas";
@@ -383,12 +442,18 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
   labels.className = "office-labels";
   const hint = document.createElement("div");
   hint.className = "office-hint";
-  hint.textContent = "drag: rotate · right-drag: pan · wheel: zoom · click a desk or station";
+  const hintText = document.createElement("span");
+  hintText.textContent = "drag: rotate · right-drag: pan · wheel: zoom · click a house, shop or silo";
+  const demoButton = document.createElement("button");
+  demoButton.type = "button";
+  demoButton.textContent = "▶ Demo";
+  demoButton.title = "Play a few made-up signals to see the agents work (nothing is sent anywhere)";
+  hint.append(hintText, demoButton);
   container.append(labels, hint);
 
   const scene = new THREE.Scene();
   scene.environment = makeEnvironment(renderer);
-  scene.environmentIntensity = 0.7;
+  scene.environmentIntensity = 0.5;
 
   const { minX, maxX, minZ, maxZ } = layout.bounds;
   const width = maxX - minX;
@@ -396,124 +461,162 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
   const cx = (minX + maxX) / 2;
   const cz = (minZ + maxZ) / 2;
 
-  // ---- light: a dim violet night, a warm key from above with soft shadows, neon fills ----
-  scene.add(new THREE.AmbientLight(0x1a1b35, 2.2));
-  scene.add(new THREE.HemisphereLight(0x4a5cc0, 0x140a28, 0.55));
-  const key = new THREE.DirectionalLight(0xffd9b0, 2.1);
-  key.position.set(cx - 14, 26, cz + 10);
-  key.target.position.set(cx, 0, cz);
-  key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
-  const reach = Math.max(width, depth) * 0.62;
-  Object.assign(key.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 1, far: 90 });
-  key.shadow.bias = -0.0004;
-  key.shadow.normalBias = 0.04;
-  scene.add(key, key.target);
-  const rim = new THREE.DirectionalLight(0x6a8cff, 0.7);
-  rim.position.set(cx + 18, 14, cz - 16);
-  scene.add(rim);
-  for (const [color, x, z, power] of [[0x2fd4e8, cx, minZ + 5, 50], [0xff79c6, cx, maxZ - 3, 45], [0xb47cff, cx - 12, cz, 26], [0x38d989, cx + 12, cz, 16]]) {
-    const p = new THREE.PointLight(color, power, 36, 1.6);
-    p.position.set(x, 6, z);
-    scene.add(p);
-  }
+  // ---- light: a warm low sun with soft shadows, a bright sky, a little fill ----
+  scene.add(new THREE.HemisphereLight(0xcfe6ff, 0xf3dcb5, 0.95));
+  scene.add(new THREE.AmbientLight(0xfff0e0, 0.35));
+  const sun = new THREE.DirectionalLight(0xfff0d2, 2.1);
+  sun.position.set(cx - 20, 24, cz + 12);
+  sun.target.position.set(cx, 0, cz);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  const reach = Math.max(width, depth) * 0.66;
+  Object.assign(sun.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 1, far: 100 });
+  sun.shadow.bias = -0.0003;
+  sun.shadow.normalBias = 0.035;
+  scene.add(sun, sun.target);
 
-  // ---- the island: a tiled slab with a metal edge, a neon rim and a glow underneath ----
+  // ---- the island: grass on top, layers of earth below, clouds around it ----
   const island = new THREE.Group();
-  const tiles = tileTexture();
-  tiles.repeat.set(width / 2, depth / 2);
-  tiles.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  const side = pbr("#0b1126", { rough: 0.3, metal: 0.85 });
-  const slab = new THREE.Mesh(new THREE.BoxGeometry(width, 0.7, depth), [side, side, pbr("#ffffff", { rough: 0.38, metal: 0.25, emissiveMap: tiles, emissive: "#ffffff", glow: 0.18 }), side, side, side]);
-  slab.material[2].map = tiles;
-  slab.position.set(cx, -0.35, cz);
-  slab.receiveShadow = true;
-  const keel = new THREE.Mesh(new THREE.BoxGeometry(width * 0.82, 0.5, depth * 0.82), pbr("#080d1e", { rough: 0.4, metal: 0.8 }));
-  keel.position.set(cx, -0.95, cz);
-  const keel2 = new THREE.Mesh(new THREE.BoxGeometry(width * 0.55, 0.45, depth * 0.55), pbr("#060a18", { rough: 0.4, metal: 0.8 }));
-  keel2.position.set(cx, -1.4, cz);
-  island.add(slab, keel, keel2);
-  const neon = (w, d, x, z, color, glow = 2.4) => {
-    const m = box(w, 0.05, d, pbr("#04060c", { emissive: color, glow }), x, 0.025, z);
-    m.castShadow = false;
-    return m;
-  };
-  const e = 0.35; // perimeter neon: cyan along the long sides, magenta across
-  island.add(neon(width - 2 * e, 0.09, cx, minZ + e, "#2fd4e8"), neon(width - 2 * e, 0.09, cx, maxZ - e, "#2fd4e8"), neon(0.09, depth - 2 * e, minX + e, cz, "#ff79c6"), neon(0.09, depth - 2 * e, maxX - e, cz, "#ff79c6"));
-  const underglow = new THREE.Mesh(new THREE.PlaneGeometry(width * 1.7, depth * 1.7), new THREE.MeshBasicMaterial({ map: dotTexture(), color: 0x5b6cff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
-  underglow.rotation.x = -Math.PI / 2;
-  underglow.position.set(cx, -2.4, cz);
-  island.add(underglow);
-
-  // zone pads: a raised plate under each part of the office, edged with its colour
-  const zones = [];
-  const pad = (name, color, items, margin) => {
-    if (!items.length) return;
-    const x0 = Math.min(...items.map((o) => o.x)) - margin.x;
-    const x1 = Math.max(...items.map((o) => o.x)) + margin.x;
-    const z0 = Math.min(...items.map((o) => o.z)) - margin.z0;
-    const z1 = Math.max(...items.map((o) => o.z)) + margin.z1;
-    const plate = box(x1 - x0, 0.06, z1 - z0, pbr("#0a1330", { rough: 0.35, metal: 0.5 }), (x0 + x1) / 2, 0.03, (z0 + z1) / 2);
-    plate.castShadow = false;
-    const line = (w, d, x, z) => island.add(neon(w, d, x, z, color, 1.4));
-    island.add(plate);
-    line(x1 - x0, 0.06, (x0 + x1) / 2, z0);
-    line(x1 - x0, 0.06, (x0 + x1) / 2, z1);
-    line(0.06, z1 - z0, x0, (z0 + z1) / 2);
-    line(0.06, z1 - z0, x1, (z0 + z1) / 2);
-    zones.push({ name, color, x: x0 + 0.4, z: z0 + 0.3 });
-  };
-  pad("AGENTS", AGENT_ZONE_COLOR, layout.desks, { x: 3.2, z0: 2.4, z1: 3.3 });
-  pad("PROJECTS", PROJECT_COLOR, layout.stations.filter((s) => s.zone === "project"), { x: 3.2, z0: 2.2, z1: 3.1 });
-  pad("INFRASTRUCTURE", INFRA_COLOR, layout.stations.filter((s) => s.zone === "infra"), { x: 2.2, z0: 2.4, z1: 1.9 });
-  scene.add(island);
-  const zoneLabels = zones.map((z) => {
-    const el = document.createElement("div");
-    el.className = "office-zone";
-    el.style.setProperty("--tag", z.color);
-    el.textContent = z.name;
-    labels.append(el);
-    return { ...z, el };
+  const grass = grassTexture();
+  grass.repeat.set(1 / 7, 1 / 7);
+  const grassM = mat("#ffffff", { rough: 0.95 });
+  grassM.map = grass;
+  const soilM = mat(PALETTE.soil, { rough: 1 });
+  const top = new THREE.Mesh(slabGeometry(width, depth, 3.4, 0.7), [grassM, soilM]);
+  top.position.set(cx, -0.82, cz); // the bevel lifts the grass 0.12 above the slab: ground level is y = 0
+  top.receiveShadow = true;
+  island.add(top);
+  [[0.86, 0.9], [0.66, 0.9], [0.42, 0.8]].forEach(([k, thick], i) => {
+    const layer = new THREE.Mesh(slabGeometry(width * k, depth * k, 3, thick), [mat(PALETTE.soilDark, { rough: 1 }), mat(i % 2 ? "#a77b56" : PALETTE.soil, { rough: 1 })]);
+    layer.position.set(cx, -0.82 - 0.85 * (i + 1), cz);
+    layer.castShadow = true;
+    island.add(layer);
   });
+  scene.add(island);
+
+  // ---- paths: the lanes and corridors the characters walk on ----
+  const { lanes } = layout;
+  const pathM = mat(PALETTE.sand, { rough: 1 });
+  const strip = (w, d, x, z) => island.add(shadowed(rbox(w, 0.06, d, 0.025, pathM, x, 0.03, z), { cast: false }));
+  const lastProjectLane = lanes.z.at(-2) ?? lanes.z[0];
+  const span = lanes.outer;
+  for (const z of lanes.z) strip(span * 2, 1.5, 0, z);
+  for (const x of lanes.corridors) strip(1.3, lastProjectLane - lanes.z[0], x, (lanes.z[0] + lastProjectLane) / 2);
+  for (const x of [-span, span]) strip(1.3, (lanes.rackLane ?? lastProjectLane) - lanes.z[0], x, (lanes.z[0] + (lanes.rackLane ?? lastProjectLane)) / 2);
+  for (const o of [...layout.desks, ...layout.stations]) { // the doorstep: from the door to the lane
+    const lane = lanes.z.reduce((b, l) => (Math.abs(l - o.stand.z) < Math.abs(b - o.stand.z) ? l : b));
+    strip(1.1, Math.abs(lane - o.stand.z) + 0.4, o.stand.x, (lane + o.stand.z) / 2);
+  }
 
   // ---- everything clickable, by the key officeStates() uses for "where" (station:<id> / desk:<agent>) ----
   const objects = new Map();
   const pickables = [];
-  const addObject = ({ key: id, x, z, node, color, label, build, ringRadius, labelClass }) => {
-    const group = build();
+  const rects = []; // where buildings stand, so trees and flowers stay out of the way
+  const addObject = ({ key, x, z, node, color, label, built, hitSize, ringRadius, labelClass, footprint }) => {
+    const group = built.group;
     group.position.set(x, 0, z);
     scene.add(group);
-    const ring = makeRing(ringRadius);
-    ring.position.set(x, 0.07, z);
+    rects.push({ x, z, w: footprint.w, d: footprint.d });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(ringRadius * 0.9, ringRadius, 56), new THREE.MeshBasicMaterial({ color: SELECT_COLOR, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.09, z);
     scene.add(ring);
-    const hit = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.8, 2.6), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
-    hit.position.y = 1.4;
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(hitSize.w, hitSize.h, hitSize.d), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
+    hit.position.y = hitSize.h / 2;
     group.add(hit);
     pickables.push(hit);
+    // while someone works inside: a spinning gear over the roof, windows aglow
+    const gear = shadowed(new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.09, 6, 8), mat("#ffd45e", { emissive: "#ffd45e", glow: 0.6, rough: 0.5 })), { cast: false });
+    gear.position.y = built.top + 0.7;
+    gear.visible = false;
+    group.add(gear);
     const text = document.createElement("div");
     text.className = `office-label ${labelClass}`;
     text.style.setProperty("--tag", color);
     text.textContent = label;
     labels.append(text);
-    objects.set(id, { key: id, x, z, node, color, ring, text, glow: 0, hover: false, active: null });
-    hit.userData.key = id;
+    objects.set(key, { key, x, z, node, color, ring, text, glass: built.glass, gear, gearY: gear.position.y, glow: 0, lit: 0, hover: false, active: null });
+    hit.userData.key = key;
   };
   for (const d of layout.desks) {
-    addObject({ key: `desk:${d.agent}`, x: d.x, z: d.z, node: d.node, color: d.color, label: `${d.label}${d.reserved ? " · free desk" : ""}`, build: () => makeDesk(d.color, d.reserved), ringRadius: 2.7, labelClass: "desk" });
+    addObject({ key: `desk:${d.agent}`, x: d.x, z: d.z, node: d.node, color: d.color, label: `${d.label}${d.reserved ? " · free house" : ""}`, built: makeHome(d), hitSize: { w: 4.2, h: 3.2, d: 2.8 }, ringRadius: 2.7, labelClass: "desk", footprint: FOOTPRINT.desk });
   }
   layout.stations.forEach((s, i) => {
-    const rack = s.zone === "infra";
-    const color = rack ? INFRA_COLOR : PROJECT_COLOR;
-    addObject({ key: `station:${s.node}`, x: s.x, z: s.z, node: s.node, color, label: s.label, build: () => (rack ? makeRack(color) : makeWorkstation(color, i % 3)), ringRadius: rack ? 1.7 : 2.1, labelClass: rack ? "rack" : "project" });
+    const silo = s.zone === "infra";
+    const color = silo ? "#5b9dff" : "#2fb56a";
+    addObject({
+      key: `station:${s.node}`, x: s.x, z: s.z, node: s.node, color, label: s.label,
+      built: silo ? makeSilo(i) : makeShop(s.node, i), hitSize: silo ? { w: 1.9, h: 3.4, d: 1.9 } : { w: 3.4, h: 3, d: 2.4 },
+      ringRadius: silo ? 1.5 : 2.1, labelClass: silo ? "rack" : "project", footprint: silo ? FOOTPRINT.rack : FOOTPRINT.project,
+    });
   });
 
-  // ---- avatars: one per desk, starting seated ----
+  // ---- trees, flowers and lamps, placed where nothing else is ----
+  const r = rng(2024);
+  const onPath = (x, z) => lanes.z.some((l) => Math.abs(z - l) < 1.3 && Math.abs(x) < span + 1) || [...lanes.corridors, -span, span].some((c) => Math.abs(x - c) < 1.2 && z > lanes.z[0] - 1 && z < (lanes.rackLane ?? lastProjectLane) + 1);
+  const blocked = (x, z, pad) => onPath(x, z) || rects.some((q) => Math.abs(x - q.x) < q.w / 2 + pad && Math.abs(z - q.z) < q.d / 2 + pad) || layout.stations.concat(layout.desks).some((o) => Math.hypot(x - o.stand.x, z - o.stand.z) < 1.4);
+  const inside = (x, z, m) => x > minX + m && x < maxX - m && z > minZ + m && z < maxZ - m;
+  let trees = 0;
+  for (let tries = 0; tries < 900 && trees < 38; tries++) {
+    const x = minX + 1 + r() * (width - 2);
+    const z = minZ + 1 + r() * (depth - 2);
+    const edge = !inside(x, z, 3.2);
+    if (!edge && r() > 0.08) continue; // mostly around the rim, a few inside
+    if (blocked(x, z, 1.2)) continue;
+    const tree = makeTree(r);
+    tree.position.set(x, 0, z);
+    scene.add(tree);
+    trees++;
+  }
+  const FLOWERS = 160;
+  const flowers = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 8, 6), mat("#ffffff", { rough: 0.7 }), FLOWERS);
+  const dummy = new THREE.Object3D();
+  const petals = ["#ff8fa8", "#ffd45e", "#ffffff", "#c98bd1", "#8ec9f0"];
+  for (let i = 0, n = 0; n < FLOWERS && i < 2000; i++) {
+    const x = minX + 0.8 + r() * (width - 1.6);
+    const z = minZ + 0.8 + r() * (depth - 1.6);
+    if (blocked(x, z, 0.6)) continue;
+    dummy.position.set(x, 0.1, z);
+    dummy.scale.setScalar(0.7 + r() * 0.8);
+    dummy.updateMatrix();
+    flowers.setMatrixAt(n, dummy.matrix);
+    flowers.setColorAt(n, new THREE.Color(pick(petals, Math.floor(r() * 50))));
+    n++;
+  }
+  scene.add(flowers);
+  for (const [x, z] of [[-span + 1.2, lanes.z[0]], [span - 1.2, lanes.z[0]], [-span + 1.2, lastProjectLane], [span - 1.2, lastProjectLane], [0, lanes.z[0]], [0, lastProjectLane]]) {
+    const lamp = makeLamp();
+    lamp.position.set(x, 0, z + 0.9);
+    scene.add(lamp);
+  }
+  const clouds = [];
+  const cr = rng(9);
+  for (let i = 0; i < 9; i++) {
+    const c = makeCloud(cr);
+    c.position.set(minX - 8 + cr() * (width + 16), -4.5 - cr() * 7, minZ - 6 + cr() * (depth + 12));
+    c.scale.setScalar(1 + cr());
+    scene.add(c);
+    clouds.push({ c, speed: 0.15 + cr() * 0.25 });
+  }
+
+  // ---- zone captions ----
+  const zoneLabels = [["AGENT HOMES", lanes.z[0]], ["PROJECT SHOPS", lanes.z[1] ?? lanes.z[0]], ["SERVER SILOS", lanes.rackLane ?? lanes.z.at(-1)]].map(([name, z]) => {
+    const el = document.createElement("div");
+    el.className = "office-zone";
+    el.textContent = name;
+    labels.append(el);
+    return { el, x: -span - 0.2, z: z - 0.4 };
+  });
+
+  // ---- characters: one per house, starting at the door ----
   const STATE_WORDS = { idle: "idle", working: "working", waiting: "needs you", done: "done", collaborating: "pairing" };
   const avatars = layout.desks.map((d) => {
     const def = OFFICE_AGENTS.find((a) => a.id === d.agent);
     const a = makeAvatar(def);
     a.pos = { ...d.stand };
-    a.heading = Math.PI;
+    a.goal = { ...d.stand };
+    a.path = [];
+    a.heading = 0;
     a.walking = false;
     a.def = d;
     a.mode = "idle";
@@ -538,39 +641,38 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
     a.tag = tag;
     a.bubble = bubble;
     a.stateEl = state;
-    a.id = `avatar:${d.agent}`;
     return a;
   });
 
-  // ---- a few motes of light drifting in the air above the floor ----
-  const MOTES = 170;
+  // ---- pollen and petals drifting in the light ----
+  const MOTES = 120;
   const motePos = new Float32Array(MOTES * 3);
   const moteSpeed = new Float32Array(MOTES);
   const moteColor = new Float32Array(MOTES * 3);
-  const palette = [new THREE.Color("#8fb4ff"), new THREE.Color("#2fd4e8"), new THREE.Color("#ff79c6"), new THREE.Color("#ffd9b0")];
+  const palette = ["#fff6c9", "#ffd1dc", "#ffffff", "#ffe2a8"].map((c) => new THREE.Color(c));
   for (let i = 0; i < MOTES; i++) {
-    motePos.set([minX + Math.random() * width, 0.5 + Math.random() * 9, minZ + Math.random() * depth], i * 3);
-    moteSpeed[i] = 0.08 + Math.random() * 0.22;
+    motePos.set([minX + r() * width, 0.5 + r() * 7, minZ + r() * depth], i * 3);
+    moteSpeed[i] = 0.05 + r() * 0.16;
     palette[i % palette.length].toArray(moteColor, i * 3);
   }
   const moteGeo = new THREE.BufferGeometry();
   moteGeo.setAttribute("position", new THREE.BufferAttribute(motePos, 3));
   moteGeo.setAttribute("color", new THREE.BufferAttribute(moteColor, 3));
-  const motes = new THREE.Points(moteGeo, new THREE.PointsMaterial({ size: 0.16, map: dotTexture(), vertexColors: true, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const motes = new THREE.Points(moteGeo, new THREE.PointsMaterial({ size: 0.17, map: dotTexture(), vertexColors: true, transparent: true, opacity: 0.75, depthWrite: false }));
   motes.frustumCulled = false;
   scene.add(motes);
 
   // ---------- camera ----------
 
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, -200, 400);
-  const view = { az: DEFAULT_AZIMUTH, el: DEFAULT_ELEVATION, zoom: 1, target: new THREE.Vector3((minX + maxX) / 2, 0, (minZ + maxZ) / 2), goal: null };
+  const view = { az: DEFAULT_AZIMUTH, el: DEFAULT_ELEVATION, zoom: 1, target: new THREE.Vector3(cx, 0, cz), goal: null };
   let w = 1;
   let h = 1;
-  // Metres visible top to bottom at zoom 1: the whole room (less its empty margin) fits on
-  // any window shape, seen from the default angle.
+  // Metres visible top to bottom at zoom 1: the whole island (less its margin) fits on any
+  // window shape, seen from the default angle.
   const baseSize = () => {
-    const room = (width + depth - 4) * Math.SQRT1_2;
-    return Math.max(room * Math.sin(DEFAULT_ELEVATION) + 9, room / (w / h));
+    const room = (width + depth - 2) * Math.SQRT1_2;
+    return Math.max(room * Math.sin(DEFAULT_ELEVATION) + 11, room / (w / h));
   };
 
   function placeCamera() {
@@ -626,7 +728,7 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
     const click = drag.mode && drag.moved < 5;
     drag.mode = null;
     if (click) {
-      const hit = pick(ev);
+      const hit = pick3d(ev);
       if (hit?.node) onPick(hit.node);
     }
   });
@@ -641,9 +743,9 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
 
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  function pick(ev) {
-    const r = el.getBoundingClientRect();
-    ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  function pick3d(ev) {
+    const rect = el.getBoundingClientRect();
+    ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
     const hit = ray.intersectObjects(pickables, false)[0];
     return hit ? objects.get(hit.object.userData.key) : null;
@@ -656,7 +758,7 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
     if (o) o.hover = true;
     el.style.cursor = o?.node ? "pointer" : "";
   }
-  const hover = (ev) => setHover(pick(ev));
+  const hover = (ev) => setHover(pick3d(ev));
 
   // ---------- state ----------
 
@@ -693,6 +795,25 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
     if (inView) node.style.transform = `translate(${((tmp.x * 0.5 + 0.5) * w).toFixed(1)}px, ${((-tmp.y * 0.5 + 0.5) * h + dy).toFixed(1)}px) translate(-50%, -100%)`;
   }
 
+  // Walk the route to the target, corner by corner; a new target means a new route.
+  function walk(a, st, dt) {
+    if (Math.hypot(st.target.x - a.goal.x, st.target.z - a.goal.z) > 0.01) {
+      a.goal = { ...st.target };
+      if (REDUCED) a.pos = { ...st.target };
+      a.path = REDUCED ? [] : routeBetween(layout, a.pos, st.target);
+    }
+    const next = a.path[0] ?? a.goal;
+    const step = stepToward(a.pos, next, WALK_SPEED * dt);
+    a.pos = { ...step.pos };
+    if (step.arrived && a.path.length) a.path.shift();
+    a.walking = a.path.length > 0 || !step.arrived;
+    if (a.walking && !(step.arrived && !a.path.length)) a.heading = turn(a.heading, step.heading, dt * 10);
+    else {
+      const at = objects.get(st.key);
+      if (at) a.heading = turn(a.heading, Math.atan2(at.x - a.pos.x, at.z - a.pos.z), dt * 8);
+    }
+  }
+
   function frame(t) {
     raf = requestAnimationFrame(frame);
     // Unfocused but still on screen: keep it alive at a few frames a second (BLUR_FPS 0 pauses it).
@@ -713,21 +834,14 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
 
     for (const a of avatars) {
       const st = states[a.def.agent];
-      const step = REDUCED ? { pos: st.target, arrived: true, heading: a.heading } : stepToward(a.pos, st.target, WALK_SPEED * dt);
-      a.pos = { ...step.pos };
-      a.walking = !step.arrived;
-      if (a.walking) a.heading = turn(a.heading, step.heading, dt * 10);
-      else {
-        const at = objects.get(st.key);
-        if (at) a.heading = turn(a.heading, Math.atan2(at.x - a.pos.x, at.z - a.pos.z), dt * 8);
-      }
+      walk(a, st, dt);
       animate(a, st, sec);
       a.group.position.set(a.pos.x, 0, a.pos.z);
       a.group.rotation.y = a.heading;
       const free = a.def.reserved && st.mode === "idle";
       for (const m of a.materials) {
         m.transparent = free;
-        m.opacity = free ? 0.35 : 1;
+        m.opacity = free ? 0.4 : 1;
       }
       a.bubble.hidden = st.mode === "idle" || !st.text;
       if (!a.bubble.hidden) {
@@ -739,41 +853,51 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
         a.mode = st.mode;
         a.stateEl.textContent = STATE_WORDS[st.mode] ?? st.mode;
       }
-      a.pad.rotation.y = sec * 0.8;
     }
     placeTags();
 
     if (!REDUCED) {
-      for (const l of leds) l.mat.emissiveIntensity = 0.5 + 1.9 * (0.5 + 0.5 * Math.sin(sec * l.speed * 3 + l.phase)) ** 2;
       const p = moteGeo.attributes.position;
       for (let i = 0; i < MOTES; i++) {
         let y = p.getY(i) + moteSpeed[i] * dt;
-        if (y > 10) y = 0.5;
+        if (y > 8) y = 0.5;
         p.setY(i, y);
-        p.setX(i, p.getX(i) + Math.sin(sec * 0.3 + i) * dt * 0.12);
+        p.setX(i, p.getX(i) + Math.sin(sec * 0.3 + i) * dt * 0.15);
       }
       p.needsUpdate = true;
+      for (const k of clouds) {
+        k.c.position.x += k.speed * dt;
+        if (k.c.position.x > maxX + 14) k.c.position.x = minX - 14;
+      }
     }
 
     for (const o of objects.values()) {
-      const want = o.active ? 0.85 : o.key === selectedKey ? 0.6 : o.hover ? 0.4 : 0;
+      const want = o.active ? 0.9 : o.key === selectedKey ? 0.8 : o.hover ? 0.5 : 0;
       o.glow += (want - o.glow) * Math.min(1, dt * 8);
       o.ring.material.opacity = o.glow;
-      o.ring.material.color.set(o.active ?? ACCENT);
+      o.ring.material.color.set(o.active ?? (o.key === selectedKey ? SELECT_COLOR : "#ffffff"));
       o.ring.visible = o.glow > 0.01;
+      o.lit += ((o.active ? 1.7 : 0.35) - o.lit) * Math.min(1, dt * 5); // windows light up while someone works inside
+      o.glass.emissiveIntensity = o.lit;
+      o.gear.visible = Boolean(o.active);
+      if (o.active && !REDUCED) {
+        o.gear.rotation.z = sec * 2.2;
+        o.gear.position.y = o.gearY + Math.sin(sec * 3) * 0.08;
+      }
       o.text.classList.toggle("hot", o.hover || o.key === selectedKey || Boolean(o.active));
-      placeLabel(o.text, o.x, 0.05, o.z + (o.key.startsWith("desk:") ? -1.2 : 1.1), 14);
+      placeLabel(o.text, o.x, 0.05, o.z + (o.key.startsWith("desk:") ? -1.5 : 1.0), 12);
     }
     for (const z of zoneLabels) placeLabel(z.el, z.x, 0.1, z.z);
     renderer.render(scene, camera);
   }
 
-  // Names and bubbles over the avatars. Agents that gather at one station would pile their
+  // Names and bubbles over the characters. Agents that gather at one shop would pile their
   // bubbles on top of each other, so from the lowest on screen up, each is lifted above any
-  // tag it overlaps. All measuring comes first, then all writing: one layout per frame.
+  // tag it overlaps (or stacked downwards when there is no room under the top bar). All
+  // measuring comes first, then all writing: one layout per frame.
   function placeTags() {
     const tags = avatars.map((a) => {
-      tmp.set(a.pos.x, 2.6, a.pos.z).project(camera);
+      tmp.set(a.pos.x, 2.7, a.pos.z).project(camera);
       const { width: tw, height: th } = a.tag.getBoundingClientRect();
       return { a, tw, th, x: (tmp.x * 0.5 + 0.5) * w, y: (-tmp.y * 0.5 + 0.5) * h, inView: tmp.z < 1 && Math.abs(tmp.x) < 1.15 && Math.abs(tmp.y) < 1.15 };
     }).sort((p, q) => q.y - p.y);
@@ -783,7 +907,7 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
     for (const t of tags.filter((x) => x.inView)) {
       const home = t.y;
       for (let pass = 0, hit; pass < tags.length && (hit = clash(t)); pass++) t.y = hit.y - hit.th - 4;
-      if (t.y - t.th < TOP && t.y !== home) { // no room above: stack downwards instead
+      if (t.y - t.th < TOP && t.y !== home) {
         t.y = home;
         for (let pass = 0, hit; pass < tags.length && (hit = clash(t)); pass++) t.y = hit.y + t.th + 4;
       }
@@ -801,34 +925,82 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
     return from + d;
   };
 
-  // Walking swings the arms, working types, waiting waves a hand, idle breathes.
+  // Walking waddles on little feet; working types on a laptop; waiting waves; done cheers
+  // under a ring of stars; idle breathes.
   function animate(a, st, sec) {
     const [left, right] = a.arms;
     const k = a.def.agent.length; // so the agents do not move in lockstep
-    let bob = 0;
+    const working = !a.walking && (st.mode === "working" || st.mode === "collaborating");
+    a.laptop.visible = working;
+    a.stars.visible = !a.walking && st.mode === "done";
     left.rotation.set(0, 0, 0);
     right.rotation.set(0, 0, 0);
     a.head.rotation.set(0, 0, 0);
-    if (REDUCED) return void ((a.body.position.y = BODY_Y), (a.head.position.y = HEAD_Y));
+    a.group.rotation.z = 0;
+    a.feet[0].position.z = a.feet[1].position.z = 0.05;
+    let bob = 0;
+    if (REDUCED) {
+      if (working) left.rotation.x = right.rotation.x = -1.0;
+      return;
+    }
     if (a.walking) {
-      bob = Math.abs(Math.sin(sec * 9 + k)) * 0.09;
-      left.rotation.x = Math.sin(sec * 9 + k) * 0.7;
-      right.rotation.x = -Math.sin(sec * 9 + k) * 0.7;
-    } else if (st.mode === "working" || st.mode === "collaborating") {
-      left.rotation.x = -1.2 + Math.sin(sec * 17 + k) * 0.22;
-      right.rotation.x = -1.2 + Math.sin(sec * 17 + k + 2) * 0.22;
+      const s = Math.sin(sec * 11 + k);
+      bob = Math.abs(s) * 0.1;
+      a.group.rotation.z = s * 0.07; // a little waddle
+      left.rotation.x = s * 0.8;
+      right.rotation.x = -s * 0.8;
+      a.feet[0].position.z = 0.05 + s * 0.16;
+      a.feet[1].position.z = 0.05 - s * 0.16;
+    } else if (working) {
+      left.rotation.x = -1.1 + Math.sin(sec * 17 + k) * 0.12;
+      right.rotation.x = -1.1 + Math.sin(sec * 17 + k + 2) * 0.12;
+      a.head.rotation.x = 0.14 + Math.sin(sec * 3 + k) * 0.03;
       a.head.rotation.y = st.mode === "collaborating" ? Math.sin(sec * 1.6 + k) * 0.5 : 0;
     } else if (st.mode === "done") {
-      bob = Math.abs(Math.sin(sec * 5 + k)) * 0.08; // a little hop: the task is finished
+      bob = Math.abs(Math.sin(sec * 5 + k)) * 0.22; // a cheer
+      left.rotation.z = 2.6;
+      right.rotation.z = -2.6;
+      a.stars.rotation.y = sec * 2.5;
     } else if (st.mode === "waiting") {
-      right.rotation.z = -2.7 + Math.sin(sec * 7) * 0.25;
-      bob = Math.abs(Math.sin(sec * 4)) * 0.12;
+      right.rotation.z = -2.6 + Math.sin(sec * 7) * 0.3; // a wave
+      bob = Math.abs(Math.sin(sec * 4)) * 0.06;
     } else {
-      bob = Math.sin(sec * 1.6 + k) * 0.015;
+      bob = Math.sin(sec * 1.8 + k) * 0.02;
     }
-    a.body.position.y = BODY_Y + bob;
-    a.head.position.y = HEAD_Y + bob + Math.sin(sec * 2 + k) * 0.03; // the head floats a little above the body
+    a.body.position.y = 0.55 + bob;
+    a.head.position.y = 1.1 + bob * 1.2;
   }
+
+  // ---------- demo: a few made-up signals, local to this page ----------
+
+  let demoCount = 0;
+  const demoTimers = [];
+  function demo() {
+    demoTimers.forEach(clearTimeout);
+    demoTimers.length = 0;
+    const projects = layout.stations.filter((s) => s.zone === "project").map((s) => s.node);
+    const silos = layout.stations.filter((s) => s.zone === "infra").map((s) => s.node);
+    const at = (list, i) => list[i % Math.max(list.length, 1)];
+    const script = [
+      [0, "claude-code", at(projects, 2), "working", "Refactoring the importer"],
+      [1200, "hermes", at(silos, 0), "working", "Checking the deploy"],
+      [2400, "buzz", at(projects, 7), "working", "Drafting a launch thread"],
+      [3600, "gemini", at(projects, 2), "working", "Reviewing the pull request"],
+      [4800, "chatgpt", at(projects, 11), "working", "Summarising the docs"],
+      [11000, "claude-code", at(projects, 2), "done", "All tests green"],
+      [13000, "buzz", at(projects, 7), "waiting", "Needs your OK to post"],
+      [16000, "hermes", at(silos, 0), "done", "Deploy healthy"],
+      [18000, "gemini", at(projects, 2), "done", "Review finished"],
+      [20000, "chatgpt", at(projects, 11), "done", "Docs summarised"],
+    ];
+    for (const [ms, agent, node, kind, text] of script) {
+      demoTimers.push(setTimeout(() => {
+        signalList = pushSignal(signalList, { id: `demo-${++demoCount}`, agent, node, kind, text, at: Date.now() });
+        recompute();
+      }, ms));
+    }
+  }
+  demoButton.addEventListener("click", demo);
 
   // ---------- public ----------
 
@@ -868,13 +1040,14 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
       signalList = pushSignal(signalList, s);
       recompute();
     },
-    // Highlight the desk or station that stands for a node, and fly the camera to it.
+    // Highlight the house, shop or silo that stands for a node, and fly the camera to it.
     select(id) {
       const place = id ? locator.resolve(id) : null;
       selectedKey = place?.key ?? null;
       const o = selectedKey && objects.get(selectedKey);
       if (o) view.goal = { x: o.x, z: o.z };
     },
+    demo,
     layout,
   };
 }

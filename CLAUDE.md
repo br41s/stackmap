@@ -30,9 +30,11 @@ Read `README.md` for the run commands and the data format.
   node → object lookup, and `officeStates()` (where each agent is, from signals + time: a
   `working` signal holds it at the station until its `done`/`waiting`, `HOLD_MS` has the
   linger and the safety caps). An agent's home node (`AGENT_HOME` in `lib/signals.mjs`) also
-  lists all of that agent's signals in `/api/activity`. `public/office.js` — draws it with three.js (procedural PBR shapes, a generated reflection map, canvas
-  textures, shadows, DOM cards and bubbles — no models or images, no add-ons: post-processing
-  would need an import map, which the CSP forbids); app.js loads it on the first open, calls `show()` / `hide()` (hide stops
+  lists all of that agent's signals in `/api/activity`. `routeBetween()` walks avatars along the lanes between buildings (footprints in `FOOTPRINT`; a test
+  checks no route crosses one). `public/office.js` — draws it as a pastel village with three.js
+  (rounded procedural shapes, canvas textures, a warm sun with shadows, DOM cards and speech
+  bubbles; the ▶ Demo button feeds it fake local signals) — no models or images, no add-ons:
+  post-processing would need an import map, which the CSP forbids; app.js loads it on the first open, calls `show()` / `hide()` (hide stops
   the frame loop completely) and feeds it the same SSE signals. Tested in `test/office.test.mjs`;
   the renderer is not (needs a GPU) — check it by eye after changing it.
 - `public/focus.js` — focus mode: snapshots the overview, flies nodes and camera, flowing
