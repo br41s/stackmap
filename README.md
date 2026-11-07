@@ -28,23 +28,36 @@ product — with a floating chat that answers questions about it.
   to fly there with that ping open in the node's **Activity** card: its pings of the last 14
   days (and those of everything inside it), each opening to the full message, plus a bot's
   `estado.md`. Green = done, amber = waiting on you. See [Agent signals](#agent-signals).
-- **3D office:** the switch in the top bar (or `V`) swaps the map for a cosy little village on a
-  floating island — one house per agent (Claude Code, Hermes, Buzz/Fizz, and free houses for
-  Gemini and ChatGPT), one shop per project, one silo per hosting platform, sand lanes between
-  them. When a signal arrives its agent (a chibi character) walks along the lanes to the shop the
-  node belongs to, types on a laptop, and says the signal's text in a speech bubble; the shop's
-  windows light up and a gear spins over its roof while someone works there; two agents at one
-  shop pair up. The **▶ Demo** button plays made-up signals (local to the page) to see it all
-  without waiting for an agent. The task decides when it walks back: a `working`
-  signal (a prompt was sent) keeps it there until its `done` (it lingers 12 s so the result can
-  be read) or `waiting` (hand up until the next signal); only a note (`info`) is brief, 12 s,
-  and a session that never reports back is given up on after 15 min (`HOLD_MS` in
-  `public/office-layout.js`). Bubbles that would overlap stack up instead. Click a house, shop or silo
-  to open the same Activity card and chat focus as on the map; an agent's desk card lists
-  everything that agent sent, wherever it landed. Drag rotates a little, right-drag (or Shift-drag) pans, the wheel zooms. Closed, it
-  costs nothing: the render loop stops and three.js is not even loaded until the first open; with
-  the window unfocused it drops to 12 fps (`BLUR_FPS` in `public/office.js`, 0 pauses it).
-- **Local only:** the server binds to `127.0.0.1`.
+- **3D office:** the switch in the top bar (or `V`) swaps the map for a living village on a
+  floating island: a house for each agent round the town square (Claude Code, Hermes, Buzz/Fizz,
+  and free houses for Gemini and ChatGPT), a building for every project and for the services,
+  tools and jobs inside it (cottages, shops, townhouses, barns, A-frames, stilt houses, greenhouses,
+  windmills, clock towers, yurts, kiosks…, chosen by kind), silos and lighthouses for the hosting
+  platforms with their projects, databases and services around them, winding streets, a river
+  with bridges and a waterfall, mountains to the north, forest, flowers, lamps, birds.
+  When a signal arrives its agent (a chibi character) walks along the streets to the building the
+  node belongs to, types on a laptop, and says the signal's text in a speech bubble; the windows
+  light up and a gear spins over the roof while someone works there; two agents at one building pair
+  up. The **▶ Demo** button plays made-up signals (local to the page) to see it all without waiting
+  for an agent. The task decides when it walks back: a `working` signal (a prompt was sent) keeps it
+  there until its `done` (it lingers 12 s so the result can be read) or `waiting` (hand up until the
+  next signal); only a note (`info`) is brief, 12 s, and a session that never reports back is given up
+  on after 15 min (`HOLD_MS` in `public/office-layout.js`). Click a building to open the same Activity
+  card and chat focus as on the map (an agent's house lists everything that agent sent); click a
+  character to follow it.
+  **The sky is Bangkok's:** the sun and moon are where they really are there, so it is night when it is
+  night in Bangkok (lamps and windows light up, stars come out), and the weather is what Bangkok has
+  this hour (clear, cloudy, fog, rain with drops, thunderstorm with lightning), read from
+  open-meteo.com every 15 minutes. The sky button in the bar lets you pick any hour and weather by hand.
+  **Moving around:** drag moves the ground under the cursor, right-drag (or Ctrl-drag) turns and
+  tilts the whole way round, the wheel zooms towards the cursor, double-click goes to a building or
+  zooms in, `WASD` / arrows fly, `Q` `E` turn, `+` `-` zoom, `Home` returns to the square, `F` shows
+  the whole island; on a touch screen one finger moves and two pinch and turn. Labels of the small
+  buildings appear as you zoom in. Closed, it costs nothing: the render loop stops and three.js is
+  not even loaded until the first open; with the window unfocused it drops to 12 fps (`BLUR_FPS`
+  in `public/office.js`, 0 pauses it).
+- **Local only:** the server binds to `127.0.0.1`. Its only requests to the outside are the optional
+  Hermes status probe and Bangkok's weather (see [Environment](#run)).
 
 ## Run
 
@@ -63,6 +76,7 @@ npm start          # http://127.0.0.1:4317
 | `Esc` / click empty space | fly back out |
 | `/` | search (lands in focus on the result) |
 | `V` | switch between the map and the 3D office |
+| `WASD` / arrows, `Q` `E`, `+` `-`, `Home`, `F` | in the office: fly, turn, zoom, back to the square, whole island |
 | `[[node-id]]` in a chat answer | click to fly to that node |
 
 Motion follows the OS "reduce motion" setting: with it on, every move is instant.
@@ -73,7 +87,8 @@ Env vars (all optional, `stackmap/.env` is read at start): `OPENROUTER_API_KEY`,
 (default `low` for map only, `medium` for Deep), `STACKMAP_WORKSPACE` (parent folder of this
 repo), `STACKMAP_AS_OF`, `STACKMAP_FIZZ_DIR` (`~/fizz/salida`; empty turns the Fizz source off),
 `STACKMAP_ACTIVITY_FILE` (`.activity/activity.jsonl`; empty keeps activity in memory only),
-`STACKMAP_HERMES_STATUS_URL` (unset = no Hermes source).
+`STACKMAP_HERMES_STATUS_URL` (unset = no Hermes source), `STACKMAP_WEATHER` (`off` stops the
+Bangkok weather requests; the office sky is then clear at Bangkok's time).
 
 ## Data
 
@@ -174,7 +189,8 @@ Two more sources live in `lib/sources.mjs`, for agents that cannot run the hook:
   `https://blhermes.zeabur.app/api/status`, the public liveness probe), the server reads it
   every 5 minutes and pings on a change: gateway stopped / running again, degraded / healthy
   again, a new version, agents starting to work, the probe unreachable / back. It is the
-  server's only request to the outside. A deploy shows only when the version number changes.
+  one of the server's two requests to the outside (the other is Bangkok's weather). A deploy shows
+  only when the version number changes.
 
 ## Chat safety
 

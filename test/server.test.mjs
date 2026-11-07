@@ -22,7 +22,7 @@ function call(path, { method = "GET", headers = {}, body } = {}) {
 }
 
 before(async () => {
-  server = spawn(process.execPath, [fileURLToPath(new URL("../server.mjs", import.meta.url))], { env: { ...process.env, PORT: String(PORT), STACKMAP_FIZZ_DIR: "", STACKMAP_HERMES_STATUS_URL: "", STACKMAP_ACTIVITY_FILE: "" } });
+  server = spawn(process.execPath, [fileURLToPath(new URL("../server.mjs", import.meta.url))], { env: { ...process.env, PORT: String(PORT), STACKMAP_FIZZ_DIR: "", STACKMAP_HERMES_STATUS_URL: "", STACKMAP_ACTIVITY_FILE: "", STACKMAP_WEATHER: "off" } });
   await new Promise((resolve, reject) => {
     server.stdout.on("data", (d) => String(d).includes("stackmap on") && resolve());
     server.on("exit", (code) => reject(new Error(`server exited ${code}`)));
@@ -143,4 +143,12 @@ test("an agent's desk card lists its signals wherever they landed; a task start 
   assert.deepEqual(desk.signals.filter((s) => s.text === "desk card test").map((s) => [s.node, s.kind]), [["proj-flywell", "working"]]);
   const plain = JSON.parse((await call("/api/activity?node=cc-hooks")).body);
   assert.equal(plain.signals.some((s) => s.text === "desk card test"), false);
+});
+
+test("weather: the page asks the server, which stays quiet when it is switched off", async () => {
+  const res = await call("/api/weather");
+  assert.equal(res.status, 200);
+  assert.deepEqual(JSON.parse(res.body), { enabled: false, current: null });
+  assert.equal((await call("/api/weather", { headers: { host: "evil.example" } })).status, 403);
+  assert.equal((await call("/api/weather", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).status, 405);
 });

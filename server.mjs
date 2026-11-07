@@ -16,6 +16,7 @@ import { runChat } from "./lib/chat.mjs";
 import { runOpenRouter } from "./lib/openrouter.mjs";
 import { AGENT_HOME, DAYS, FOLDERS, cleanDetail, cleanText, createSignals, nodeForCwd } from "./lib/signals.mjs";
 import { fizzStatus, pollHermes, watchFizz } from "./lib/sources.mjs";
+import { watchWeather } from "./lib/weather.mjs";
 import { loadActivity, saveTo } from "./lib/activity.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -43,6 +44,10 @@ const MAX_CHATS = 3;
 // Hermes: off unless a status URL is set — the server's only request to the outside.
 const FIZZ_DIR = process.env.STACKMAP_FIZZ_DIR ?? join(homedir(), "fizz", "salida");
 const HERMES_STATUS_URL = process.env.STACKMAP_HERMES_STATUS_URL ?? "";
+// Bangkok's weather for the village sky (open-meteo.com, public, no key, Bangkok's coordinates only):
+// on unless STACKMAP_WEATHER=off. The page asks /api/weather; it never calls out itself (the CSP).
+const WEATHER_ON = (process.env.STACKMAP_WEATHER ?? "on") !== "off";
+let weather = null;
 // Activity history across restarts (gitignored; "" keeps it in memory only).
 const ACTIVITY_FILE = process.env.STACKMAP_ACTIVITY_FILE ?? join(ROOT, ".activity", "activity.jsonl");
 const ALLOWED_HOSTS = new Set([`${HOST}:${PORT}`, `localhost:${PORT}`]);
@@ -237,6 +242,7 @@ async function route(req, res) {
   if (path === "/api/stack") return send(res, 200, JSON.stringify(stackPayload()), "application/json");
   if (path === "/api/signals") return streamSignals(req, res);
   if (path === "/api/activity") return activityFor(res, url.searchParams.get("node") ?? "");
+  if (path === "/api/weather") return send(res, 200, JSON.stringify({ enabled: WEATHER_ON, current: weather }), "application/json");
   if (path.startsWith("/vendor/")) {
     const rel = VENDOR[path.slice("/vendor/".length)];
     return rel ? serveFile(res, join(ROOT, "node_modules", rel)) : send(res, 404, "Not found");
@@ -261,6 +267,10 @@ server.listen(PORT, HOST, () => {
     sources.push(`Hermes ${HERMES_STATUS_URL} every 5 min`);
   }
   console.log(`signals: ${sources.join("; ")}`);
+  if (WEATHER_ON) {
+    watchWeather({ onChange: (w) => (weather = w) });
+    console.log("weather: Bangkok from open-meteo.com every 15 min (STACKMAP_WEATHER=off to disable)");
+  }
   const map = mapViaOpenRouter() ? `${MAP_MODEL} via OpenRouter` : `claude ${MODEL}, no tools, effort ${effortFor(false)}${OPENROUTER_KEY ? "" : " (no OPENROUTER_API_KEY in .env)"}`;
   console.log(`chat: map only → ${map}; deep → claude ${MODEL}, Read/Grep/Glob in ${READ_DIRS.join(", ")}, effort ${effortFor(true)}`);
 });
