@@ -7,10 +7,10 @@
    "parent": "layer-agents",
    "summary": "Brais's production fork of NousResearch/hermes-agent, run as the COO/control plane for BigLobster and its customers: one multiplexed gateway, a profile per customer, cron-driven content agents, a PR auditor and an incident watcher.",
    "details": [
-    "Fork of NousResearch/hermes-agent (MIT); UPSTREAM_VERSION v2026.9.24; repo br41s/hermes-sandbox",
+    "Fork of NousResearch/hermes-agent (MIT); UPSTREAM_VERSION v0.22.5 (recorded 2026-10-23, upstream renumbered from v2026.9.24); repo br41s/hermes-sandbox",
     "A customer or project is a Hermes profile (native profiles; no custom namespacing layer)",
-    "One container, project hermes-eu on the Zeabur Frankfurt dedicated server (EU residency for GDPR; clears a Spanish Plesk geo-block); migrated from Jakarta 2026-07-22",
-    "Panel at blhermes.zeabur.app; Telegram forum supergroup with one topic per profile; CEO-only access",
+    "One container: Coolify app on a Netcup VPS in Nuremberg (project hermes-eu), moved off Zeabur 2026-11-05 (EU residency for GDPR; clears a Spanish Plesk geo-block); earlier Zeabur Frankfurt from 2026-07-22, Jakarta before",
+    "Panel at hermes.biglobster.top (Nous OAuth); webhooks at hook.biglobster.top; Telegram forum supergroup with one topic per profile; CEO-only access",
     "Control plane for the other projects: changes here can affect FinView, biglobster, grow-shop and every repo Hermes touches",
     "Two invariants: per-conversation prompt caching is sacred; core is a narrow waist (capability goes in plugins/skills)",
     "Deploy as rarely as possible (owner's rule 2026-10-01): every deploy restarts the gateway"
@@ -19,7 +19,7 @@
    "links": [
     {
      "label": "Panel",
-     "url": "https://blhermes.zeabur.app"
+     "url": "https://hermes.biglobster.top"
     },
     {
      "label": "Repo",
@@ -30,7 +30,9 @@
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/UPSTREAM_VERSION",
     "memories/decisions/hermes.md",
-    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/ops/README.md",
+    "memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -45,7 +47,8 @@
     "Fork-only code: hermes_cli/fork_ext, cron/fork_ext, auditor/, incidents/, remediation/, merge_on_green/, gap-hunter/, onsite-seo/, infographic/, shorts/, offsite-geo/, content-updater/, maintenance/, ops/, scripts/provision_bl_client.py",
     "AGENTS.md is upstream's dev guide (read per section); CLAUDE.md is fork-specific and inert to the Hermes runtime",
     "Fork workflows: ghcr-publish.yml, shorts-studio.yml, infographic-check.yml, osv-scanner.yml, upstream-drift.yml (most others are upstream's)",
-    "Dependency alerts triaged to zero crit/high on 2026-09-18 (242 -> 22); osv-scanner.toml is a decision log"
+    "Dependency alerts triaged to zero crit/high on 2026-09-18 (242 -> 22); osv-scanner.toml is a decision log",
+    "Branch protection on main (Brais, 2026-11-05): requires only the `All required checks pass` gate job, not strict; admins can bypass; no force-push or deletion. Auto-merge had merged #513 before its tests finished"
    ],
    "status": "live",
    "links": [
@@ -59,7 +62,8 @@
     "hermes-sandbox/AGENTS.md",
     "hermes-sandbox/.github/workflows/",
     "memories/decisions/hermes.md",
-    "memories/decisions/hermes.md"
+    "memories/decisions/hermes.md",
+    "memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -100,7 +104,8 @@
     "Since 2026-09-18 (PR #271/#280). Older docs (BIGLOBSTER_SETUP.md, ops/deploy-zeabur.md) describe Cloud Build as primary and say Actions is not enabled; newer decision log wins",
     "Cloud Build (cloudbuild.yaml) remains as the deploy.sh --build fallback",
     "The auto-memory note 'GitHub Actions never run' (2026-09-10) is stale for this repo; deploy-automation-plan.md records the correction",
-    "Auto-deploy from CI was rejected 2026-09-22: it would put a Zeabur credential in CI and let the auditor's auto-merge ship to prod unattended"
+    "Auto-deploy from CI was rejected 2026-09-22: it would put a hosting credential in CI and let the auditor's auto-merge ship to prod unattended (still true on Coolify: deploy.sh runs from the owner's Mac)",
+    "2026-11-05 (#513/#514): ops/deploy-zeabur.md and the Zeabur isolate runbook now carry a header marking them historical; zbpack.json removed; deploy docs describe Coolify"
    ],
    "status": "live",
    "links": [],
@@ -118,20 +123,23 @@
    "label": "deploy.sh",
    "kind": "tool",
    "parent": "hermes",
-   "summary": "scripts/deploy.sh moves the Zeabur service's image tag to sha-<commit>, verifies the pod runs that commit, and refuses unsafe deploys.",
+   "summary": "scripts/deploy.sh stops the Hermes app in Coolify, moves its image tag to sha-<commit>, starts it, verifies the container runs that commit, and refuses unsafe deploys.",
    "details": [
     "Run by the owner after pulling main; --status, --dry-run, --verify-file, --yes, --build, --force-in-flight",
     "Refuses a non-main branch, an unpublished image, and (under --yes) a deploy while any cron run is claimed/running in any store",
-    "Moving the tag is the only thing that makes Zeabur roll out; restart, redeploy and env-var bumps are no-ops (2026-10-06: a moved tag was once saved but never rolled out until a manual Restart)",
+    "Never Coolify's Redeploy: it can start the new container before stopping the old one, and two gateways would poll Telegram with one bot token and write the same volume and state.db. The script refuses to move the tag if the old container has not gone; a failed ssh never reads as a stopped container (auditor review, #513)",
     "'Pod is serving' is not 'Telegram is listening': wait for 'Cold boot: dropping Telegram updates' then 'Gateway running'",
-    "Gateway stop grace is S6_KILL_GRACETIME 20s; SIGKILL leads to a PRAGMA quick_check on the 2.2 GB state.db at next boot (up to ~4 min)"
+    "Gateway stop grace is S6_KILL_GRACETIME 20s; SIGKILL leads to a PRAGMA quick_check on the 2.2 GB state.db at next boot (up to ~4 min)",
+    "Since 2026-11-05 (#513) it reaches Coolify's API over SSH (the API listens only on the server's localhost), with the token read on the owner's Mac and sent on stdin; `zeabur service update tag` is gone",
+    "Rollback = the same by hand in Coolify with the previous sha-<commit>; :latest is never used; verify with a file only the new image has or /opt/hermes/.hermes_build_sha"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/scripts/deploy.sh",
-    "memories/decisions/hermes.md"
+    "memories/decisions/hermes.md",
+    "memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -140,28 +148,19 @@
    "label": "Hermes service (Zeabur)",
    "kind": "service",
    "parent": "zb-hermes-eu",
-   "summary": "The single running Hermes container: Zeabur prebuilt-image service `hermes` in project hermes-eu on the Frankfurt dedicated server.",
+   "summary": "The former Hermes container: Zeabur prebuilt-image service `hermes` in project hermes-eu on the Frankfurt dedicated server. Replaced by the Coolify app (coolify-hermes) on 2026-11-05.",
    "details": [
-    "Image pulled from GHCR; pod pinned by tag sha-<commit>; env vars (provider keys, Telegram, Langfuse) live only in Zeabur env",
-    "Static egress IP (value in CLAUDE.md, deliberately not recorded here); clients on their own servers whitelist it on 443",
-    "No liveness probes: pod restarts every 1-2h are benign Zeabur rollouts, not crashes",
-    "Live state: use `zeabur service get/metric`, not `deployment list`; logs via service exec into /opt/data/logs/",
-    "Hermes volume was too large for Zeabur's S3 backup limit, so the 2026-07-22 migration used root SSH rsync of /opt/data",
-    "Frankfurt server SSH is key-only since 2026-10-06 (zeabur server ssh/ssh-info and the dashboard terminal no longer log in)",
-    "Zeabur service-data migration to the server completed 2026-10-06 (hermes-eu last)"
+    "Retired 2026-11-05: Hermes moved to Coolify on the Netcup VPS (hosting slice node coolify-hermes); the Zeabur service was kept suspended as rollback until the account closes",
+    "Facts that still hold on Coolify (env only in the app env, pod commands as the hermes user, Coolify R2 Postgres dumps, Traefik files) are on the Hermes platform node and in deploy.sh / backup nodes",
+    "Zeabur era: env vars lived only in Zeabur env; no liveness probes, so rollouts every 1-2h were benign; 2026-07-22 migration used root SSH rsync of /opt/data"
    ],
-   "status": "live",
-   "links": [
-    {
-     "label": "Panel",
-     "url": "https://blhermes.zeabur.app"
-    }
-   ],
+   "status": "retired",
+   "links": [],
    "sources": [
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/ops/README.md",
-    "memories/decisions/hermes.md",
-    "~/.claude/projects/-Users-brais-VSCODE/memory/reference_zeabur_live_status.md"
+    "hermes-sandbox/scripts/deploy.sh",
+    "memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -178,7 +177,9 @@
     "HERMES_FORK_SCOPE_PROCESS_ENV=1 lets the launch profile's secret scope fall back to the service env; health probe: hermes_cli.fork_ext.process_env_scope --check must say VERDICT: OK",
     "First multiplex rollout 2026-09-28 silenced Telegram; re-enabled after the process-env scope fix",
     "Logs: /opt/data/logs/agent.log (infrastructure only; use Langfuse for what an agent did), profiles/<p>/logs/agent.log for moved jobs",
-    "2026-10-17: the Buzz platform adapter splits long messages by UTF-8 bytes (60,000 under the relay's 65,536 limit) instead of cron output being cut at 4000 with an unreadable 'saved to' footer (PR #470)"
+    "2026-10-17: the Buzz platform adapter splits long messages by UTF-8 bytes (60,000 under the relay's 65,536 limit) instead of cron output being cut at 4000 with an unreadable 'saved to' footer (PR #470)",
+    "2026-10-23 bug (fixed): after upstream v0.22.5 a served secondary kept a credential-free local adapter, so the \"is the adapter map empty?\" test took it for its own bot; every biglobster and auditor delivery failed `platform telegram not configured` until the fix. A satellite borrows the primary's bot only while it holds no messaging adapter other than `local` (gateway/profile_routing.py)",
+    "TELEGRAM_* allowlists and bot token live in the Coolify app env"
    ],
    "status": "live",
    "links": [],
@@ -219,19 +220,20 @@
    "label": "Web panel + API",
    "kind": "service",
    "parent": "hermes",
-   "summary": "The Hermes dashboard on port 9119 (FastAPI server plus React SPA) at blhermes.zeabur.app, also exposing the delegation API and the rental provisioning webhook.",
+   "summary": "The Hermes dashboard on port 9119 (FastAPI server plus React SPA) at hermes.biglobster.top, also exposing the delegation API and the rental provisioning webhook.",
    "details": [
     "Login is gated by Nous Portal OAuth (GitHub); the gate was enforced after the 2026-06-05 XMRig cryptominer incident (unauthenticated write access via MCP-server injection)",
     "POST /api/delegate: async task delegation from the BigLobster COO (shared secret header), result posted back to BigLobster's /api/hermes-callback; internal URL hermes-sandbox.zeabur.internal:9119",
     "POST /api/bl/rental/provision: HMAC-signed payment-confirmed webhook (see Rental provisioner)",
     "/health and /api/status for probes; fork route makes 'Run now' queue instead of running inside the request",
-    "2026-09-06 logout loop: Portal WAF blocked token-endpoint calls with no User-Agent; fixed, with no retry on refresh by design"
+    "2026-09-06 logout loop: Portal WAF blocked token-endpoint calls with no User-Agent; fixed, with no retry on refresh by design",
+    "Moved to hermes.biglobster.top with the Coolify move 2026-11-05; webhooks (rental provisioning, GitHub) enter at hook.biglobster.top, a Traefik file, to port 8644"
    ],
    "status": "live",
    "links": [
     {
      "label": "Panel",
-     "url": "https://blhermes.zeabur.app"
+     "url": "https://hermes.biglobster.top"
     }
    ],
    "sources": [
@@ -239,23 +241,22 @@
     "hermes-sandbox/ops/security/dashboard-auth-lockdown.md",
     "hermes-sandbox/ops/security/cryptominer-incident-2026-06-05.md",
     "memories/decisions/hermes.md",
-    "hermes-sandbox/CLAUDE.md"
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/README.md"
    ],
    "confidence": "from-docs"
   },
   {
    "id": "zb-hermes-eu-hermes-data",
-   "label": "Data volume (/opt/data)",
+   "label": "Data volume (Zeabur, retired)",
    "kind": "database",
    "parent": "zb-hermes-eu",
-   "summary": "The persistent Zeabur volume holding every profile's state: state.db, sessions, memory, skills, cron stores, workspaces, checkouts and logs.",
+   "summary": "The former Zeabur volume mounted at /opt/data; the data now lives in a named Docker volume on the Netcup host (hermes-data-volume).",
    "details": [
-    "HERMES_HOME=/opt/data; ~15 GB volume; state.db (SQLite, FTS5 session search) ~2.2 GB",
-    "profiles/<p>/ each hold config.yaml, .env, memories, skills, workspace, cron store, executions.db; checkouts/ holds isolated BigLobster site clones",
-    "Rotated secrets reach profile .env files only through the boot reconciler (a main-only rotation once left grow-shop on a revoked key)",
-    "Nightly zip to Google Drive; other projects' volumes are dumped separately (see backups)"
+    "Retired 2026-11-05 with the move to Coolify; contents carried over to the Netcup volume",
+    "Zeabur era: ~15 GB, state.db ~2.2 GB, nightly zip to Drive"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "hermes-sandbox/BIGLOBSTER_SETUP.md",
@@ -270,11 +271,12 @@
    "label": "hermes CLI",
    "kind": "tool",
    "parent": "hermes",
-   "summary": "The `hermes` command-line (cron, profile, backup, doctor, gateway, remediate) used on the pod via zeabur service exec and locally.",
+   "summary": "The `hermes` command-line (cron, profile, backup, doctor, gateway, remediate) used on the pod via docker exec and locally.",
    "details": [
     "Fork subcommands: cron move, cron sync-prompt, cron runs; remediation CLI is python -m remediation.cli",
     "Run as the hermes user (never root: root flips file ownership)",
-    "`hermes gateway start/stop/restart` is not the known-good path on Zeabur; /command/s6-svc is"
+    "`hermes gateway start/stop/restart` is still not the verified path in the container; /command/s6-svc is",
+    "Wrap pod commands as the hermes user (s6-setuidgid hermes); a root hermes breaks installs/ ownership and crash-looped dashboard and gateway on 2026-10-25"
    ],
    "status": "live",
    "links": [],
@@ -293,7 +295,7 @@
    "summary": "s6 cont-init hooks run on every container boot; 03-biglobster-config calls boot_reconcile to sync env, pin config, seed profiles and clone repos.",
    "details": [
     "Hooks: 01-hermes-setup, 015-supervise-perms, 02-reconcile-profiles, 03-biglobster-config",
-    "Syncs Zeabur env into main and per-profile .env (INJECT list); TENANT_EXCLUDE keeps OPENROUTER/EXA/HF/PEXELS/Langfuse keys out of rented tenants",
+    "Syncs Coolify app env into main and per-profile .env (INJECT list); TENANT_EXCLUDE keeps OPENROUTER/EXA/HF/PEXELS/Langfuse keys out of rented tenants",
     "Pins config: web backend exa, image_gen provider openrouter (skipped for profiles with their own FAL_KEY), video_gen provider huggingface, agent.max_turns 90, cron.max_parallel_jobs 1, request_timeout_seconds",
     "Seeds per-profile SOUL/repos.txt/routing.env from docker/profiles and generates gateway.profile_routes per bound topic",
     "Clones/pulls profile repos and isolated BigLobster checkouts (biglobster-seo, -gaphunter, -infographic, -translation) with timeouts so a git stall cannot hang boot",
@@ -340,7 +342,8 @@
     "Facts are the site's, prose is the agent's: identifiers, change fingerprints and publish eligibility are decided server-side",
     "Blog posts go live immediately (status hardcoded to published) but every PUT snapshots the replaced body (bl-site-package >= 1.8.0, restorable from Blog -> Historial); agents pass author and base_hash",
     "Product sheets save as drafts unless publication is explicit; redirects stay pending unless the match tier is gtin/mpn (gate reads the tier back from the site)",
-    "Toolsets are declared per job (restrictive allowlist) so a prompt and its real capabilities cannot drift silently"
+    "Toolsets are declared per job (restrictive allowlist) so a prompt and its real capabilities cannot drift silently",
+    "2026-11-02 (#507): create_blog_post refuses a new post that states percentages with no source link off the client's own site (links in HTML comments or without a host do not count); prices and catalogue counts are exempt"
    ],
    "status": "live",
    "links": [],
@@ -360,10 +363,12 @@
    "summary": "scripts/provision_bl_client.py creates a rented bl-site-package client as a Hermes profile with its own key, config and daily agent jobs; triggered by the CEO via Telegram or by a Stripe-confirmed webhook from BigLobster.",
    "details": [
     "Creates profile bl-<client>, writes .env (client's own OpenRouter key, optional FAL_KEY/Pexels key, site URL, panel password), config.yaml (model default deepseek/deepseek-v4.1-flash, web.search_backend ddgs), SOUL and the cron jobs",
-    "AGENT_SOURCES: gap-hunter, seo, onboarding-content (one-shot), product-articles, product-sheets, infographic, maintenance, site-setup (one-shot), content-updater, shorts; daily schedules hashed into a 02:00-06:00 window; deliver is always `local`",
+    "AGENT_SOURCES: gap-hunter, seo, onboarding-content (one-shot), product-articles, product-sheets, infographic, maintenance, site-setup (one-shot), content-updater, shorts; schedules hashed into a 02:00-06:00 window; deliver is always `local`",
     "Webhook: POST /api/bl/rental/provision with HMAC-SHA256 over timestamp + raw body, 300 s replay window, secret BL_RENTAL_WEBHOOK_SECRET; refuses all requests if the secret is unset",
     "Removal is manual: remove each job, then `hermes profile delete <slug>`",
-    "BYOK: rented profiles bill their own OpenRouter key; the boot reconciler never overwrites it with ours"
+    "BYOK: rented profiles bill their own OpenRouter key; the boot reconciler never overwrites it with ours",
+    "--runs-per-week (1-7, default 2, #510) spreads each agent's off-peak slot over that many days from a hashed weekday; Website Maintenance stays daily because its run is the availability check",
+    "2026-11-05: AGENT_RENTAL_SETUP says rental hosting is decided per customer, no default host (#515)"
    ],
    "status": "live",
    "links": [],
@@ -430,7 +435,7 @@
    "parent": "hermes",
    "summary": "A separate Langfuse project, with its own key pair, that all rented-client profiles trace into.",
    "details": [
-    "Keys HERMES_RENTAL_LANGFUSE_PUBLIC_KEY/_SECRET_KEY set in Zeabur 2026-09-29; pinned into rental .env on every boot (rental_langfuse_pin)",
+    "Keys HERMES_RENTAL_LANGFUSE_PUBLIC_KEY/_SECRET_KEY set in the service env 2026-09-29 (Zeabur then, Coolify app env now); pinned into rental .env on every boot (rental_langfuse_pin)",
     "If unset, both key names are pinned empty (never stripped), which disables tracing instead of failing open onto BigLobster's keys",
     "Rationale: a client agent can read its own .env, and a key pair reads every trace in its project",
     "A rental run is only findable with the rental keys; BigLobster's project returns an honest empty result"
@@ -610,7 +615,7 @@
    "parent": "hermes",
    "summary": "Rented lead-qualification chat assistant (Chatwoot AgentBot, Node service scripts/whatsapp-lead-bot, replies via OpenRouter); live on web-chat widgets for biglobster.top and shoroban.com, WhatsApp itself not yet connected.",
    "details": [
-    "Plan: customer owns the WABA and Meta billing; BigLobster charges EUR 49/month excluding Meta fees; Chatwoot CE self-hosted on Zeabur EU",
+    "Plan: customer owns the WABA and Meta billing; BigLobster charges EUR 49/month excluding Meta fees (superseded, see 2026-10-18 line); Chatwoot CE self-hosted, on Zeabur EU until the 2026-11-05 move",
     "Code exists in scripts/whatsapp-lead-bot (commits 2026-08-14) with GET /api/knowledge on the customer's bl-site-package; the plan doc still says implementation not started",
     "Pilot on customer-created Meta Apps; Meta Tech Provider registration targeted from 2026-09-03 (4-6 weeks); Chatwoot self-hosted Embedded Signup is broken upstream",
     "Chatwoot volumes (Postgres+pgvector, Redis) appear in the host backup script, so a Chatwoot instance exists on the server",
@@ -619,7 +624,9 @@
     "2026-10-18 decision-log summary: live on biglobster.top (Chatwoot account 2) and shoroban.com (account 3, own agent bot, webhook secret and Telegram alert group); Chatwoot upgraded to 4.17.0. Direct-deployed: a merge never updates the service",
     "Behaviour (hermes #445-#465): per-turn search of the site's catalogue (bl-site-package /api/knowledge/search) with matches first and any site URL not in the reference stripped from the reply; human request skips the model; handoff to a human expires after HANDOFF_TTL_MINUTES (15) and fires a Telegram alert",
     "Cost (#465): reference prefix byte-identical between turns so providers cache it, provider.sort=price under deny; measured about 0.0003 $/turn after caching",
-    "Sold as the agent-chat-assistant rental at 29.99 EUR/month (decision 2026-10-18; the earlier EUR 49 plan is superseded). Next: connect BigLobster's own WhatsApp number to Chatwoot (runbook ONBOARDING-WHATSAPP.md in bl-site-package)"
+    "Sold as the agent-chat-assistant rental at 29.99 EUR/month (decision 2026-10-18; the earlier EUR 49 plan is superseded). Next: connect BigLobster's own WhatsApp number to Chatwoot (runbook ONBOARDING-WHATSAPP.md in bl-site-package)",
+    "2026-11-05 (#512): a greeting never hands off to a person. Shoroban's visitor \"hola\" got a model_cannot_answer escalation and a Telegram alert; small talk now skips handoff and the catalogue search, keeps the model reply or a fixed one, and history holds only what the visitor saw",
+    "The 2026-11-05 Coolify deploy (sha-5b3f28f02) includes #512 and the earlier deny change; the host volume backup dumps Chatwoot (Postgres, Redis, storage) on the Netcup host, so Chatwoot is now there (inferred from the script); where the bot service itself runs was not re-checked"
    ],
    "status": "live",
    "links": [],
@@ -628,7 +635,9 @@
     "hermes-sandbox/scripts/whatsapp-lead-bot",
     "hermes-sandbox/ops/README.md",
     "hermes-sandbox/scripts/whatsapp-lead-bot/src/assistant.js",
-    "memories/decisions/hermes.md"
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/scripts/whatsapp-lead-bot/src/policy.js",
+    "memories/decisions/workspace.md"
    ],
    "confidence": "from-docs"
   },
@@ -637,7 +646,7 @@
    "label": "Profile: default (main)",
    "kind": "project",
    "parent": "hermes",
-   "summary": "The owner/main profile at /opt/data: COO chat, backups, incident watcher, infographic and shorts jobs; carries the Zeabur service-env keys.",
+   "summary": "The owner/main profile at /opt/data: COO chat, backups, incident watcher, infographic and shorts jobs; carries the Coolify app-env keys.",
    "details": [
     "Jobs in the default store: Hermes full backup (nightly), incident watcher, BigLobster Infographic Engineer, Shorts Producer, Shorts Publisher",
     "Main store pool is unbounded; web server is pinned to this profile",
@@ -865,10 +874,13 @@
     "python -m incidents.sweep; silent when clean, one 'all clean' heartbeat per 24h; dedup state in $HERMES_HOME/incidents/state.json",
     "Signals: failed and silently stalled cron jobs (every served store), prompt drift, errored Langfuse traces, blocked agent commits, runaway runs, judge liveness (48h), site-checkout drift, unclean gateway exits, deploy drift vs main (reads /opt/hermes/.hermes_build_sha), new critical/high osv dependency alerts; ChatMemo Mac backup heartbeat (since 2026-10-07, PR #417)",
     "Fails loud: a signal that is blind (no token, unstamped image, 401/403/404) raises its own incident instead of returning empty",
-    "Attaches gated remediation proposals; known gap: does not cover failures of no-agent script jobs such as the nightly backup; also does not see the host-side volume backup cron",
+    "Attaches gated remediation proposals; known gap: does not cover failures of no-agent script jobs such as the nightly backup; reads the host volume backup's outcome in Drive (not its host log, so a failed final rclone check after the dumps landed shows only there)",
     "Dedicated tokens: HERMES_DEP_ALERT_GITHUB_TOKEN; no-agent cron scripts never see GITHUB_TOKEN/GH_TOKEN",
     "ChatMemo backup heartbeat: reads a secret gist the Mac backup rewrites after each verified dump; briefs after 50h of silence or an unreadable heartbeat; blind (401/403/404, file gone) is its own incident; outside the deployment it is a no-op with no network call",
-    "2026-10-13: the runaway signal pages on the forced max-iteration request message (not on the call count); a run that ended cron_complete with a real report stays silent even at 85-89 iterations"
+    "2026-10-13: the runaway signal pages on the forced max-iteration request message (not on the call count); a run that ended cron_complete with a real report stays silent even at 85-89 iterations",
+    "2026-11-05 (#513): watcher text points at Coolify and Netcup instead of Zeabur",
+    "Dependency alerts (#502): the photon sidecar lock is tiered (it is npm ci'd into the image and fetches sender-chosen URLs) and uv.lock packages are split by image membership: only those reachable from hermes-agent plus the Dockerfile's baked extras are \"runtime (production image)\", the rest \"runtime (on-demand install, not in image)\"",
+    "2026-10-28 CVE bumps: undici 6.29.1 / 7.30.1 (#501), msgpack 1.2.3 (#500); vendored Node/npm undici recorded as an osv-scanner blind spot (#504); 22 stale min-release-age excludes dropped (#503)"
    ],
    "status": "live",
    "links": [],
@@ -928,15 +940,18 @@
    "label": "Host volume dumps",
    "kind": "tool",
    "parent": "zeabur-frankfurt",
-   "summary": "ops/backup-volumes.sh on the Frankfurt host, scheduled nightly at 02:00 UTC by /etc/cron.d/backup-volumes: dumps other projects' volumes and uploads them to Google Drive.",
+   "summary": "ops/backup-volumes.sh on the Netcup host (beside Coolify), scheduled nightly at 19:00 host time (Europe/Berlin) by /etc/cron.d/backup-volumes: dumps other services' data and uploads it to Google Drive.",
    "details": [
-    "Dumps three Postgres volumes via pg_dumpall (social-agenda, flywell, chatwoot+pgvector), the chatwoot Redis RDB, the BigLobster sentinel SQLite via the online backup API, and idle Chrome/CDP volumes as tars",
+    "Dumps three Postgres volumes via pg_dumpall (social-agenda, flywell, chatwoot+pgvector), the chatwoot Redis RDB, the BigLobster sentinel SQLite via the online backup API, and idle Chrome/CDP volumes as tars. Since the 2026-11-05 port it also covers Chatwoot's storage and the reference site's data and uploads, which Coolify's R2 backups do not",
     "Stages root-only under /var/backups/volumes/<stamp>/, uploads with the host's own rclone to hermesdrive:/VolumeBackups/<stamp>, fails unless rclone check confirms every file",
     "Accepted trade-off: dumps are unencrypted in Drive and readable with the token the container holds (rclone crypt declined)",
     "The OAuth stanza now lives in two configs; re-authorizing or revoking must touch both",
-    "First run 2026-10-06 (192 MB). Scheduled nightly at 02:00 UTC since 2026-10-06 via /etc/cron.d/backup-volumes -> backup-volumes-cron.sh, clear of the Hermes zip (13:00) and the repo backup (20:00); the wrapper appends one OK / FAILED exit=N line per run to /var/log/backup-volumes.log (logrotate weekly, 8 kept)",
+    "First run 2026-10-06 (192 MB) on the Zeabur Frankfurt host; ported to the Netcup host (Docker replaces k3s) 2026-11-05 with the same Drive folder and dump names so the watcher's signal keeps working; cron runs 19:00 host time via /etc/cron.d/backup-volumes -> backup-volumes-cron.sh, one OK/FAILED line per run in /var/log/backup-volumes.log",
     "Retention (Brais, 2026-10-06): 14 days of stamps on the host, 30 in Drive, pruned by the script itself only after that night's upload verified, matching stamp-named directories by UTC date (PR #416)",
-    "Nothing pages on failure: the incident watcher does not see host cron (still open)"
+    "Nothing pages on failure: the incident watcher does not see host cron (still open)",
+    "Chatwoot's Redis is backed up again (#513: it holds ~1,800 keys, snapshot costs almost nothing)",
+    "All three Postgres dumps were restored from Drive into throwaway containers 2026-11-05, row counts equal to live",
+    "Coolify also uploads the three Postgres databases to R2 (03:00 UTC, 30 days); not read by the watcher (a new R2 credential in the container was rejected)"
    ],
    "status": "live",
    "links": [],
@@ -944,7 +959,8 @@
     "hermes-sandbox/ops/README.md",
     "memories/decisions/hermes.md",
     "hermes-sandbox/ops/backup-volumes.sh",
-    "hermes-sandbox/ops/backup-volumes-cron.sh"
+    "hermes-sandbox/ops/backup-volumes-cron.sh",
+    "memories/decisions/workspace.md"
    ],
    "confidence": "from-docs"
   },
@@ -973,14 +989,18 @@
    "label": "Content Gap Hunter",
    "kind": "agent",
    "parent": "hermes",
-   "summary": "Daily agent that finds a content gap and writes at most one blog article, via PR on BigLobster and FinView and directly through bl_site_publish on rented sites.",
+   "summary": "Agent that finds a content gap and writes at most one blog article per run: capped at 1 per rolling 7 days and gated on five topic pillars on BigLobster, via PR on BigLobster and FinView and directly through bl_site_publish on rented sites.",
    "details": [
     "BigLobster: job ce583d11dedd, workdir /opt/data/checkouts/biglobster-gaphunter, PR reviewed by the auditor; also consumes agent-mailbox requests (expand_thin_content)",
     "FinView: job 3988cc0c189f (presumed; docs name the id and the prompt file separately), daily 06:00 Asia/Bangkok, ephemeral clone, MDX blog posts in Spanish",
     "Rentals: create_blog_post goes live immediately with no review step; images via the client's own FAL key if any",
     "Internal links are discovered at run time from the site's own routes, never from an allowlist (2026-09-17)",
     "2026-09-12: a 38-min auditor run held the old single lane and the Gap Hunter sat silent 20+ min",
-    "2026-10-07 (PRs #418, #419): BigLobster prompt no longer deletes the local branch after the PR (cron blocks git branch -D; step 1 uses -B so a leftover branch is harmless); now states title <= 60 chars including the ' | BigLobster' suffix and description <= 160, and runs npm test before opening the PR (PR #641 had shipped 67/165 chars with CI red)"
+    "2026-10-07 (PRs #418, #419): BigLobster prompt no longer deletes the local branch after the PR (cron blocks git branch -D; step 1 uses -B so a leftover branch is harmless); now states title <= 60 chars including the ' | BigLobster' suffix and description <= 160, and runs npm test before opening the PR (PR #641 had shipped 67/165 chars with CI red)",
+    "BigLobster after the 2026-10-18 Google site-wide demotion (#508, #509; decision 2026-11-01): FASE 1B measures the blog with one GSC call per run (RENDIMIENTO ledger line); PUERTA 0 rejects topics outside the five pillars in biglobster site/_data/topics.json (`rechazado:tema`); posts carry \"pillar\" and link to a pillar hub; cap fixed at 1 per rolling 7 days; fifth class `datos-propios` reads owner-approved first-party fact files (ships unapproved) and wins ties",
+    "Per-figure sourcing (#507): the factsheet records each figure's sample and collection date, and moving-series headline figures get their own rule (#508)",
+    "2026-11-07 (#517): must name the BigLobster agent the article serves; prompts say a person runs BigLobster",
+    "Rented clients (#510): topic must name a catalogue category or service the client sells and help the reader choose, buy, use or maintain it (`rechazado:tema` otherwise; sector news is out); one post per run, frequency is the client's schedule; since #507 needs one client-owned fact read from the site API in the run, else [SILENT]"
    ],
    "status": "live",
    "links": [],
@@ -989,7 +1009,10 @@
     "hermes-sandbox/AGENT_RENTAL_SETUP.md",
     "memories/decisions/hermes.md",
     "hermes-sandbox/ops/multiplex-stage3-plan.md",
-    "hermes-sandbox/gap-hunter/biglobster-gap-hunter.prompt"
+    "hermes-sandbox/gap-hunter/biglobster-gap-hunter.prompt",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/gap-hunter/bl-site-package-gap-hunter.prompt",
+    "memories/decisions/biglobster.md"
    ],
    "confidence": "from-docs"
   },
@@ -1002,14 +1025,16 @@
    "details": [
     "BigLobster: job 20ec3607f2c6, DRY_RUN=false, workdir checkouts/biglobster-seo, coverage ledger and CATCH-UP mode, seo-rules.json, emits agent-mailbox requests",
     "Rentals: update_page_text, update_blog_post (link repairs only), bl_site_redirect (scan, find_target via Wayback, propose/publish only for gtin/mpn-verified matches, max 3/run)",
-    "Third job added 2026-09-17: audit published posts and repair link destinations (reads up to 5, fixes up to 3 per run)"
+    "Third job added 2026-09-17: audit published posts and repair link destinations (reads up to 5, fixes up to 3 per run)",
+    "2026-11-01 (#509): BigLobster internal links go to the hubs of the post's pillar and never to a googleNoindex post"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/onsite-seo/",
     "hermes-sandbox/AGENT_RENTAL_SETUP.md",
-    "memories/decisions/hermes.md"
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/onsite-seo/seo-agent.prompt"
    ],
    "confidence": "from-docs"
   },
@@ -1023,7 +1048,7 @@
     "Never publishes; a human reviews the brief and posts it; worldwide English-language audience since 2026-08-12",
     "Canary for the stage 3 job moves (moved to the biglobster store 2026-10-02; first run 03:00 +07:00 lost its start ping, fixed in #388)",
     "2026-10-17 (a47b0c298b): prompt lists our accounts and SocialBot's EXCLUDED/PAUSED platforms (mirror of fizz agents/socialbot.prompt.md; change both together), bars any platform pitched in the last 21 days (PLATFORM_COOLDOWN, each subreddit its own), prefers niche crawlable communities, writes LEDGER lines, and every Monday adds a 'Community to join this week' section that SocialBot turns into a 'crear cuenta' item for Brais",
-    "2026-10-18 (#478): may pick Reddit threads it cannot open (reddit.com blocks Zeabur) when a search result shows subreddit, title and a date within 30 days; briefs are marked Status: UNVERIFIED and SocialBot checks them with the brand's Reddit session. Delivery goes to the Buzz #geo channel for SocialBot (docs #468/#469); the briefs' Buzz delivery needs the primary profile route"
+    "2026-10-18 (#478): may pick Reddit threads it cannot open (reddit.com blocked the old Zeabur host; not re-checked from Netcup) when a search result shows subreddit, title and a date within 30 days; briefs are marked Status: UNVERIFIED and SocialBot checks them with the brand's Reddit session. Delivery goes to the Buzz #geo channel for SocialBot (docs #468/#469); the briefs' Buzz delivery needs the primary profile route"
    ],
    "status": "live",
    "links": [],
@@ -1044,7 +1069,8 @@
     "BigLobster: job 4a0ebe8779ca, `0 8 * * *`, DRY_RUN pushes a branch and opens no PR; decay scanner scripts/content-decay/scan.mjs (GSC-aware) lives in the biglobster repo; first live edit merged 2026-09-16",
     "Rule: when unsure, leave the page alone; every figure needs an official source; each article reviewed at most once a year",
     "Rental variant built (PRs #293/#294, 2026-09-19): publishes directly, refuses sites without revision history (bl-site-package < 1.8.0); provisioning on the client profile was still open as of 2026-09-29",
-    "2026-10-17 (#473): the DRY_RUN flag, STEP 8-DRY and every 'Under DRY_RUN' clause were removed from the BigLobster prompt after the model misread DRY_RUN: false as true and pushed a branch without a PR; runs on 10-15 and 10-16 had published normally. The agent now always opens the PR"
+    "2026-10-17 (#473): the DRY_RUN flag, STEP 8-DRY and every 'Under DRY_RUN' clause were removed from the BigLobster prompt after the model misread DRY_RUN: false as true and pushed a branch without a PR; runs on 10-15 and 10-16 had published normally. The agent now always opens the PR",
+    "2026-11-01 (#509): leaves googleNoindex posts alone (the scanner excludes all-noindex pairs); 2026-11-07 (#517): skips off-topic posts, gated like the Gap Hunter"
    ],
    "status": "live",
    "links": [],
@@ -1052,7 +1078,8 @@
     "hermes-sandbox/tasks/content-updater.md",
     "hermes-sandbox/tasks/content-updater-rental.md",
     "memories/decisions/hermes.md",
-    "hermes-sandbox/content-updater/biglobster-content-updater.prompt"
+    "hermes-sandbox/content-updater/biglobster-content-updater.prompt",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
    ],
    "confidence": "from-docs"
   },
@@ -1063,15 +1090,17 @@
    "parent": "hermes",
    "summary": "Agent (job e197e33b0f00) that creates the other-language version of BigLobster articles as a new file via PR.",
    "details": [
-    "Pinned to tencent/hy3 at job level; workdir checkouts/biglobster-translation; unpinned job was once blocked by the model-drift guard (2026-08-17)",
-    "Schedule not in the docs read"
+    "Job-level model pin: the decision log says no tencent/hy3 pins remain since 2026-10-09 (all 6 pinned jobs use deepseek-v4.1-flash); workdir checkouts/biglobster-translation; an unpinned job was once blocked by the model-drift guard (2026-08-17)",
+    "Schedule not in the docs read",
+    "Translates on evidence only (#509, 2026-11-01): an English post qualifies at 28+ days old with 20+ Google impressions in 90 days and a place in a pillar; without GSC data it translates nothing; a `skipped:` ledger line is final"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/translation/translation-engineer.prompt",
     "memories/decisions/hermes.md",
-    "hermes-sandbox/tasks/biglobster-v41-pilot.md"
+    "hermes-sandbox/tasks/biglobster-v41-pilot.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
    ],
    "confidence": "from-docs"
   },
@@ -1085,14 +1114,17 @@
     "BigLobster job 2988bba27c73 runs under the default profile with workdir checkouts/biglobster-infographic; rentals run it daily; lane chosen at runtime from BL_SITE_URL (set = HTTP lane live on save, unset = git lane with PR)",
     "Hybrid poster format (2026-09-23): artwork carries zero text, all labels/numbers are inline SVG over a fixed-palette plate; seedream-4.5 via OpenRouter ~$0.04/plate; a failing plate downgrades to a plain SVG and says so",
     "Canvas is always viewBox 0 0 800 H; done-marker is class=\"article-infographic\"; validate_infographic.py is a mandatory pre-publish gate",
-    "Toolset must include image_gen (it silently went missing once and a run shipped a plain SVG as a normal success)"
+    "Toolset must include image_gen (it silently went missing once and a run shipped a plain SVG as a normal success)",
+    "2026-11-07 (#517): repo lane skips off-topic and googleNoindex posts"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "hermes-sandbox/infographic/",
     "memories/decisions/hermes.md",
-    "hermes-sandbox/scripts/provision_bl_client.py"
+    "hermes-sandbox/scripts/provision_bl_client.py",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/infographic/infographic-engineer.prompt"
    ],
    "confidence": "from-docs"
   },
@@ -1129,7 +1161,8 @@
     "Older notes about a ~60 s short with X handed to Brais on Telegram predate the 2026-10-10/11 tip format and Buzz hand-off",
     "Hook patterns rotate per language (#474); the Producer calls shorts_studio 'performance' once per run and prefers stronger allowed patterns (#477; 'not enough signal' under 5 shorts)",
     "Series (#466, #467): the Publisher also runs shorts_studio 'series', reading #publicar-episodio (VideoDesk) and #actualizar-video (SEODesk) requests from the Buzz series channel and uploading or updating the 2-3 min ES/EN episodes as regular YouTube videos; one episode a day by default (quota). Since #479 #actualizar-video also accepts blog Shorts that the shorts ledger records as uploaded by Hermes; every Short now opens with its Thumb still for 0.5 s as the cover frame",
-    "Status docs read this week still say shadow by default; whether live uploads are on in Zeabur was not re-checked"
+    "Status docs read still say shadow by default; whether live uploads are on in the Coolify app was not re-checked",
+    "Late-Oct to Nov fixes: episodes refused when duplicate and shorts keyed by language (#498); only fresh ignored requests answered, not the backlog; the Publisher reads the YouTube description back after each write and resends a snippet whose link was cut (#499); titles and descriptions go to YouTube as written, no appended #Shorts or article link (#505); a request mark counts only alone on its line (#506)"
    ],
    "status": "dry-run",
    "links": [],
@@ -1142,7 +1175,8 @@
     "hermes-sandbox/plugins/shorts/series.py",
     "hermes-sandbox/plugins/shorts/social/youtube_analytics.py",
     "hermes-sandbox/shorts/biglobster-shorts-producer.prompt",
-    "memories/decisions/hermes.md"
+    "memories/decisions/hermes.md",
+    "hermes-sandbox/plugins/shorts/social/youtube.py"
    ],
    "confidence": "from-docs"
   },
@@ -1304,7 +1338,8 @@
    "summary": "Fork-specific instructions for Claude Code: multiplex, cron rules, deploy gotchas, Langfuse diagnosis, rented-agent write path.",
    "details": [
     "Read by Claude Code only; inert to the Hermes runtime because AGENTS.md outranks it",
-    "Related runbooks: BIGLOBSTER_SETUP.md, AGENT_RENTAL_SETUP.md, ops/ (multiplex stage 3 plan, backups, security)"
+    "Related runbooks: BIGLOBSTER_SETUP.md, AGENT_RENTAL_SETUP.md, ops/ (multiplex stage 3 plan, backups, security)",
+    "Rewritten for Coolify on Netcup in #513 (2026-11-05); the Zeabur rules in older decisions no longer apply"
    ],
    "status": "live",
    "links": [
@@ -1421,6 +1456,27 @@
     "hermes-sandbox/WHATSAPP-BOT-PLAN.md"
    ],
    "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-data-volume",
+   "label": "Data volume (/opt/data)",
+   "kind": "database",
+   "parent": "hermes",
+   "summary": "The persistent named Docker volume (nqonduf6dnveg889xjvoubbw-hermes-data, bound to /data/hermes/opt-data on the Netcup host) mounted at /opt/data, holding every profile's state: state.db, sessions, memory, skills, cron stores, workspaces, checkouts and logs.",
+   "details": [
+    "HERMES_HOME=/opt/data; state.db (SQLite, FTS5 session search) was ~2.2 GB and the volume ~15 GB on Zeabur, not re-measured on Netcup",
+    "profiles/<p>/ each hold config.yaml, .env, memories, skills, workspace, cron store, executions.db; checkouts/ holds isolated BigLobster site clones",
+    "Rotated secrets reach profile .env files only through the boot reconciler (a main-only rotation once left grow-shop on a revoked key)",
+    "Nightly zip to Google Drive (HermesBackups); other services' volumes are dumped separately by the host script (see backup-volumes-host)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/ops/README.md",
+    "memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs"
   }
  ],
  "edges": [
@@ -1502,18 +1558,7 @@
    "confidence": "from-docs"
   },
   {
-   "source": "zb-hermes-eu-hermes",
-   "target": "zeabur-frankfurt",
-   "kind": "deployed-on",
-   "label": "pod runs on the Frankfurt dedicated server (EU region)",
-   "sources": [
-    "hermes-sandbox/CLAUDE.md",
-    "memories/decisions/hermes.md"
-   ],
-   "confidence": "from-docs"
-  },
-  {
-   "source": "zb-hermes-eu-hermes",
+   "source": "coolify-hermes",
    "target": "hermes-ci-build",
    "kind": "depends-on",
    "label": "pulls ghcr.io/br41s/hermes-sandbox:sha-<commit>",
@@ -1535,22 +1580,12 @@
   },
   {
    "source": "hermes-deploy-script",
-   "target": "zb-hermes-eu-hermes",
+   "target": "coolify-hermes",
    "kind": "deploys",
-   "label": "moves the image tag to sha-<commit> and verifies the pod",
+   "label": "stops the app, moves the image tag to sha-<commit>, starts it and verifies",
    "sources": [
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/scripts/deploy.sh"
-   ],
-   "confidence": "verified"
-  },
-  {
-   "source": "hermes-deploy-script",
-   "target": "zeabur",
-   "kind": "calls",
-   "label": "zeabur service update tag via the Zeabur CLI",
-   "sources": [
-    "hermes-sandbox/CLAUDE.md"
    ],
    "confidence": "verified"
   },
@@ -1680,7 +1715,7 @@
   },
   {
    "source": "hermes-gateway",
-   "target": "zb-hermes-eu-hermes-data",
+   "target": "hermes-data-volume",
    "kind": "stores-in",
    "label": "state.db sessions, memory, FTS search",
    "sources": [
@@ -1691,7 +1726,7 @@
   },
   {
    "source": "hermes-cron-scheduler",
-   "target": "zb-hermes-eu-hermes-data",
+   "target": "hermes-data-volume",
    "kind": "stores-in",
    "label": "jobs.json, executions.db and outputs per store",
    "sources": [
@@ -1701,7 +1736,7 @@
   },
   {
    "source": "hermes-dashboard",
-   "target": "zb-hermes-eu-hermes-data",
+   "target": "hermes-data-volume",
    "kind": "reads",
    "label": "status and session data",
    "sources": [
@@ -1722,7 +1757,7 @@
   },
   {
    "source": "hermes-cont-init",
-   "target": "zb-hermes-eu-hermes-data",
+   "target": "hermes-data-volume",
    "kind": "writes",
    "label": "profile .env/config.yaml, SOUL, checkouts",
    "sources": [
@@ -2011,7 +2046,7 @@
   },
   {
    "source": "hermes-incident-watcher",
-   "target": "zb-hermes-eu-hermes",
+   "target": "coolify-hermes",
    "kind": "monitors",
    "label": "deploy drift: running commit vs main",
    "sources": [
@@ -2180,7 +2215,7 @@
   },
   {
    "source": "hermes-backup-nightly",
-   "target": "zb-hermes-eu-hermes-data",
+   "target": "hermes-data-volume",
    "kind": "reads",
    "label": "hermes backup zips /opt/data",
    "sources": [
@@ -2858,6 +2893,47 @@
    "sources": [
     "hermes-sandbox/BIGLOBSTER_SETUP.md",
     "hermes-sandbox/offsite-geo/geo-scout.prompt"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-deploy-script",
+   "target": "coolify",
+   "kind": "calls",
+   "label": "Coolify API over SSH (listens only on the server's localhost)",
+   "sources": [
+    "hermes-sandbox/scripts/deploy.sh",
+    "memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-data-volume",
+   "target": "coolify-hermes",
+   "kind": "deployed-on",
+   "label": "named Docker volume mounted at /opt/data",
+   "sources": [
+    "hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-gap-hunter",
+   "target": "hermes-mcp-gsc",
+   "kind": "reads",
+   "label": "BigLobster hunter measures the blog (FASE 1B, one GSC call per run)",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-translation",
+   "target": "hermes-mcp-gsc",
+   "kind": "reads",
+   "label": "translates only posts with 20+ impressions in 90 days",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
    ],
    "confidence": "from-docs"
   }

@@ -5,8 +5,9 @@
    "label": "Zeabur",
    "kind": "platform",
    "parent": "layer-hosting",
-   "summary": "Primary PaaS: Brais's always-on apps, the Hermes engine and their databases run as Kubernetes workloads on one dedicated Frankfurt server rented through Zeabur.",
+   "summary": "Former primary PaaS (Kubernetes workloads on one dedicated Frankfurt server). Left in the Zeabur exit: every project moved to Coolify on Netcup by 2026-11-05; the account now lists no projects.",
    "details": [
+    "Retired 2026-11-09: 'zeabur project list -i=false' returns no projects; Hermes was the last service off Zeabur on 2026-11-05 (decision 2026-11-05, 'Hermes on Coolify'), the rest moved 2026-11-04/05. Zeabur was shutting down (decision 2026-10-21); account closure was planned before the next charge (~mid November), actual closure date not recorded",
     "Account plan DEVELOPER (Dev $5/mo) plus one dedicated server (~$21-22/mo): fixed plan, no usage billing, no Project Budget, so no server-side spend cap exists (dashboard check 2026-06-20)",
     "6 projects exist today (CLI, 2026-10-19): hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural. All sit on the single Frankfurt server",
     "Decision notes say 'all 6 projects': the six migrated and exported are hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural. The 7th, B_Browser (created 2026-10-05), has no services",
@@ -18,7 +19,7 @@
     "Account owner/billing identity moved to Biglobster LLC (decided 2026-10-09, done); service-data and plan unchanged",
     "B_Browser (7th project on 2026-10-06, no services) no longer appears in 'zeabur project list' on 2026-10-19; see zb-b-browser"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Zeabur dashboard",
@@ -31,7 +32,8 @@
     "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_zeabur_guardrail.md",
     "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/reference_zeabur_live_status.md",
     "/Users/brais/VSCODE/memories/decisions/workspace.md",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -40,8 +42,9 @@
    "label": "Tencent Frankfurt server",
    "kind": "server",
    "parent": "zeabur",
-   "summary": "Dedicated Tencent Cloud VM in Frankfurt (4 vCPU / 8 GB, ZeaburOS with k3s) that runs every Zeabur project.",
+   "summary": "Former dedicated Tencent Cloud VM in Frankfurt that ran every Zeabur project; stopped and offline since the exit to Netcup.",
    "details": [
+    "Retired 2026-11-09: 'zeabur server list' shows the Tencent Frankfurt server Offline with VM STOPPED; all workloads moved to the Netcup server (netcup-nue). Its k8s Secrets held the only server-side copy of project env vars; the ~/Backups/zeabur exports and Coolify app env replace them",
     "Name in Zeabur: 'Tencent Frankfurt 4C 8GB'; provider Tencent Cloud, Frankfurt am Main (DE); provisioning READY, VM RUNNING, online",
     "Load on 2026-10-06: CPU ~6% of 4 vCPU, RAM ~71% of 7.7 GB, disk ~56% of ~118 GB",
     "Runs k3s; each Zeabur project is a Kubernetes namespace; one static egress IP is shared by every service (Brevo and WAF allowlists key on it)",
@@ -51,12 +54,13 @@
     "Single point of truth for all project secrets (Kubernetes Secrets) after the service-data migration: losing the SSH key or the server means restoring from the ~/Backups/zeabur exports",
     "Deleting a Zeabur service can half-complete and leave its PVC behind"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur server list -i=false --json",
     "/Users/brais/VSCODE/memories/decisions/hermes.md",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -67,12 +71,13 @@
    "parent": "zeabur",
    "summary": "Zeabur project for the Hermes engine, its Chatwoot stack (Rails, Sidekiq, Postgres, Redis) and the WhatsApp lead bot.",
    "details": [
+    "Retired 2026-11-09: project no longer listed by 'zeabur project list -i=false'; its apps moved to Coolify on Netcup on 2026-11-04/05 (Zeabur exit)",
     "Created 2026-07-20; 6 services",
     "Hermes got its own project when it was split from the biglobster website on 2026-07-22; moved Jakarta to Frankfurt by root SSH rsync of /opt/data because the ~15 GB volume exceeds Zeabur's S3 clone limit",
     "Service-data migration done 2026-10-06 15:35 UTC (six -configs Secrets, pods untouched)",
     "Template exports taken 2026-10-05 and 2026-10-06"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Zeabur project",
@@ -83,7 +88,8 @@
     "zeabur project list -i=false --json",
     "zeabur service list --project-id <id> -i=false --json",
     "/Users/brais/VSCODE/memories/decisions/workspace.md",
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -94,11 +100,12 @@
    "parent": "zeabur",
    "summary": "Zeabur project for the grow-shop.com domain-sale landing page and its offer-email API.",
    "details": [
+    "Retired 2026-11-09: project no longer listed by 'zeabur project list -i=false'; its apps moved to Coolify on Netcup on 2026-11-04/05 (Zeabur exit)",
     "Created 2026-07-21 (cloned Jakarta to Frankfurt with 'project clone')",
     "2 services; both Git-sourced from main",
     "First project migrated to server-side service data (2026-10-02)"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Zeabur project",
@@ -108,7 +115,8 @@
    "sources": [
     "zeabur project list -i=false --json",
     "zeabur service list --project-id <id> -i=false --json",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -119,12 +127,13 @@
    "parent": "zeabur",
    "summary": "Zeabur project for SocialAgenda: web, scheduler and Postgres.",
    "details": [
+    "Retired 2026-11-09: project no longer listed by 'zeabur project list -i=false'; its apps moved to Coolify on Netcup on 2026-11-04/05 (Zeabur exit)",
     "Created 2026-07-21 (cloned Jakarta to Frankfurt; Postgres verified 392 rows exact)",
     "3 services: web (RUN_SCHEDULER=0), scheduler (RUN_SCHEDULER=1), postgresql",
     "Production moved off Render to Zeabur earlier (README)",
     "Service-data migration done 2026-10-06"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Zeabur project",
@@ -134,7 +143,8 @@
    "sources": [
     "zeabur project list -i=false --json",
     "zeabur service list --project-id <id> -i=false --json",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -145,12 +155,13 @@
    "parent": "zeabur",
    "summary": "Zeabur project for the BigLobster website/legacy backend and the bl-site-package reference instance.",
    "details": [
+    "Retired 2026-11-09: project no longer listed by 'zeabur project list -i=false'; its apps moved to Coolify on Netcup on 2026-11-04/05 (Zeabur exit)",
     "Created 2026-07-22 (cloned from Jakarta; Hermes was split out into hermes-eu)",
     "2 visible services: biglobster-osee and bl-site-package",
     "A stale Pending Hermes pod remains in this project's Kubernetes namespace, invisible to Zeabur",
     "Service-data migration done 2026-10-06 (Zeabur counts 2 services)"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Zeabur project",
@@ -160,7 +171,8 @@
    "sources": [
     "zeabur project list -i=false --json",
     "zeabur service list --project-id <id> -i=false --json",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -171,12 +183,13 @@
    "parent": "zeabur",
    "summary": "Zeabur project for FlyWell: public web app, internal flight-search service and Postgres.",
    "details": [
+    "Retired 2026-11-09: project no longer listed by 'zeabur project list -i=false'; its apps moved to Coolify on Netcup on 2026-11-04/05 (Zeabur exit)",
     "Created 2026-08-08",
     "3 services: flywell-web (public), flywell-fli (internal only, deliberately no public domain), postgresql",
     "A push to main deploys to Zeabur immediately, so DB migrations must run before merging",
     "Service-data migration done 2026-10-06"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Zeabur project",
@@ -186,7 +199,8 @@
    "sources": [
     "zeabur project list -i=false --json",
     "zeabur service list --project-id <id> -i=false --json",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -197,10 +211,11 @@
    "parent": "zeabur",
    "summary": "Zeabur project for the experiencianatural.com home page.",
    "details": [
+    "Retired 2026-11-09: project no longer listed by 'zeabur project list -i=false'; its apps moved to Coolify on Netcup on 2026-11-04/05 (Zeabur exit)",
     "Created 2026-09-27; born migrated (server-side service data from the start)",
     "1 service: 'home' (static site, Git-sourced)"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Zeabur project",
@@ -210,7 +225,8 @@
    "sources": [
     "zeabur project list -i=false --json",
     "zeabur service list --project-id <id> -i=false --json",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -249,6 +265,8 @@
    "parent": "zb-hermes-eu",
    "summary": "Container running the Hermes engine (gateway, dashboard, webhooks, cron) from a GHCR image; the agent's internals are mapped under the Hermes node.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
+    "Switched to Coolify 2026-11-05 01:49-01:59 UTC; the Zeabur service was kept suspended as rollback until the account closed (decision 2026-11-05). Deploy on Coolify is stop, move the tag, start - never Coolify's redeploy (two gateways would share one bot token and state.db)",
     "Source: prebuilt image ghcr.io/br41s/hermes-sandbox pinned by a sha-<commit> tag (sha-ae01cb439 in today's export); deploy = move the tag with scripts/deploy.sh, everything else is a no-op",
     "Ports: 8080 HTTP, 8644 webhook, 9119 dashboard; volume /opt/data (profiles, sessions, state.db ~2.2 GB)",
     "Generated public domains: blhermes.zeabur.app (panel, GitHub-OAuth login) and hermes-webhook.zeabur.app (webhook port)",
@@ -257,7 +275,7 @@
     "Env changes need an image-tag bounce, not a restart; the gateway CLI restart is unsupported on Zeabur's k8s pods",
     "2026-10-12: env OPENROUTER_IMAGE_MODEL set to bytedance-seed/seedream-4.5 on this service and restarted (OpenRouter ZDR has no provider for meta/muse-image)"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Panel",
@@ -269,7 +287,9 @@
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
     "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md",
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -280,17 +300,20 @@
    "parent": "zb-hermes-eu",
    "summary": "Persistent volume mounted at /opt/data holding every Hermes profile, session store, state.db, cron definitions and the backup script.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Volume id 'data' mounted at /opt/data on the hermes service (export)",
     "Roughly 15 GB; too large for Zeabur's S3-based clone, so it was copied by SSH rsync",
     "state.db is ~2.2 GB; an unclean shutdown triggers PRAGMA quick_check at boot",
     "Nightly zip to Google Drive (HermesBackups); not covered by backup-volumes.sh, which handles the other projects' volumes"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
     "/Users/brais/VSCODE/memories/decisions/hermes.md",
-    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md"
+    "/Users/brais/VSCODE/hermes-sandbox/CLAUDE.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "from-docs"
   },
@@ -301,17 +324,20 @@
    "parent": "zb-hermes-eu",
    "summary": "pgvector Postgres 17 that backs the Chatwoot instance.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Image pgvector/pgvector:pg17; port 5432 TCP; volume /var/lib/postgresql/data; port forwarding enabled",
     "Status RUNNING (service get)",
     "Dumped with pg_dumpall by the host-side backup script (one-off run 2026-10-06)",
     "Which Rails/Sidekiq env var points at it was not checked; the Chatwoot link is inferred from the stack"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -322,13 +348,14 @@
    "parent": "zb-hermes-eu",
    "summary": "Chatwoot v4.16.2 community edition web app used as the shared inbox/WhatsApp front for the lead bot.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Image chatwoot/chatwoot:v4.16.2-ce; port 3000; storage volume /app/storage; custom /docker/entrypoint.sh config file",
     "Public generated domain bl-chatwoot.zeabur.app (HTTP 200 on 2026-10-06)",
     "Status RUNNING; account signup and enterprise features are controlled by env names ENABLE_ACCOUNT_SIGNUP and DISABLE_ENTERPRISE",
     "Chatwoot upgraded to 4.17.0 per the 2026-10-18 Hermes session summary (not re-checked live; the image detail above is from 2026-10-06)",
     "Per the same summary: widget rate limits off (ENABLE_RACK_ATTACK_WIDGET_API=false), assets gzipped at boot, 1 GiB limits; two Chatwoot accounts serve biglobster.top and shoroban.com"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "Chatwoot",
@@ -339,7 +366,9 @@
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "from-docs"
   },
@@ -350,16 +379,19 @@
    "parent": "zb-hermes-eu",
    "summary": "Chatwoot background job worker running the same image as rails.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Image chatwoot/chatwoot:v4.16.2-ce with a sidekiq command; no ports; shares the /app/storage volume id",
     "Status RUNNING (service get)",
     "Chatwoot upgraded to 4.17.0 per the 2026-10-18 Hermes session summary (not re-checked live; the image detail above is from 2026-10-06)"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "from-docs"
   },
@@ -370,15 +402,18 @@
    "parent": "zb-hermes-eu",
    "summary": "Redis Stack server used by Chatwoot for cache and Sidekiq queues.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Image redis/redis-stack-server:latest; port 6379 TCP; volume /data; port forwarding enabled",
     "Status RUNNING; dumped with a forced SAVE by the host-side backup script"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -389,20 +424,23 @@
    "parent": "zb-hermes-eu",
    "summary": "Chatwoot agent bot that answers website/WhatsApp visitors with an LLM.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Image built by Zeabur from an uploaded source (registry-oci.zeabur.cloud), not from a Git repo; port 8080; created 2026-08-14",
     "Public generated domain bl-whatsapp-bot.zeabur.app (404 at root, webhook-style)",
     "Env names show its wiring: CHATWOOT_BASE_URL, CHATWOOT_AGENT_BOT_TOKEN, OPENROUTER_API_KEY, VISITOR_AGENT_MODEL, WEBHOOK_SHARED_SECRET",
     "Status RUNNING (service get)",
     "Live as the web-chat lead bot on biglobster.top and shoroban.com since 2026-10-13..18 (one Chatwoot account, agent bot and webhook secret per site; env names include per-account agentBotToken/webhookSecret settings); direct-deployed, a merge never updates it (Hermes session summary 2026-10-18)"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
     "/Users/brais/VSCODE/hermes-sandbox/WHATSAPP-BOT-PLAN.md (file name only)",
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -413,18 +451,21 @@
    "parent": "zb-grow-shop",
    "summary": "Node API that sends offer emails for the grow-shop.com domain sale, with Turnstile verification.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Git-sourced from br41s/grow-shop-api main (Zeabur's last deployment record still names the old owner handle braisntext); plan type nodejs, port 8080; latest deploy 2026-07-23",
     "Generated domain grow-shop-api.zeabur.app (404 at root, API only)",
     "Env names: RESEND_API_KEY, TO_EMAIL, TURNSTILE_SECRET_KEY (email sent through Resend)",
     "Status RUNNING; push to main auto-deploys"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur deployment list --service-id <id> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md"
+    "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -435,17 +476,20 @@
    "parent": "zb-grow-shop",
    "summary": "Static landing page whose purpose is to sell the grow-shop.com domain.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Git-sourced from br41s/grow-shop-landing main; plan type static, port 8080; latest deploy 2026-07-23",
     "Custom domain grow-shop.com, status PROVISIONED, HTTP 200 on 2026-10-06",
     "Status RUNNING"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur deployment list --service-id <id> -i=false --json",
-    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/README.md"
+    "/Users/brais/VSCODE/grow-shop/grow-shop-landing/README.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -456,19 +500,22 @@
    "parent": "zb-social-agenda",
    "summary": "Flask web process of SocialAgenda (RUN_SCHEDULER=0).",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Git-sourced from br41s/SocialAgenda main, Dockerfile build; latest deploy 2026-10-03 (e88741f); port 8080",
     "Domains: socialagenda.biglobster.top (custom, since 2026-10-03, DNS straight at Zeabur with no Cloudflare proxy) and socialagenda.zeabur.app (generated); the former agenda.experiencianatural.com was detached 2026-10-03",
     "Env names: DATABASE_URL, BASE_URL, BREVO_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, TAVILY_API_KEY, TURNSTILE_*, SUPERUSER_*",
     "Status RUNNING; HTTP 200 on 2026-10-06"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur deployment list --service-id <id> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
+    "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -479,16 +526,19 @@
    "parent": "zb-social-agenda",
    "summary": "Dedicated SocialAgenda process (RUN_SCHEDULER=1) that sends reminders and alerts so the web workers never double-send.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Same repo and Dockerfile as web; no public domain; port 8080",
     "Env names include DATABASE_URL, BREVO_API_KEY, GROQ_API_KEY",
     "Status RUNNING"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/SocialAgenda/README.md"
+    "/Users/brais/VSCODE/SocialAgenda/README.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -499,16 +549,19 @@
    "parent": "zb-social-agenda",
    "summary": "Postgres 18 holding SocialAgenda's production data.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Image postgres:18; 10 GiB volume at /var/lib/postgresql/18/docker; port forwarding enabled; custom postgresql.conf",
     "Status RUNNING; dumped with pg_dumpall by the host-side backup script",
     "Verified 392 rows exact after the Frankfurt clone (2026-07-22)"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -519,6 +572,7 @@
    "parent": "zb-biglobster",
    "summary": "BigLobster website (Eleventy static build served by Node) plus the legacy 'sentinel' backend and its contact/agent endpoints.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Git-sourced from br41s/biglobster main, Dockerfile build with a Caddyfile config; latest deploy 2026-10-06; port 8080",
     "Domains: biglobster.top and www.biglobster.top (custom, www 301s to the apex), biglobster.zeabur.app (generated); HTTP 200 on 2026-10-06",
     "Volume /app/data (10 GiB) holds sentinel.db",
@@ -526,7 +580,7 @@
     "The COO role moved to Hermes; this service only keeps the web shell and legacy agents",
     "Status RUNNING"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "biglobster.top",
@@ -538,7 +592,9 @@
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur deployment list --service-id <id> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/biglobster/CLAUDE.md"
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -549,15 +605,18 @@
    "parent": "zb-biglobster",
    "summary": "10 GiB volume with the BigLobster sentinel.db SQLite file.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Mounted at /app/data on biglobster-osee (export)",
     "sentinel.db copied byte-exact to Frankfurt and static since 2026-06-04",
     "Backed up with the SQLite online-backup API by the host-side script (one-off run 2026-10-06)"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/memories/decisions/hermes.md"
+    "/Users/brais/VSCODE/memories/decisions/hermes.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "from-docs"
   },
@@ -568,13 +627,14 @@
    "parent": "zb-biglobster",
    "summary": "The reference/staging deployment of bl-site-package ('blcliente'); every release is validated here before a customer host.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Git-sourced from br41s/bl-site-package main, Dockerfile build; latest deploy 2026-10-05; port 8080",
     "Generated domain blcliente.zeabur.app; HTTP 200 on 2026-10-06",
     "Fleet manifest: id blcliente, role reference, host zeabur, driver zeabur, Hermes profile bl-site-package",
     "Export shows no persistent volume (SQLite lives in the container filesystem)",
     "Status RUNNING"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "blcliente",
@@ -586,7 +646,9 @@
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur deployment list --service-id <id> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json"
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -597,15 +659,17 @@
    "parent": "zb-biglobster",
    "summary": "Leftover Pending Hermes pod from the pre-split BigLobster project, claiming a volume that does not exist in its namespace.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Image tag braisntext/hermes-sandbox:latest (old owner handle); invisible to Zeabur and not counted among its services",
     "Noted 2026-10-06 as an open cleanup item; left untouched",
     "Cannot be removed with the Zeabur CLI because it does not see it; needs kubectl on the host"
    ],
-   "status": "unknown",
+   "status": "retired",
    "links": [],
    "sources": [
     "/Users/brais/VSCODE/memories/decisions/hermes.md",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "from-docs"
   },
@@ -616,15 +680,18 @@
    "parent": "zb-flywell",
    "summary": "Postgres 18 for FlyWell (Drizzle schema).",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Image postgres:18; port forwarding enabled; custom postgresql.conf; status RUNNING",
     "Dumped with pg_dumpall by the host-side backup script"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/FlyWell/README.md"
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -635,20 +702,23 @@
    "parent": "zb-flywell",
    "summary": "Public FlyWell web app (dashboard, login, cron webhooks).",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Git-sourced from br41s/FlyWell main, Dockerfile; latest deploy 2026-10-05; HTTP health check on /login",
     "Custom domain flywell.biglobster.top (307 to /login on 2026-10-06)",
     "Env names: DATABASE_URL, FLI_BASE_URL, SERPAPI_KEY, TELEGRAM_BOT_TOKEN, CRON_SHARED_SECRET (cron-job.org hits two protected webhooks)",
     "A push to main deploys at once, so migrations run before merge",
     "Status RUNNING"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur deployment list --service-id <id> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/FlyWell/README.md"
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -659,15 +729,18 @@
    "parent": "zb-flywell",
    "summary": "Internal-only Python flight-search service (apps/fli-service) called by flywell-web.",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Same repo, root directory apps/fli-service; no public domain on purpose",
     "Status RUNNING"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur project export -n <project> -i=false (piped through a structure-only filter; env values never printed)",
-    "/Users/brais/VSCODE/FlyWell/README.md"
+    "/Users/brais/VSCODE/FlyWell/README.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -678,11 +751,12 @@
    "parent": "zb-experiencianatural",
    "summary": "Static single-file home page (illustrated valley with a seed-catching game).",
    "details": [
+    "Retired 2026-11-09: its Zeabur project is gone from 'zeabur project list -i=false'; the workload moved to Coolify on Netcup (Zeabur exit, 2026-11-04/05)",
     "Git-sourced from br41s/experiencianatural-home main, plan type static; latest deploy 2026-09-27",
     "Domains experiencianatural.com and www.experiencianatural.com (Zeabur redirects www to the apex), proxied by Cloudflare",
     "Status RUNNING; HTTP 200 on 2026-10-06"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "experiencianatural.com",
@@ -693,7 +767,9 @@
     "zeabur service get --id <id> --env-id <env> -i=false --json",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
     "zeabur deployment list --service-id <id> -i=false --json",
-    "/Users/brais/VSCODE/experiencianatural-home/README.md"
+    "/Users/brais/VSCODE/experiencianatural-home/README.md",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -1132,6 +1208,7 @@
    "parent": "layer-hosting",
    "summary": "DNS and proxy for experiencianatural.com, plus the Turnstile captcha used across Brais's apps.",
    "details": [
+    "2026-11-09: DNS for biglobster.top is on Cloudflare (migration runbook); it fronts Coolify (Traefik) on Netcup. Zeabur's HTTP/3 stall reason for the proxy no longer applies. R2 bucket vps-db-backups holds Coolify's Postgres dumps (cloudflare-r2). Cloudflare Pages was planned 2026-10-21 and dropped 2026-11-04 in favor of Coolify",
     "experiencianatural.com uses Cloudflare nameservers and its apex/www resolve to Cloudflare edge addresses, i.e. proxied (dig, 2026-10-06); SSL mode Full (not strict) per the 2026-09-27 decision",
     "Reason for the proxy: Zeabur's HTTP/3 edge stalled Safari; via Cloudflare 4/4 runs were clean",
     "Decision 2026-09-27: BigLobster apps live as subdomains of experiencianatural.com and are marketed from biglobster.top; email forwarding on experiencianatural.com 'untouched' (provider not stated)",
@@ -1150,7 +1227,9 @@
     "dig NS/A experiencianatural.com",
     "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
     "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
-    "/Users/brais/VSCODE/experiencianatural-home/README.md"
+    "/Users/brais/VSCODE/experiencianatural-home/README.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
    ],
    "confidence": "verified"
   },
@@ -1291,6 +1370,7 @@
    "parent": "namecheap",
    "summary": "Main brand domain: marketing site and the legal reference for every app.",
    "details": [
+    "Now served by the biglobster app on Coolify (Netcup) since 2026-11-05; was a Zeabur custom domain. DNS is on Cloudflare per the migration runbook",
     "Zeabur custom domain on biglobster-osee, PROVISIONED; www 301s to the apex; HTTP 200",
     "Legal owner: Biglobster LLC (New Mexico); every project links here (decision 2026-10-02)",
     "Hosts the subdomains socialagenda. and flywell."
@@ -1305,7 +1385,8 @@
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
    ],
    "confidence": "verified"
   },
@@ -1316,6 +1397,7 @@
    "parent": "namecheap",
    "summary": "Public address of SocialAgenda since 2026-10-03.",
    "details": [
+    "Served by SocialAgenda on Coolify since 2026-11-04 (was Zeabur)",
     "Zeabur custom domain on SocialAgenda web; DNS at Namecheap straight to Zeabur, no Cloudflare proxy; Turnstile hostname added",
     "Replaced agenda.experiencianatural.com"
    ],
@@ -1329,7 +1411,9 @@
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "/Users/brais/VSCODE/SocialAgenda/tasks/todo.md"
+    "/Users/brais/VSCODE/SocialAgenda/tasks/todo.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
    ],
    "confidence": "verified"
   },
@@ -1340,6 +1424,7 @@
    "parent": "namecheap",
    "summary": "Public address of FlyWell.",
    "details": [
+    "Served by FlyWell on Coolify since 2026-11-04 (was Zeabur)",
     "Zeabur custom domain on flywell-web; HTTP 307 to /login"
    ],
    "status": "live",
@@ -1351,7 +1436,9 @@
    ],
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
-    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
    ],
    "confidence": "verified"
   },
@@ -1362,6 +1449,7 @@
    "parent": "namecheap",
    "summary": "Domain that is itself for sale; its landing page is on Zeabur.",
    "details": [
+    "Served by grow-shop-landing on Coolify since 2026-11-04 (was Zeabur); stays registered at Namecheap with A records edited by Brais",
     "Zeabur custom domain on grow-shop-landing; HTTP 200"
    ],
    "status": "live",
@@ -1373,7 +1461,9 @@
    ],
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
-    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
    ],
    "confidence": "verified"
   },
@@ -1384,6 +1474,7 @@
    "parent": "cloudflare",
    "summary": "Home of the experiencianatural page; the planned parent for BigLobster app subdomains.",
    "details": [
+    "Served by experiencianatural-home on Coolify since 2026-11-04 (was Zeabur); the 2026-10-21 Cloudflare Pages plan was replaced by Coolify (decision 2026-11-02, hostnames decided 2026-11-04)",
     "Cloudflare DNS, proxied (orange cloud); Zeabur custom domain on 'home'; www redirects to the apex",
     "Email forwarding is set up at the domain and was left untouched"
    ],
@@ -1397,7 +1488,9 @@
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
     "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "/Users/brais/VSCODE/memories/decisions/socialagenda.md"
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
    ],
    "confidence": "verified"
   },
@@ -1450,9 +1543,10 @@
    "parent": "zeabur",
    "summary": "Zeabur-generated address: Hermes panel (GitHub/Nous OAuth login); HTTP 302 to the login page.",
    "details": [
+    "Retired 2026-11-09: Zeabur-generated address died with the Zeabur project; replaced by hermes/hook/chat/wa/cliente.biglobster.top on Coolify (runbook hostnames decided 2026-11-04)",
     "Generated domain, PROVISIONED; port dashboard 9119"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "blhermes.zeabur.app",
@@ -1461,7 +1555,9 @@
    ],
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
-    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -1472,9 +1568,10 @@
    "parent": "zeabur",
    "summary": "Zeabur-generated address: Hermes webhook port; HTTP 404 at the root.",
    "details": [
+    "Retired 2026-11-09: Zeabur-generated address died with the Zeabur project; replaced by hermes/hook/chat/wa/cliente.biglobster.top on Coolify (runbook hostnames decided 2026-11-04)",
     "Generated domain, PROVISIONED; port webhook 8644"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "hermes-webhook.zeabur.app",
@@ -1483,7 +1580,9 @@
    ],
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
-    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -1494,9 +1593,10 @@
    "parent": "zeabur",
    "summary": "Zeabur-generated address: Chatwoot web; HTTP 200.",
    "details": [
+    "Retired 2026-11-09: Zeabur-generated address died with the Zeabur project; replaced by hermes/hook/chat/wa/cliente.biglobster.top on Coolify (runbook hostnames decided 2026-11-04)",
     "Generated domain, PROVISIONED; port web 3000"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "bl-chatwoot.zeabur.app",
@@ -1505,7 +1605,9 @@
    ],
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
-    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -1516,9 +1618,10 @@
    "parent": "zeabur",
    "summary": "Zeabur-generated address: WhatsApp lead bot endpoint; HTTP 404 at the root.",
    "details": [
+    "Retired 2026-11-09: Zeabur-generated address died with the Zeabur project; replaced by hermes/hook/chat/wa/cliente.biglobster.top on Coolify (runbook hostnames decided 2026-11-04)",
     "Generated domain, PROVISIONED; port web 8080"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "bl-whatsapp-bot.zeabur.app",
@@ -1527,7 +1630,9 @@
    ],
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
-    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -1538,9 +1643,10 @@
    "parent": "zeabur",
    "summary": "Zeabur-generated address: bl-site-package reference instance; HTTP 200.",
    "details": [
+    "Retired 2026-11-09: Zeabur-generated address died with the Zeabur project; replaced by hermes/hook/chat/wa/cliente.biglobster.top on Coolify (runbook hostnames decided 2026-11-04)",
     "Generated domain, PROVISIONED; port web 8080"
    ],
-   "status": "live",
+   "status": "retired",
    "links": [
     {
      "label": "blcliente.zeabur.app",
@@ -1549,7 +1655,9 @@
    ],
    "sources": [
     "dig NS/A/CNAME (2026-10-06)",
-    "zeabur domain list --id <id> --env-id <env> -i=false --json"
+    "zeabur domain list --id <id> --env-id <env> -i=false --json",
+    "zeabur project list -i=false (no projects, 2026-11-09)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -1604,6 +1712,7 @@
    "parent": "cc-hooks",
    "summary": "Global Claude Code hook and deny rules that block the six Zeabur CLI verbs that delete infrastructure or spend money.",
    "details": [
+    "2026-11-09: Zeabur has no projects and no live server any more, so the hook now guards an inert account; kept until the account is closed",
     "Hook script ~/.claude/hooks/block-zeabur-destructive.sh exists; settings.json mentions zeabur 26 times (deny rules plus the PreToolUse hook)",
     "Blocked: deleting a project or a service, renting a server, purchasing or renewing a domain, adding AI Hub balance; the regex scans the whole command so bash -c, pinned npx versions and bare zeabur are caught",
     "Fires even for allow-listed 'zeabur project *' and 'zeabur service *'; do not disable it: it is the primary spend and delete control on a personal account",
@@ -1615,7 +1724,8 @@
    "sources": [
     "/Users/brais/.claude/projects/-Users-brais-VSCODE/memory/project_zeabur_guardrail.md",
     "ls ~/.claude/hooks",
-    "grep -c zeabur ~/.claude/settings.json"
+    "grep -c zeabur ~/.claude/settings.json",
+    "zeabur project list -i=false (no projects, 2026-11-09)"
    ],
    "confidence": "verified"
   },
@@ -1624,8 +1734,9 @@
    "label": "Zeabur template exports (~/Backups/zeabur)",
    "kind": "config",
    "parent": "layer-hosting",
-   "summary": "Dated Zeabur project template exports, with variable values, kept on the Mac and in Drive: the only off-server copy of env vars and config files.",
+   "summary": "Dated Zeabur project template exports (with variable values) kept on the Mac and in Drive, taken before the Zeabur exit; the source for the env values copied into Coolify.",
    "details": [
+    "2026-11-09: Zeabur is closed out; these exports predate the move and are now history. Coolify app env is the live copy of variables",
     "Directories 2026-10-05 and 2026-10-06, each with six YAMLs: hermes-eu, grow-shop, social-agenda, biglobster, flywell, experiencianatural (B_Browser is not exported)",
     "The 2026-10-05 set was also copied to Google Drive (My Drive/Backups/zeabur/2026-10-05) with identical checksums; unencrypted by Brais's choice",
     "zeabur_export_stream.py streams exports into a gpg pipe; only the .sha256 of that encrypted archive remains on disk",
@@ -1638,21 +1749,22 @@
     "/Users/brais/VSCODE/memories/decisions/workspace.md",
     "/Users/brais/VSCODE/memories/decisions/hermes.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs"
   },
   {
    "id": "backup-volumes-host",
    "label": "Host-side volume dump (backup-volumes.sh)",
    "kind": "cron-job",
    "parent": "zeabur-frankfurt",
-   "summary": "Root script on the Frankfurt host that dumps every other project's data volume nightly and uploads it to Google Drive, pruning old stamps.",
+   "summary": "Root script on the Netcup host (ported from Frankfurt on 2026-11-05) that dumps the other services' data nightly and uploads it to Google Drive, pruning old stamps.",
    "details": [
-    "Dumps: pg_dumpall for the Chatwoot, SocialAgenda and FlyWell Postgres, Redis SAVE, BigLobster sentinel SQLite via the backup API, tars of the idle Chrome/CDP volumes",
-    "Stages root-only in /var/backups/volumes/<stamp>, uploads with the host's own rclone to hermesdrive:/VolumeBackups/<stamp> and fails unless rclone check passes",
-    "First run 2026-10-06 (192 MB, all dumps verified); PR hermes-sandbox#415 merged 2026-10-06",
-    "Scheduled nightly at 02:00 host time (host clock UTC+8, so 18:00 UTC; earlier notes said 02:00 UTC, corrected 2026-10-08) since 2026-10-06 by /etc/cron.d/backup-volumes through backup-volumes-cron.sh, which appends one OK / FAILED line per run to /var/log/backup-volumes.log (hermes-sandbox#416 merged to main; install on the host is per the ops README, not re-verified over SSH)",
-    "Retention (Brais, 2026-10-06): 14 days of stamps on the host, 30 in Drive, pruned by the script only after that night's upload verified; about 0.7 GB on the host and 1.5 GB in Drive at steady state",
-    "Failure coverage since 2026-10-08: the Hermes incident watcher checks the outcome in Drive (newest folder under 50h old holding the three Postgres dumps of at least 1 KB; rclone refusing counts as blind). Gap: a failed final rclone check after the dumps landed shows only in the host log. The Drive folder is unencrypted by choice and readable with the container's OAuth token"
+    "Dumps: pg_dumpall for the three Postgres (Chatwoot, SocialAgenda, FlyWell), the Chatwoot Redis RDB (SAVE must reply OK), the bl-site-package reference site's SQLite via the online backup API, tars of Chatwoot storage and the site's uploads; every dump size- and gzip-checked",
+    "Stages root-only in /var/backups/volumes/<stamp>, uploads with the host's own rclone to hermesdrive:/VolumeBackups/<stamp> (same folder and dump names as on Zeabur, so the watcher keeps working) and fails unless rclone check passes",
+    "Scheduled nightly at 19:00 host time (Europe/Berlin) by /etc/cron.d/backup-volumes via backup-volumes-cron.sh, one OK / FAILED line per run in /var/log/backup-volumes.log",
+    "Retention (Brais, 2026-10-06): 14 days on the host, 30 in Drive, pruned only after that night's upload verified",
+    "The three dumps were restored from Drive into throwaway containers on 2026-11-05, row counts equal to live",
+    "Failure coverage: the Hermes incident watcher checks the newest Drive folder (under 50h old, three Postgres dumps); gap: a failed final rclone check shows only in the host log. Drive folder is unencrypted by choice",
+    "Before 2026-11-05 this ran on the Frankfurt Zeabur host (02:00 host time, UTC+8)"
    ],
    "status": "live",
    "links": [],
@@ -1663,7 +1775,8 @@
     "git log in hermes-sandbox (commits 0649dfe706, 457d8d1074)",
     "/Users/brais/VSCODE/memories/decisions/hermes.md",
     "/Users/brais/VSCODE/hermes-sandbox/ops/backup-volumes-cron.sh",
-    "git log in hermes-sandbox (commit 1dbaa9f14a)"
+    "git log in hermes-sandbox (commit 1dbaa9f14a)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "from-docs"
   },
@@ -1727,6 +1840,364 @@
     "memories/decisions/chatmemo.md"
    ],
    "confidence": "verified"
+  },
+  {
+   "id": "netcup",
+   "label": "Netcup",
+   "kind": "platform",
+   "parent": "layer-hosting",
+   "summary": "VPS provider of the Zeabur exit target: one VPS Lite 2 G12.5s in Nuremberg that runs Coolify and every app that left Zeabur.",
+   "details": [
+    "Chosen 2026-11-02: 4 vCore / 8 GB / 160 GB SSD, Nuremberg (DE), EUR 9.50/mo incl. VAT, 3-month minimum; GDPR art. 28 DPA signed in the control panel",
+    "Replaced the 2026-10-21 choice of OVHcloud VPS-3: no EU VPS stock at OVH on migration day, Hetzner out since 2026-06, Contabo checkout failed",
+    "Rejected: Lite 3 (16 GB), VPS 2000, Hostinger KVM 4 (24-month term), UpCloud, OVH Public Cloud / Hetzner auction",
+    "No Netcup MCP or third-party CLI (none official); the whole migration was done over SSH"
+   ],
+   "status": "live",
+   "links": [
+    {
+     "label": "Netcup control panel",
+     "url": "https://www.customercontrolpanel.de"
+    }
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "netcup-nue",
+   "label": "netcup-nue (Netcup VPS, Nuremberg)",
+   "kind": "server",
+   "parent": "netcup",
+   "summary": "Debian 13 VPS that runs Coolify, Traefik and all of Brais's always-on apps since the 2026-11-04/05 migration; reached by SSH alias netcup-nue.",
+   "details": [
+    "Debian 13 kept instead of reinstalling Ubuntu; Docker and Coolify 4.6.0 installed cleanly (2026-11-04). Docker replaces k3s",
+    "Load plan: 4 GB swap file, concurrent builds = 1, no deploys during Hermes' nightly jobs",
+    "SSH: PermitRootLogin prohibit-password because Coolify manages the host over root SSH; key has a passphrase and is used through the agent. Differs from the Frankfurt server on purpose",
+    "Docker bypasses ufw: docker-user-firewall.service drops Coolify's ports 8000/6001/6002 in the DOCKER-USER chain, so the panel is reached only by SSH tunnel (all three ports, over 127.0.0.1)",
+    "Traefik files Coolify does not manage, in /data/coolify/proxy/dynamic/: hermes-webhooks.yaml (hook host to hermes:8644), coolify-webhooks.yaml (deploy host, only /webhooks/, so GitHub can reach Coolify) and www-redirects.yaml (301s)",
+    "Nightly backup-volumes.sh runs here as root (cron) and uploads to Drive; the incident watcher reads the Drive folder"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify",
+   "label": "Coolify",
+   "kind": "platform",
+   "parent": "netcup-nue",
+   "summary": "Self-hosted PaaS (Docker + Traefik) on netcup-nue; builds and runs every app that left Zeabur and backs up its databases to Cloudflare R2.",
+   "details": [
+    "Panel and API only through the SSH tunnel; GitHub push webhooks arrive on the deploy.biglobster.top /webhooks/ route",
+    "Env values live in each Coolify app's env, never in a transcript; secrets are runtime-only where the build does not need them (build-time env becomes a Docker ARG)",
+    "Redeploy can start the new container before stopping the old one, which is unsafe for Hermes; Hermes deploys with scripts/deploy.sh (stop, move tag, start; API over SSH, token on stdin)",
+    "Coolify backs up databases only: three Postgres to R2 bucket vps-db-backups, 03:00 UTC, 30 days (the incident watcher does not read it)",
+    "Static sites run on Coolify rather than Cloudflare Pages (decision 2026-11-04); they go down with the server, moving them to Pages later is easy"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify-hermes",
+   "label": "Hermes (Coolify app)",
+   "kind": "service",
+   "parent": "coolify",
+   "summary": "Hermes gateway container from the GHCR image, on Coolify since 2026-11-05; the agent's internals are mapped under the Hermes node.",
+   "details": [
+    "Coolify app switched 2026-11-05 01:49-01:59 UTC, then moved to main (sha-5b3f28f02); Zeabur's copy was kept suspended as rollback until the account closed",
+    "Deploy: scripts/deploy.sh (hermes-sandbox#513): stop, move the image tag, start; a failed ssh is never read as a stopped container",
+    "Ports: webhook 8644 (hook.biglobster.top via Traefik), panel 9119, 8080; volume /opt/data"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md",
+    "/Users/brais/VSCODE/memories/decisions.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify-chatwoot",
+   "label": "Chatwoot stack (Coolify)",
+   "kind": "service",
+   "parent": "coolify",
+   "summary": "Chatwoot (rails, sidekiq, Postgres pgvector, Redis) that was the hermes-eu support stack, moved to Coolify on 2026-11-05.",
+   "details": [
+    "Hostname chat.biglobster.top (decided 2026-11-04); Meta WhatsApp Cloud webhook and the two Chatwoot agent bots needed repointing by Brais",
+    "Postgres in the R2 dumps and the Drive volume backup; Chatwoot storage tarred by backup-volumes.sh (Coolify does not back up volumes)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify-whatsapp-lead-bot",
+   "label": "WhatsApp lead bot (Coolify)",
+   "kind": "service",
+   "parent": "coolify",
+   "summary": "Chatwoot agent bot (BigLobster and Shoroban lead bots) on Coolify at wa.biglobster.top.",
+   "details": [
+    "Moved from Zeabur with hermes-eu on 2026-11-05 (runbook plan); built from hermes-sandbox scripts/whatsapp-lead-bot"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify-biglobster",
+   "label": "biglobster apps (Coolify)",
+   "kind": "service",
+   "parent": "coolify",
+   "summary": "The biglobster site and API, plus bl-site-package (cliente.biglobster.top), on Coolify since 2026-11-05.",
+   "details": [
+    "Moved from Zeabur 2026-11-04/05 (decision 2026-11-02 'Done' list; runbook inventory)",
+    "biglobster apex and www redirect to biglobster.top; www 301s are a Traefik file because Coolify's own redirect is a 302",
+    "sentinel.db volume: the last Drive copy expires about 2026-12-04, the Zeabur volume goes with the account (decision 2026-11-05)",
+    "Rate limiting keys on CF-Connecting-IP behind Cloudflare, trust-proxy hops stay 1 (decision 2026-11-05)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify-grow-shop",
+   "label": "grow-shop apps (Coolify)",
+   "kind": "service",
+   "parent": "coolify",
+   "summary": "grow-shop-landing (grow-shop.com) and grow-shop-api (api.grow-shop.com) on Coolify since 2026-11-04.",
+   "details": [
+    "Moved from Zeabur 2026-11-04/05 (decision 2026-11-02 'Done' list; runbook inventory)",
+    "API was Nixpacks-built; landing is static"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify-social-agenda",
+   "label": "SocialAgenda (Coolify)",
+   "kind": "service",
+   "parent": "coolify",
+   "summary": "SocialAgenda web, scheduler (RUN_SCHEDULER) and Postgres on Coolify since 2026-11-04.",
+   "details": [
+    "Moved from Zeabur 2026-11-04/05 (decision 2026-11-02 'Done' list; runbook inventory)",
+    "No code change needed (BASE_URL env); no CF-Worker check or /64 key yet (open in decision 2026-11-05)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify-flywell",
+   "label": "FlyWell (Coolify)",
+   "kind": "service",
+   "parent": "coolify",
+   "summary": "FlyWell web, fli-service and Postgres on Coolify since 2026-11-04; cron-job.org still triggers the protected webhooks.",
+   "details": [
+    "Moved from Zeabur 2026-11-04/05 (decision 2026-11-02 'Done' list; runbook inventory)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "coolify-experiencianatural",
+   "label": "experiencianatural-home (Coolify)",
+   "kind": "service",
+   "parent": "coolify",
+   "summary": "Static experiencianatural.com site on Coolify since 2026-11-04, behind Cloudflare.",
+   "details": [
+    "Moved from Zeabur 2026-11-04/05 (decision 2026-11-02 'Done' list; runbook inventory)"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "cloudflare-r2",
+   "label": "Cloudflare R2 (vps-db-backups)",
+   "kind": "service",
+   "parent": "cloudflare",
+   "summary": "R2 bucket that receives Coolify's nightly Postgres dumps.",
+   "details": [
+    "Bucket vps-db-backups, 03:00 UTC, 30 days retention; covers the three Postgres databases only, no volumes",
+    "The incident watcher does not read it"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-hermes-biglobster-top",
+   "label": "hermes.biglobster.top",
+   "kind": "domain",
+   "parent": "domain-biglobster-top",
+   "summary": "Hermes panel on Coolify.",
+   "details": [
+    "Hostname decided 2026-11-04 to replace the Zeabur-generated address"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-hook-biglobster-top",
+   "label": "hook.biglobster.top",
+   "kind": "domain",
+   "parent": "domain-biglobster-top",
+   "summary": "Hermes webhook (GitHub PR trigger for the auditor) on Coolify.",
+   "details": [
+    "Hostname decided 2026-11-04 to replace the Zeabur-generated address; port 8644 via hermes-webhooks.yaml"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-deploy-biglobster-top",
+   "label": "deploy.biglobster.top",
+   "kind": "domain",
+   "parent": "domain-biglobster-top",
+   "summary": "Coolify GitHub push webhooks only (/webhooks/) on Coolify.",
+   "details": [
+    "Hostname decided 2026-11-04 to replace the Zeabur-generated address; panel stays behind the SSH tunnel"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-chat-biglobster-top",
+   "label": "chat.biglobster.top",
+   "kind": "domain",
+   "parent": "domain-biglobster-top",
+   "summary": "Chatwoot on Coolify.",
+   "details": [
+    "Hostname decided 2026-11-04 to replace the Zeabur-generated address"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-wa-biglobster-top",
+   "label": "wa.biglobster.top",
+   "kind": "domain",
+   "parent": "domain-biglobster-top",
+   "summary": "WhatsApp lead bot on Coolify.",
+   "details": [
+    "Hostname decided 2026-11-04 to replace the Zeabur-generated address"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-cliente-biglobster-top",
+   "label": "cliente.biglobster.top",
+   "kind": "domain",
+   "parent": "domain-biglobster-top",
+   "summary": "bl-site-package reference site on Coolify.",
+   "details": [
+    "Hostname decided 2026-11-04 to replace the Zeabur-generated address"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "domain-api-grow-shop-com",
+   "label": "api.grow-shop.com",
+   "kind": "domain",
+   "parent": "domain-grow-shop-com",
+   "summary": "grow-shop-api on Coolify.",
+   "details": [
+    "Hostname decided 2026-11-04, replacing grow-shop-api.zeabur.app; grow-shop.com DNS stays at Namecheap"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
   }
  ],
  "edges": [
@@ -2532,58 +3003,53 @@
   },
   {
    "source": "domain-biglobster-top",
-   "target": "zb-biglobster-osee",
+   "target": "coolify-biglobster",
    "kind": "routes-to",
-   "label": "A record to Zeabur; Zeabur custom domain",
+   "label": "Coolify (Traefik) on Netcup",
    "sources": [
-    "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "dig"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs"
   },
   {
    "source": "domain-socialagenda-biglobster-top",
-   "target": "zb-social-agenda-web",
+   "target": "coolify-social-agenda",
    "kind": "routes-to",
-   "label": "DNS straight to Zeabur",
+   "label": "Coolify (Traefik) on Netcup",
    "sources": [
-    "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "dig"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs"
   },
   {
    "source": "domain-flywell-biglobster-top",
-   "target": "zb-flywell-web",
+   "target": "coolify-flywell",
    "kind": "routes-to",
-   "label": "DNS straight to Zeabur",
+   "label": "Coolify (Traefik) on Netcup",
    "sources": [
-    "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "dig"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs"
   },
   {
    "source": "domain-grow-shop-com",
-   "target": "zb-grow-shop-landing",
+   "target": "coolify-grow-shop",
    "kind": "routes-to",
-   "label": "DNS straight to Zeabur",
+   "label": "Coolify (Traefik) on Netcup",
    "sources": [
-    "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "dig"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs"
   },
   {
    "source": "domain-experiencianatural-com",
-   "target": "zb-experiencianatural-home",
+   "target": "coolify-experiencianatural",
    "kind": "routes-to",
-   "label": "via Cloudflare proxy",
+   "label": "Coolify (Traefik) on Netcup",
    "sources": [
-    "zeabur domain list --id <id> --env-id <env> -i=false --json",
-    "dig"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs"
   },
   {
    "source": "domain-blhermes-zeabur-app",
@@ -2707,7 +3173,7 @@
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-social-agenda-postgresql",
+   "target": "coolify-social-agenda",
    "kind": "reads",
    "label": "dump of the project volume",
    "sources": [
@@ -2717,7 +3183,7 @@
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-flywell-postgresql",
+   "target": "coolify-flywell",
    "kind": "reads",
    "label": "dump of the project volume",
    "sources": [
@@ -2727,7 +3193,7 @@
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-hermes-eu-postgresql",
+   "target": "coolify-chatwoot",
    "kind": "reads",
    "label": "dump of the project volume",
    "sources": [
@@ -2737,17 +3203,7 @@
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-hermes-eu-redis",
-   "kind": "reads",
-   "label": "dump of the project volume",
-   "sources": [
-    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
-   ],
-   "confidence": "from-docs"
-  },
-  {
-   "source": "backup-volumes-host",
-   "target": "zb-biglobster-osee-data",
+   "target": "coolify-biglobster",
    "kind": "reads",
    "label": "dump of the project volume",
    "sources": [
@@ -2818,6 +3274,257 @@
     "/Users/brais/VSCODE/FinView/docs/deployment.md"
    ],
    "confidence": "verified"
+  },
+  {
+   "source": "domain-hermes-biglobster-top",
+   "target": "coolify-hermes",
+   "kind": "routes-to",
+   "label": "Traefik on Netcup",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-hook-biglobster-top",
+   "target": "coolify-hermes",
+   "kind": "routes-to",
+   "label": "Traefik on Netcup",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-deploy-biglobster-top",
+   "target": "coolify",
+   "kind": "routes-to",
+   "label": "Traefik on Netcup",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-chat-biglobster-top",
+   "target": "coolify-chatwoot",
+   "kind": "routes-to",
+   "label": "Traefik on Netcup",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-wa-biglobster-top",
+   "target": "coolify-whatsapp-lead-bot",
+   "kind": "routes-to",
+   "label": "Traefik on Netcup",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-cliente-biglobster-top",
+   "target": "coolify-biglobster",
+   "kind": "routes-to",
+   "label": "Traefik on Netcup",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "domain-api-grow-shop-com",
+   "target": "coolify-grow-shop",
+   "kind": "routes-to",
+   "label": "Traefik on Netcup",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify",
+   "target": "cloudflare-r2",
+   "kind": "backs-up-to",
+   "label": "Postgres dumps, 03:00 UTC",
+   "sources": [
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github-ghcr",
+   "target": "coolify-hermes",
+   "kind": "deploys",
+   "label": "image pulled by pinned sha tag via scripts/deploy.sh",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github",
+   "target": "coolify-biglobster",
+   "kind": "deploys",
+   "label": "push to main via the deploy.biglobster.top /webhooks/ route",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github",
+   "target": "coolify-grow-shop",
+   "kind": "deploys",
+   "label": "push to main via the deploy.biglobster.top /webhooks/ route",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github",
+   "target": "coolify-social-agenda",
+   "kind": "deploys",
+   "label": "push to main via the deploy.biglobster.top /webhooks/ route",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github",
+   "target": "coolify-flywell",
+   "kind": "deploys",
+   "label": "push to main via the deploy.biglobster.top /webhooks/ route",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "github",
+   "target": "coolify-experiencianatural",
+   "kind": "deploys",
+   "label": "push to main via the deploy.biglobster.top /webhooks/ route",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/hermes-sandbox/ops/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify-social-agenda",
+   "target": "proj-socialagenda",
+   "kind": "serves",
+   "label": "runs the app",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify-flywell",
+   "target": "proj-flywell",
+   "kind": "serves",
+   "label": "runs the app",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify-biglobster",
+   "target": "proj-biglobster",
+   "kind": "serves",
+   "label": "runs the app",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify-biglobster",
+   "target": "proj-bl-site-package",
+   "kind": "serves",
+   "label": "runs the app",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify-grow-shop",
+   "target": "proj-grow-shop",
+   "kind": "serves",
+   "label": "runs the app",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify-experiencianatural",
+   "target": "proj-experiencianatural-home",
+   "kind": "serves",
+   "label": "runs the app",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify-hermes",
+   "target": "hermes",
+   "kind": "serves",
+   "label": "runs the app",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "ext-cron-job-org",
+   "target": "coolify-flywell",
+   "kind": "calls",
+   "label": "scheduled webhooks (CRON_SHARED_SECRET)",
+   "sources": [
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "/Users/brais/VSCODE/FlyWell/README.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "coolify-whatsapp-lead-bot",
+   "target": "coolify-chatwoot",
+   "kind": "calls",
+   "label": "CHATWOOT_BASE_URL agent bot",
+   "sources": [
+    "/Users/brais/VSCODE/tasks/zeabur-migration-runbook.md"
+   ],
+   "confidence": "from-docs"
   }
  ]
 }
