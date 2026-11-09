@@ -186,7 +186,8 @@
     "Names the workspace agents (Explore, reviewer, docs-writer), the codebase-topology skill and the gstack rule",
     "Docs-travel-with-the-change rule: update stale CLAUDE.md/README/docs in the same PR",
     "Delegation section 'Model choice - Haiku by default': mechanical or fully specified work (search, log reads, running commands, edits given in the brief, verification) goes to Haiku 5.5; Sonnet only for judgment; Haiku runs must be named and listed in the recap (commit 70d678c, 2026-10-08)",
-    "Hard limits now carve out an exception: a merged PR's head branch may be deleted, including by GitHub auto-delete, and must not be re-pushed (uncommitted edit at refresh time)"
+    "Hard limits now carve out an exception: a merged PR's head branch may be deleted, including by GitHub auto-delete, and must not be re-pushed (uncommitted edit at refresh time)",
+    "Model choice section opens with an orchestration rule: never run a whole session on the user-selected model; Opus orchestrates and architects and launches subagents to cut cost and time (uncommitted edit at refresh time)"
    ],
    "status": "live",
    "links": [],

@@ -575,7 +575,9 @@
     "colima status 2026-10-06: running, aarch64, macOS Virtualization.Framework, runtime docker, virtiofs mounts",
     "Docs recommend 4 CPU / 12 GB / 40 GB disk and mounting only ~/fizz/salida (writable) so the bots cannot see the Mac home, keychain, ~/.ssh or repos",
     "The fleet only runs while the Mac is awake; `bot arrancar` starts Colima if needed",
-    "Docker volumes seen: bot-<name>_work per bot, navegador_perfil, navegador_perfil-exploracion, and a leftover fizz_fizz-work"
+    "Docker volumes seen: bot-<name>_work per bot, navegador_perfil, navegador_perfil-exploracion, and a leftover fizz_fizz-work",
+    "2026-10-30: the VM disk file never shrinks (28 GB on the Mac that day); ordenar-colima.py logs its size daily, alerts above 32 GB inside or +1 GB a week, prunes untagged images weekly, never volumes",
+    "Cleanup of published videos now also makes the VM release deleted files, since otherwise the Mac keeps the space (6 GB held in a 2026-10-30 measurement)"
    ],
    "status": "live",
    "links": [],
@@ -583,7 +585,8 @@
     "colima status",
     "docker volume ls",
     "~/fizz/LEEME.md",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "git 906cffc, 472607c"
    ],
    "confidence": "verified"
   },
@@ -643,13 +646,15 @@
    "label": "Bot fleet (9 containers)",
    "kind": "service",
    "parent": "fizz",
-   "summary": "The nine Claude-Code-powered bot containers (compose project bot-<name> each) that act as the BigLobster team on Colima.",
+   "summary": "The nine bot containers (compose project bot-<name> each) that act as the BigLobster team on Colima; every bot runs Claude Code against QwenCloud's Anthropic-compatible endpoint.",
    "details": [
-    "fleet_status 2026-10-06: all nine Up (coach, fizz, guionista, opsbot, prospector, retador, seodesk, socialbot, videodesk)",
-    "Each runs buzz-acp bridging the relay to Claude Code (ACP); model from the persona via ANTHROPIC_MODEL; auth via Brais's Claude subscription token (name CLAUDE_CODE_OAUTH_TOKEN only)",
-    "Only Fizz listens to everything; all others wake on mentions, DMs and their own heartbeat",
+    "fleet_status 2026-11-09: all nine Up for 34 h (coach, fizz, guionista, opsbot, prospector, retador, seodesk, socialbot, videodesk), all flagged qwen",
+    "Each runs buzz-acp bridging the relay to Claude Code (ACP); since 2026-10-20 BOT_PROVEEDOR=qwen per bot loads the QwenCloud endpoint and model map (./bot proveedor <bot> qwen|claude) and blanks the Claude token in those containers; rollback is the same command with claude",
+    "No bot listens to everything since 2026-10-21: all wake on mentions, DMs and their own heartbeat",
     "Container names bot-<name>-agent-1, networks bot-<name>_default; shared output folder ~/fizz/salida",
-    "Unverified: whether sessions really answer on the persona's model (logs never name it)"
+    "Unverified: whether sessions really answer on the persona's model (logs never name it)",
+    "Accepted risk (Brais, 2026-10-20): Token Plan terms restrict use to interactive coding tools and prohibit background automation; subscription may be suspended",
+    "Heartbeats now 3h for fizz, prospector, seodesk, socialbot and videodesk, 4h coach, 6h guionista, 12h retador, none for opsbot"
    ],
    "status": "live",
    "links": [],
@@ -658,7 +663,8 @@
     "mcp__buzz__doctor",
     "docker ps",
     "~/fizz/bots.compose.yml",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git 4eecf60"
    ],
    "confidence": "verified"
   },
@@ -690,9 +696,9 @@
    "parent": "fizz-fleet",
    "summary": "Chief operating officer: sets daily/weekly plans, assigns work by @mention, reviews deliverables and sends Brais one morning brief.",
    "details": [
-    "Model: opus (Claude, via Claude Code in the container)",
-    "Listens: all messages in its channels (the only bot that does)",
-    "Heartbeat: 2h",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
+    "Heartbeat: 3h (fleet_status 2026-11-09)",
     "Memory limit: 1.5 GB default",
     "Browser: no",
     "Publishes: no",
@@ -700,7 +706,8 @@
     "Morning brief to Brais in #general between 07:00 and 11:00 ICT; Monday weekly goals; night handover",
     "Mentions Retador before new plans, spend or public/irreversible moves",
     "Since 2026-10-07 retro: does not change offer, prices, markets or approved plans without Brais (T2); assigns work only in the bot's own channel and not to a stopped bot; checks empty heartbeats of Prospector, SEODesk and SocialBot",
-    "Saturday: writes the next Diario entry (agents/diario.md) and asks Retador to check it; Monday: two Kit newsletter drafts (EN, ES) for Brais to send; the Sunday brief asks Brais to approve the entry"
+    "Saturday: writes the next Diario entry (agents/diario.md) and asks Retador to check it; Monday: two Kit newsletter drafts (EN, ES) for Brais to send; the Sunday brief asks Brais to approve the entry",
+    "2026-11-02: estado.md bounded to ~6 KB with fixed sections (tasks, rituals, night handover, waiting for Brais, last heartbeat); history goes to an append-only bitacora.md that the archiver trims"
    ],
    "status": "live",
    "links": [],
@@ -711,7 +718,9 @@
     "~/fizz/CHULETA.md",
     "git b9d4064, fcae3f5",
     "~/fizz/agents/fizz.latido.md",
-    "~/fizz/agents/diario.md"
+    "~/fizz/agents/diario.md",
+    "~/fizz/memories/decisions.md",
+    "git 056110b"
    ],
    "confidence": "verified"
   },
@@ -722,9 +731,9 @@
    "parent": "fizz-fleet",
    "summary": "Detects blocked work, checks each task follows the plan, and keeps Brais's decision queue.",
    "details": [
-    "Model: sonnet (Claude, via Claude Code in the container)",
-    "Listens: mentions",
-    "Heartbeat: 4h",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
+    "Heartbeat: 4h (fleet_status 2026-11-09)",
     "Memory limit: 2.5 GB",
     "Browser: no",
     "Publishes: no",
@@ -738,7 +747,8 @@
     "~/fizz/agents/coach.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "verified"
   },
@@ -749,9 +759,9 @@
    "parent": "fizz-fleet",
    "summary": "Devil's advocate: challenges plans, spend and irreversible/public moves once per proposal with alternatives; never executes.",
    "details": [
-    "Model: opus (Claude, via Claude Code in the container)",
-    "Listens: mentions",
-    "Heartbeat: 12h",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
+    "Heartbeat: 12h (fleet_status 2026-11-09)",
     "Memory limit: 2.5 GB",
     "Browser: yes (browser flag set)",
     "Publishes: no",
@@ -765,7 +775,8 @@
     "~/fizz/agents/retador.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "verified"
   },
@@ -776,9 +787,9 @@
    "parent": "fizz-fleet",
    "summary": "Growth: finds leads and promotion sites for biglobster.top and sends approved outbound email batches.",
    "details": [
-    "Model: sonnet (Claude, via Claude Code in the container)",
-    "Listens: mentions",
-    "Heartbeat: 2h",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
+    "Heartbeat: 3h (fleet_status 2026-11-09)",
     "Memory limit: 2 GB",
     "Browser: yes: exploration browser",
     "Publishes: no",
@@ -787,7 +798,8 @@
     "Leads and promotion lists under salida/growth; asks Brais in #growth to solve captchas",
     "Since 2026-10-08 correo sends an approved batch spaced out, not at once: random gaps (10 min to 8 h) inside 13:00-19:00 UTC, in a background sender; `correo estado` shows progress",
     "Copies Search Console emails into seo/avisos-gsc.md for SEODesk; progress goes in estado.md, @Fizz only for a ready batch or a blocker",
-    "Cold-email countries: Canada was dropped by the 2026-10-07 retro fix and restored on 2026-10-08"
+    "Cold-email countries: Canada was dropped by the 2026-10-07 retro fix and restored on 2026-10-08",
+    "2026-11-02: estado.md bounded to ~4 KB with fixed sections; history goes to an append-only bitacora.md"
    ],
    "status": "live",
    "links": [],
@@ -796,7 +808,9 @@
     "mcp__buzz__fleet_status",
     "docker ps",
     "~/fizz/CHULETA.md",
-    "git e1e339c, b9d4064, 00e466d"
+    "git e1e339c, b9d4064, 00e466d",
+    "~/fizz/memories/decisions.md",
+    "git 056110b"
    ],
    "confidence": "verified"
   },
@@ -807,9 +821,9 @@
    "parent": "fizz-fleet",
    "summary": "Social media manager for BigLobster's official accounts; publishes via Zernio and prepares Brais's daily manual-actions list.",
    "details": [
-    "Model: sonnet (Claude, via Claude Code in the container)",
-    "Listens: mentions",
-    "Heartbeat: 1h",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
+    "Heartbeat: 3h (fleet_status 2026-11-09)",
     "Memory limit: 1.5 GB default",
     "Browser: yes (browser flag set)",
     "Publishes: yes (only bot with publica: si)",
@@ -822,7 +836,9 @@
     "Since 2026-10-10 publishes the shorts Hermes delivers in the shorts channel to Facebook, Instagram and X via Zernio; Hermes publishes to YouTube itself",
     "Uses the 'social' browser (localhost:3002) for Reddit",
     "Since 2026-10-16 takes the daily GEO Scout brief from #geo as its GEO site of the day (by brief id): Reddit it posts itself (checks the thread is open first), other sites go top of Brais's lista-hoy.md, directories go to SEODesk (2026-10-18), plus a weekly community to join (2026-10-17)",
-    "Also posts series episodes announced by SEODesk's social copy"
+    "Also posts series episodes announced by SEODesk's social copy",
+    "2026-11-01: estado.md cut to ~4 KB rewritten in place, diary to append-only bitacora.md, persona 40 KB -> 24 KB; GEO and video procedures moved to on-demand agents/socialbot-geo.md and agents/socialbot-videos.md",
+    "2026-11-01: vigilante now also restarts the bot when its heartbeat session is dead (it had run ~35 h with no heartbeat)"
    ],
    "status": "live",
    "links": [],
@@ -834,7 +850,10 @@
     "git b9d4064",
     "~/fizz/agents/socialbot.latido.md",
     "~/fizz/memories/decisions.md",
-    "git d52bb0b, dac75cf, cc88de2, 1705e3d, 314f7bb"
+    "git d52bb0b, dac75cf, cc88de2, 1705e3d, 314f7bb",
+    "git abda3d2, 4eecf60",
+    "~/fizz/agents/socialbot-geo.md",
+    "~/fizz/agents/socialbot-videos.md"
    ],
    "confidence": "verified"
   },
@@ -845,16 +864,17 @@
    "parent": "fizz-fleet",
    "summary": "Turns a blog article or idea into a video script and storyboard with cost estimate for VideoDesk, and analyses the reach of BigLobster's videos and shorts; produces and publishes nothing.",
    "details": [
-    "Model: sonnet (Claude, via Claude Code in the container)",
-    "Listens: mentions",
-    "Heartbeat: 1h",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
+    "Heartbeat: 6h (fleet_status 2026-11-09)",
     "Memory limit: 1.5 GB default",
     "Browser: yes (browser flag set)",
     "Publishes: no",
     "Container bot-guionista-agent-1, volume bot-guionista_work",
     "Hands scripts to VideoDesk for a free animatic before any spend",
     "Since 2026-10-11 also the reach analyst for videos and shorts (per-video audit, trends, role-model channels) with a 1h heartbeat",
-    "Since 2026-10-16 writes the bilingual script and storyboard for each series episode (queue cola.md chains it with VideoDesk)"
+    "Since 2026-10-16 writes the bilingual script and storyboard for each series episode (queue cola.md chains it with VideoDesk)",
+    "2026-10-30: each Flow hook hangs on the day's trend peg; since 2026-10-31 unfilmed scripts expire after 3 days"
    ],
    "status": "live",
    "links": [],
@@ -864,7 +884,9 @@
     "docker ps",
     "~/fizz/CHULETA.md",
     "~/fizz/agents/guionista.latido.md",
-    "git 9cd92e5, 5b85fb2"
+    "git 9cd92e5, 5b85fb2",
+    "~/fizz/memories/decisions.md",
+    "git 944017a, bcd3e78"
    ],
    "confidence": "verified"
   },
@@ -875,9 +897,9 @@
    "parent": "fizz-fleet",
    "summary": "Video desk: edits recordings, assembles the 'Agentes BigLobster' series episodes, builds animatics and (with Brais's 'aprobado vN') generated shots; requests publication from Hermes but never publishes itself.",
    "details": [
-    "Model: sonnet (Claude, via Claude Code in the container)",
-    "Listens: mentions",
-    "Heartbeat: 20m (fleet_status 2026-10-19; the series queue runs first each beat)",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
+    "Heartbeat: 3h (fleet_status 2026-11-09)",
     "Memory limit: 4 GB",
     "Browser: no",
     "Publishes: no",
@@ -886,7 +908,8 @@
     "Outputs in salida/video (entrada, renders, fichas, transcripciones, cola.md)",
     "2026-10-10: the hook must deliver the promise in the first 3 seconds (shared with Guionista)",
     "Since 2026-10-16 also assembles the 'Agentes BigLobster' series episodes from a queue (montar-episodio, one montage at a time) and, since 2026-10-17, requests publication of finished episodes from Hermes and hands the video ids to SEODesk; no longer makes the daily blog shorts (Hermes does)",
-    "2026-10-17: containers run with init (tini) after VideoDesk exhausted its process limit on zombie Chromium children (398 of 512)"
+    "2026-10-17: containers run with init (tini) after VideoDesk exhausted its process limit on zombie Chromium children (398 of 512)",
+    "Since 2026-10-22 agents no longer produce videos (Brais shoots in Flow); VideoDesk works from the Flow recording for subtitles and covers, and cleanup of published videos is done by limpiar-videos.py"
    ],
    "status": "live",
    "links": [],
@@ -896,7 +919,9 @@
     "docker ps",
     "~/fizz/CHULETA.md",
     "~/fizz/agents/videodesk.latido.md",
-    "git 44925d8, 3bcf208"
+    "git 44925d8, 3bcf208",
+    "~/fizz/memories/decisions.md",
+    "git 414c52c, 2130745"
    ],
    "confidence": "verified"
   },
@@ -907,9 +932,9 @@
    "parent": "fizz-fleet",
    "summary": "Technical SEO/GEO for biglobster.top: audits with Search Console, PageSpeed and Umami and opens fix PRs on br41s/biglobster; never merges or deploys.",
    "details": [
-    "Model: sonnet (Claude, via Claude Code in the container)",
-    "Listens: mentions",
-    "Heartbeat: 3h",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
+    "Heartbeat: 3h (fleet_status 2026-11-09)",
     "Memory limit: 2 GB",
     "Browser: yes: work browser (Brais's sessions)",
     "Publishes: no",
@@ -921,7 +946,8 @@
     "The 2026-10-08 website CTA experiment was dropped the same day: Brais keeps changes to the website",
     "Publishes the Diario entries by PR to the blog repo after Brais's yes; will check Kit docs for the site signup form",
     "Since 2026-10-16 optimises each published series episode and the blog Shorts for YouTube and social: chapters from real timings, 16:9 cover via escena, title/description/tags, per-network copy, then a #actualizar-video request to Hermes",
-    "Since 2026-10-18 reviews directory sign-up briefs forwarded from the GEO Scout by SocialBot (salida/seo/directorios-propuestos.md): checks the form and corrects the listing against biglobster.top (the Scout invented HQ and team size), leaves it for Brais under 'Para Brais'; Brais submits it"
+    "Since 2026-10-18 reviews directory sign-up briefs forwarded from the GEO Scout by SocialBot (salida/seo/directorios-propuestos.md): checks the form and corrects the listing against biglobster.top (the Scout invented HQ and team size), leaves it for Brais under 'Para Brais'; Brais submits it",
+    "2026-11-02: estado.md bounded to ~4 KB with fixed sections; history goes to an append-only bitacora.md ; persona now says deploys are on Coolify, not Zeabur (2026-11-05)"
    ],
    "status": "live",
    "links": [],
@@ -933,7 +959,8 @@
     "git b7bcf49, b9d4064, 25fb216",
     "~/fizz/agents/diario.md",
     "~/fizz/memories/decisions.md",
-    "git 1705e3d, 314f7bb, e24ebaa, cf296c1"
+    "git 1705e3d, 314f7bb, e24ebaa, cf296c1",
+    "git 056110b, 475a56b"
    ],
    "confidence": "verified"
   },
@@ -944,8 +971,8 @@
    "parent": "fizz-fleet",
    "summary": "Operator for mechanical, high-volume jobs (transcripts, text dumps, raw lists, format conversion, data cleanup) with a verification file per delivery.",
    "details": [
-    "Model: haiku (Claude, via Claude Code in the container)",
-    "Listens: mentions",
+    "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
+    "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
     "Heartbeat: none",
     "Memory limit: 2 GB",
     "Browser: no",
@@ -960,7 +987,8 @@
     "~/fizz/agents/opsbot.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
-    "~/fizz/CHULETA.md"
+    "~/fizz/CHULETA.md",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "verified"
   },
@@ -1042,12 +1070,14 @@
    "summary": "Previous remote Chromium service on Zeabur that ran out of memory; replaced by the local Colima browsers on 2026-10-06.",
    "details": [
     "Zeabur project B_Browser shared the Frankfurt 4C/8GB server with six projects (Hermes among them); service now suspended, Brais to delete or keep",
-    "SEODesk's env still holds a stale remote CDP headers variable (name only noted) that the local nginx ignores"
+    "SEODesk's env still holds a stale remote CDP headers variable (name only noted) that the local nginx ignores",
+    "2026-11-05: the SEODesk persona and Hermes identity script were switched to Coolify wording; Hermes no longer runs on Zeabur"
    ],
    "status": "retired",
    "links": [],
    "sources": [
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git 475a56b"
    ],
    "confidence": "from-docs"
   },
@@ -1531,6 +1561,92 @@
     "~/fizz/agents/videodesk.prompt.md",
     "~/fizz/agents/seodesk.prompt.md",
     "git 5b85fb2, 3767a0c, e1ef035, a69df30, a307182, 314f7bb"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-vigilante",
+   "label": "vigilante (broken-bot watcher)",
+   "kind": "cron-job",
+   "parent": "fizz",
+   "summary": "Model-free launchd job every 15 minutes that finds bots whose agent process died and restarts them.",
+   "details": [
+    "Reads docker logs only; two consecutive turns ending in code -32603, or a heartbeat failing that way within 10 s, triggers ./bot reiniciar <bot> and a notification",
+    "At most one restart per bot every 6 hours; after that it only notifies",
+    "A gap over 1 h between passes (Mac asleep) is logged to salida/operaciones/caidas.md for Fizz's morning brief",
+    "State in mcp/.vigilante.json, outside salida/",
+    "2026-11-01: heartbeat-session check added after SocialBot ran ~35 h without a heartbeat",
+    "Tests: tests/test_vigilante.py"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/vigilante.py",
+    "git 4eecf60"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-archivar-estado",
+   "label": "archivar-estado (daily archiver)",
+   "kind": "cron-job",
+   "parent": "fizz",
+   "summary": "Model-free launchd job at 04:30 that trims each bot's estado.md (or bitacora.md) to the last 3 days and files the rest by month.",
+   "details": [
+    "Archive goes to salida/<bot>/estado-archivo/YYYY-MM.md; first 10 lines and undated lines stay",
+    "Bots with a bitacora.md (SocialBot since 2026-11-01; Fizz, SEODesk, Prospector since 2026-11-02) get the bitacora trimmed and estado.md left alone",
+    "Also runs at Mac start; Guionista still uses the old trimmed estado.md (49 KB on 2026-11-02)",
+    "Tests: tests/test_archivar_estado.py"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/archivar-estado.py",
+    "git abda3d2, 056110b"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-limpiar-videos",
+   "label": "limpiar-videos (published-video cleanup)",
+   "kind": "cron-job",
+   "parent": "fizz",
+   "summary": "Model-free launchd job, hourly and at Mac start, that deletes leftovers of videos published more than 24 h ago.",
+   "details": [
+    "Only touches folders with a PUBLICADO file written by VideoDesk after checking YouTube, Instagram and Facebook; keeps the published master and cover, all texts and any file written after publication",
+    "Does not delete if the video is gone from YouTube; a network error or 429/5xx waits for the next pass",
+    "After deleting it makes the Colima VM release the freed space; log in salida/operaciones/limpieza.md",
+    "State in mcp/.limpiar-videos.json"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/limpiar-videos.py",
+    "git 472607c, 4a41495, b208b16"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "fizz-tool-ordenar-colima",
+   "label": "ordenar-colima (Colima size keeper)",
+   "kind": "cron-job",
+   "parent": "fizz",
+   "summary": "Model-free launchd job that logs the Colima VM size daily, alerts on growth and prunes unused images weekly.",
+   "details": [
+    "Writes size history to salida/operaciones/colima.md; alerts (notification plus a line in caidas.md) above 32 GB inside the VM or +1 GB of disk file in 7 days",
+    "Weekly docker image prune -f: untagged images with no container only, never volumes",
+    "Shrinking the file for real means recreating the VM and losing bot volumes, so it is left to Brais",
+    "Tests: tests/test_ordenar_colima.py"
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/ordenar-colima.py",
+    "git 906cffc"
    ],
    "confidence": "from-docs"
   }
@@ -3153,6 +3269,70 @@
     "~/fizz/agents/seodesk.prompt.md"
    ],
    "confidence": "inferred"
+  },
+  {
+   "source": "fizz-tool-vigilante",
+   "target": "fizz-fleet",
+   "kind": "monitors",
+   "label": "restarts a bot whose agent died (docker logs only)",
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/vigilante.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-vigilante",
+   "target": "brais",
+   "kind": "notifies",
+   "label": "notification and caidas.md line on restarts and gaps",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-archivar-estado",
+   "target": "fizz-salida",
+   "kind": "writes",
+   "label": "trims estado.md/bitacora.md, files history under estado-archivo/",
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/archivar-estado.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-limpiar-videos",
+   "target": "fizz-salida",
+   "kind": "writes",
+   "label": "deletes leftovers of videos published over 24 h ago",
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/limpiar-videos.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-limpiar-videos",
+   "target": "fizz-colima",
+   "kind": "calls",
+   "label": "makes the VM release deleted files",
+   "sources": [
+    "~/fizz/CHULETA.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "fizz-tool-ordenar-colima",
+   "target": "fizz-colima",
+   "kind": "monitors",
+   "label": "daily size log, alerts and weekly image prune",
+   "sources": [
+    "~/fizz/CHULETA.md",
+    "~/fizz/ordenar-colima.py"
+   ],
+   "confidence": "from-docs"
   }
  ]
 }

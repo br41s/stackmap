@@ -1,5 +1,5 @@
 {
-  "refreshedAt": "2026-10-19T02:01:56.784Z",
+  "refreshedAt": "2026-11-09T02:13:47.185Z",
   "dirs": {
     "~/.claude/agents": [],
     "~/.claude/skills": [
@@ -90,7 +90,6 @@
     "mcp-hub": [
       "CLAUDE.md",
       "README.md",
-      "__pycache__",
       "clients",
       "config.py",
       "mcp_hub.egg-info",
@@ -127,38 +126,17 @@
       "seodesk.agent.json",
       "seodesk.latido.md",
       "seodesk.prompt.md",
+      "socialbot-geo.md",
+      "socialbot-videos.md",
       "socialbot.agent.json",
       "socialbot.latido.md",
       "socialbot.prompt.md",
       "videodesk.agent.json",
       "videodesk.latido.md",
-      "videodesk.prompt.md"
+      "videodesk.prompt.md",
+      "youtube-posts.md"
     ],
     "FACTURAS": []
   },
-  "zeabur": [
-    "biglobster",
-    "biglobster/biglobster-osee",
-    "biglobster/bl-site-package",
-    "experiencianatural",
-    "experiencianatural/home",
-    "flywell",
-    "flywell/flywell-fli",
-    "flywell/flywell-web",
-    "flywell/postgresql",
-    "grow-shop",
-    "grow-shop/grow-shop-api",
-    "grow-shop/grow-shop-landing",
-    "hermes-eu",
-    "hermes-eu/hermes",
-    "hermes-eu/postgresql",
-    "hermes-eu/rails",
-    "hermes-eu/redis",
-    "hermes-eu/sidekiq",
-    "hermes-eu/whatsapp-lead-bot",
-    "social-agenda",
-    "social-agenda/postgresql",
-    "social-agenda/scheduler",
-    "social-agenda/web"
-  ]
+  "zeabur": []
 }

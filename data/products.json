@@ -48,7 +48,8 @@
     "Latest work (2026-10-05/06): options alert dedup moved to DB, generative answers persisted, reasoning off on LLM calls.",
     "Production LLM (2026-10-10): FINVIEW_OPENROUTER_MODEL=deepseek/deepseek-v4.1-flash set on Cloud Run (code default stays deepseek-v4-flash). Key moved to Biglobster LLC's OpenRouter account 2026-10-09; every OpenRouter call sends provider.data_collection=deny via llm_envelope.chat().",
     "Watch: first Zonas Clave scorer run on the new model (22:15 UTC Mon-Fri); Artifact Registry keeps only the newest 10 images (cleanup policies since 2026-10-08).",
-    "Added 2026-10-12..19: direct IBKR Flex sync with daily cron (#347/#348), sector/region/AI exposure from annual reports (#351-#357), backend token renewal via POST /auth/refresh (#344), Cloud Run revision named per build (#352), fiscal inputs loaded once per request (#342)."
+    "Added 2026-10-12..19: direct IBKR Flex sync with daily cron (#347/#348), sector/region/AI exposure from annual reports (#351-#357), backend token renewal via POST /auth/refresh (#344), Cloud Run revision named per build (#352), fiscal inputs loaded once per request (#342).",
+    "Living World ('Mundo vivo', 2026-11-08): private /living-world page draws the portfolio as a 3D low-poly town (Three.js, lazy-loaded), served by read-only GET /living-world/world on the backend. Phases 0-1 merged (#362-#366): districts, connected roads/sidewalks, SkyTrain, ambient walkers. Phase 4 would swap in glTF kits."
    ],
    "status": "live",
    "links": [
@@ -67,7 +68,9 @@
     "/Users/brais/VSCODE/FinView/docs/deployment.md",
     "/Users/brais/VSCODE/memories/decisions/finview.md",
     "/Users/brais/VSCODE/memories/decisions.md",
-    "git log since 2026-10-12 in /Users/brais/VSCODE/FinView"
+    "git log since 2026-10-12 in /Users/brais/VSCODE/FinView",
+    "FinView/backend/api/living_world.py (origin/main)",
+    "git log origin/main in /Users/brais/VSCODE/FinView"
    ],
    "confidence": "verified"
   },
@@ -83,7 +86,8 @@
     "Landing page has a 'dividend garden' canvas animation that becomes a game (2026-10-02).",
     "Merge gate: Vercel preview check must be green before merging any PR touching frontend/**.",
     "Vercel holds only BACKEND_URL, AUTH_SECRET, public Turnstile site key and public Stripe price ids; ingestion keys live only in Cloud Run.",
-    "Session handling (2026-10): ends the session when a retried request is still 401 (#343); token renewal in the NextAuth jwt callback (#344)."
+    "Session handling (2026-10): ends the session when a retried request is still 401 (#343); token renewal in the NextAuth jwt callback (#344).",
+    "Added 2026-11-08: /living-world page (login required, 'Mundo vivo' in QuickNav, noindex) with a Three.js town engine under src/app/living-world/."
    ],
    "status": "live",
    "links": [
@@ -96,7 +100,8 @@
     "/Users/brais/VSCODE/FinView/frontend/package.json",
     "/Users/brais/VSCODE/FinView/docs/deployment.md",
     "/Users/brais/VSCODE/FinView/frontend/next.config.ts",
-    "/Users/brais/VSCODE/FinView/CLAUDE.md"
+    "/Users/brais/VSCODE/FinView/CLAUDE.md",
+    "FinView/frontend/src/app/living-world/page.tsx (origin/main)"
    ],
    "confidence": "verified"
   },
@@ -352,11 +357,12 @@
    "summary": "AI-powered social event calendar: discovers events from the web, per-event chat, email reminders, ICS export, social features.",
    "details": [
     "Flask 3 (Python 3.11), SQLAlchemy + Alembic, Postgres in prod (SQLite locally and in tests); CI workflow runs the suite on SQLite and Postgres.",
-    "Served at socialagenda.biglobster.top (DNS at Namecheap pointing straight at Zeabur, no Cloudflare proxy as of 2026-10-03); app answers Alt-Svc: clear because Zeabur HTTP/3 stalled Safari.",
+    "Served at socialagenda.biglobster.top; DNS is on Cloudflare with the record proxied again (docs 2026-11-05; the 2026-10-03 direct-to-Zeabur note is obsolete).",
     "agenda.experiencianatural.com (Cloudflare-proxied, 2026-09-27) was detached 2026-10-03 with no redirect.",
     "UI language English, 'Pastel & Stickers' design system, public landing with an animal catch game (2026-10-02), 18+ consent on every sign-up path.",
     "Legal pages (/about, /legal/*) owned by Biglobster LLC; fonts and FullCalendar self-hosted.",
-    "LLM (2026-10-09): dedicated SocialAgenda key on Biglobster LLC's OpenRouter account; production LLM_MODEL=openai/gpt-oss-120b, LLM_FALLBACK_MODEL=xiaomi/mimo-v2.6-flash on the Zeabur web service. Every OpenRouter call sends provider.data_collection=deny. The scheduler service does not call OpenRouter; after a key change the web service needs a restart (client cached per process)."
+    "LLM (2026-10-09): dedicated SocialAgenda key on Biglobster LLC's OpenRouter account; production LLM_MODEL=openai/gpt-oss-120b, LLM_FALLBACK_MODEL=xiaomi/mimo-v2.6-flash on the Zeabur web service. Every OpenRouter call sends provider.data_collection=deny. The scheduler service does not call OpenRouter; after a key change the web service needs a restart (client cached per process).",
+    "Hosting: moved to Coolify on the Netcup VPS on 2026-11-04 (legal pages name netcup as provider). Late Oct-Nov: SEO (index only opted-in pages, sitemap, event structured data), PNG link previews with the category pet, pet covers, copy-invite-link, faster enrichment (no thinking, parallel fetches)."
    ],
    "status": "live",
    "links": [
@@ -375,7 +381,10 @@
     "/Users/brais/VSCODE/SocialAgenda/requirements.txt",
     "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
     "/Users/brais/VSCODE/memories/decisions.md",
-    "/Users/brais/VSCODE/SocialAgenda/social_agenda/llm.py"
+    "/Users/brais/VSCODE/SocialAgenda/social_agenda/llm.py",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "SocialAgenda/CLAUDE.md (commit 1393796)",
+    "git log origin/main in /Users/brais/VSCODE/SocialAgenda"
    ],
    "confidence": "verified"
   },
@@ -384,18 +393,20 @@
    "label": "SocialAgenda web service",
    "kind": "service",
    "parent": "proj-socialagenda",
-   "summary": "Zeabur 'web' service: gunicorn Flask app (RUN_SCHEDULER=0) serving UI, JSON API, magic-link auth, calendar feeds and search wizard.",
+   "summary": "Coolify 'web' app (was Zeabur until 2026-11-04): gunicorn Flask app (RUN_SCHEDULER=0) serving UI, JSON API, magic-link auth, calendar feeds and search wizard.",
    "details": [
     "Same Docker image as the scheduler; differs by env (WEB_CONCURRENCY=2, RUN_SCHEDULER=0). Image includes Chromium for Playwright.",
     "Magic-link login via Brevo, optional Turnstile captcha, rate limiting; superuser password only seeds (2026-09-24).",
-    "Emailed links built from BASE_URL, never the request host; client IP from CF-Connecting-IP only when the hop is Cloudflare."
+    "Emailed links built from BASE_URL, never the request host; client IP from CF-Connecting-IP only when the hop is Cloudflare.",
+    "Client IP from CF-Connecting-IP only when the proxy hop is in Cloudflare's published ranges; no CF-Worker check or /64 key yet (workspace decision 2026-11-05)."
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/VSCODE/SocialAgenda/Dockerfile",
     "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md",
-    "/Users/brais/VSCODE/memories/decisions/socialagenda.md"
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -514,9 +525,10 @@
    "parent": "proj-flywell",
    "summary": "Next.js dashboard + API route handlers + cron webhooks + public pages (sign-in with airport game, /about, /legal/*).",
    "details": [
-    "Single long-lived Node process on Zeabur; route policy in src/server/route-policy.ts; Drizzle ORM over Postgres.",
+    "Single long-lived Node process on Coolify (Netcup VPS, since 2026-11-04; Zeabur before); route policy in src/server/route-policy.ts; Drizzle ORM over Postgres.",
     "Free-beta sign-ups (FREE_BETA_SIGNUPS); operator signs in at /login?operator.",
-    "Health check configured in the Zeabur dashboard to avoid deploy gaps (2026-10-03)."
+    "Health check was configured in the Zeabur dashboard (2026-10-03); not re-verified on Coolify.",
+    "Rate limits key on the visitor behind Cloudflare: CF-Connecting-IP only when the peer is a Cloudflare range and no CF-Worker header (#62/#63, 2026-11-05)."
    ],
    "status": "live",
    "links": [
@@ -528,7 +540,10 @@
    "sources": [
     "/Users/brais/VSCODE/FlyWell/README.md",
     "/Users/brais/VSCODE/FlyWell/docs/architecture.md",
-    "/Users/brais/VSCODE/FlyWell/.env.example"
+    "/Users/brais/VSCODE/FlyWell/.env.example",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "FlyWell/README.md (origin/main)",
+    "FlyWell/docs/operations.md (origin/main)"
    ],
    "confidence": "verified"
   },
@@ -719,11 +734,12 @@
    "summary": "Thin public web shell for Biglobster LLC: Eleventy marketing site (ES/EN, 100+ posts per language), email-only contact form, /health, /admin redirect to Hermes.",
    "details": [
     "Since PR #248 (2026-06-04) all agents, COO, CRM, Telegram bot and LLM calls were removed and archived; operations moved to Hermes.",
-    "Stateless Node server (no DB, no bot, no LLM): Dockerfile builds Eleventy then ships _site + src; Zeabur auto-deploys on push to main.",
+    "Stateless Node server (no DB, no bot, no LLM): Dockerfile builds Eleventy then ships _site + src; Coolify auto-deploys on push to main (Netcup VPS, since 2026-11-05; zbpack.json removed).",
     "Sells AI automation subscriptions and agent rentals to freelancers and SMBs; apps directory lists SocialAgenda and FlyWell.",
     "Flagship of bl-site-package: a parity rule requires porting improvements to bl-site-package in the same session.",
     "Stripe code is kept but routes were removed (PR #508, 2026-09-13) while a merchant-of-record application is under review.",
-    "Oct 2026: IndexNow ping after each deploy (static key file in web/), llms.txt lists most-viewed articles (Umami 28 d), YouTube API Services declared in privacy/terms and YouTube channel link in the footer, pricing/agents-for-rent now sell Product Guide Writer and Product Sheet Writer."
+    "Oct 2026: IndexNow ping after each deploy (static key file in web/), llms.txt lists most-viewed articles (Umami 28 d), YouTube API Services declared in privacy/terms and YouTube channel link in the footer, pricing/agents-for-rent now sell Product Guide Writer and Product Sheet Writer.",
+    "2026-11-05..07: client-IP fix behind Cloudflare; /health reports the commit from Coolify's SOURCE_COMMIT; site now says a named person runs BigLobster; SEO recovery (87 old posts googlebot-noindex, five pillars, 1 post/week cap); steady infographic and content-refresh PRs (#809-#825)."
    ],
    "status": "live",
    "links": [
@@ -741,10 +757,11 @@
     "/Users/brais/VSCODE/biglobster/README.md",
     "/Users/brais/VSCODE/biglobster/OPS.md",
     "/Users/brais/VSCODE/biglobster/Dockerfile",
-    "/Users/brais/VSCODE/biglobster/zbpack.json",
     "/Users/brais/VSCODE/memories/decisions/biglobster.md",
     "/Users/brais/VSCODE/biglobster/src/indexnow.js",
-    "/Users/brais/VSCODE/biglobster/web/llms.txt"
+    "/Users/brais/VSCODE/biglobster/web/llms.txt",
+    "/Users/brais/VSCODE/biglobster/OPS.md (origin/main)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -758,7 +775,8 @@
     "CSP, HSTS in prod, www->apex redirect, in-memory rate limiting.",
     "/admin and /panel 302 to HERMES_PANEL_URL (Hermes operations panel).",
     "/api/knowledge serves business info plus blog frontmatter read from source; the bl-site-package twin endpoint is for an external WhatsApp bot, biglobster's consumer was not verified.",
-    "Two CSPs must be edited together (header in src/web.js and meta in base.njk)."
+    "Two CSPs must be edited together (header in src/web.js and meta in base.njk).",
+    "Rate limits use CF-Connecting-IP only behind a Cloudflare peer without CF-Worker (#812, 2026-11-05)."
    ],
    "status": "live",
    "links": [],
@@ -766,7 +784,8 @@
     "/Users/brais/VSCODE/biglobster/CLAUDE.md",
     "/Users/brais/VSCODE/biglobster/README.md",
     "/Users/brais/VSCODE/biglobster/Dockerfile",
-    "/Users/brais/VSCODE/biglobster/OPS.md"
+    "/Users/brais/VSCODE/biglobster/OPS.md",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -876,7 +895,7 @@
    "label": "bl-site-package",
    "kind": "project",
    "parent": "layer-products",
-   "summary": "Deployable web package sold to Spanish SMB clients: public Eleventy site, management panel, blog, inbox, optional catalogue/shop and AI marketing agent; one Zeabur (or Plesk) deploy per customer.",
+   "summary": "Deployable web package sold to Spanish SMB clients: public Eleventy site, management panel, blog, inbox, optional catalogue/shop and AI marketing agent; hosting is decided per customer (Coolify, Plesk, ...).",
    "details": [
     "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.27.0 (see later lines).",
     "Customer-facing Spanish docs (INSTRUCCIONES-CLIENTE, DEPLOY, RELEASE) are treated as published.",
@@ -886,7 +905,8 @@
     "v1.17.0 adds a Google Search Console verification setting in the panel (rendered in the site head).",
     "Default agent model is the paid openai/gpt-oss-120b via OpenRouter (BYOK per customer), decided 2026-10-09 so it works under data_collection=deny; free models are only a fallback on 429/402. A customer's saved ai_model wins (Shoroban keeps its own). Do not change the default again without a decision.",
     "1.18.0-1.19.2: blog posts show catalogue product photos; panel moves Turnstile, site URL/GSC and WhatsApp settings to an Integraciones section; form fields kept at 16px so iOS does not zoom.",
-    "1.20-1.27.0 (2026-10-15..17): Cálida site style (site_style key, default empty = Clásico; wizard writes calida), page_index_highlights, services/team cards and FAQ accordions, a 404 page built in the site style; per-turn catalogue search for the WhatsApp bot (/api/knowledge/search); web-chat widget via chat_widget_url and chat_widget_token (Chatwoot)."
+    "1.20-1.27.0 (2026-10-15..17): Cálida site style (site_style key, default empty = Clásico; wizard writes calida), page_index_highlights, services/team cards and FAQ accordions, a 404 page built in the site style; per-turn catalogue search for the WhatsApp bot (/api/knowledge/search); web-chat widget via chat_widget_url and chat_widget_token (Chatwoot).",
+    "Package v1.29.1 (origin/main). 2026-11: reference site moved to Coolify at cliente.biglobster.top; Zeabur steps and zbpack.json removed; hosting decided per customer; checkout shipping zones and 'Comprar ahora'; servicios jump buttons and overview/partner cards; CF-Connecting-IP rate-limit fix (src/middleware/client-ip.js, TRUST_PROXY_HOPS=1 on Coolify)."
    ],
    "status": "live",
    "links": [
@@ -903,7 +923,10 @@
     "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
     "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
     "/Users/brais/VSCODE/bl-site-package/src/api/chat.js",
-    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
+    "/Users/brais/VSCODE/bl-site-package/RELEASE.md (origin/main)",
+    "/Users/brais/VSCODE/bl-site-package/README.md (origin/main)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -1008,7 +1031,7 @@
    "parent": "proj-bl-site-package",
    "summary": "fleet/manifest.json lists every deployment (reference + customers); scripts/fleet-check.mjs compares each deploy's version to main.",
    "details": [
-    "Two entries today: blcliente (reference, Zeabur) and shoroban-prod (production, Plesk Passenger, manual driver).",
+    "Two entries today: blcliente (reference, host coolify, manual driver, cliente.biglobster.top) and shoroban-prod (production, Plesk Passenger, manual driver). shoroban.com was not deployed as of 2026-11-05.",
     "Continuous checking is done by the Hermes maintenance agent with per-profile credentials; rollout-log.jsonl records first-seen versions.",
     "Shoroban staging retired 2026-09-19; validation is the shared unconfigured instance."
    ],
@@ -1017,7 +1040,9 @@
    "sources": [
     "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
     "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
-    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json (origin/main)",
+    "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "verified"
   },
@@ -1026,21 +1051,24 @@
    "label": "blcliente reference instance",
    "kind": "service",
    "parent": "proj-bl-site-package",
-   "summary": "BigLobster's own unconfigured test deployment; auto-deploys main and is the shared pre-release validation target.",
+   "summary": "BigLobster's own unconfigured test deployment on Coolify; redeployed by hand from main (no auto-deploy) and the shared pre-release validation target.",
    "details": [
-    "Unconfigured: no panel password, catalogue or posts, so a green smoke test proves boot and setup wizard only."
+    "Unconfigured: no panel password, catalogue or posts, so a green smoke test proves boot and setup wizard only.",
+    "Moved from Zeabur (blcliente.zeabur.app) to Coolify project 'biglobster' in Nov 2026; release step 5 is a manual redeploy."
    ],
    "status": "live",
    "links": [
     {
      "label": "Instance",
-     "url": "https://blcliente.zeabur.app"
+     "url": "https://cliente.biglobster.top"
     }
    ],
    "sources": [
     "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json",
     "/Users/brais/VSCODE/bl-site-package/CLAUDE.md",
-    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md"
+    "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
+    "/Users/brais/VSCODE/bl-site-package/RELEASE.md (origin/main)",
+    "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json (origin/main)"
    ],
    "confidence": "verified"
   },
@@ -1076,9 +1104,10 @@
    "parent": "layer-products",
    "summary": "Domain-sale landing page for grow-shop.com plus a micro-API that emails purchase offers.",
    "details": [
-    "Two repos (grow-shop-landing, grow-shop-api), both on one Zeabur project (grow-shop), auto-deploy from main.",
+    "Two repos (grow-shop-landing, grow-shop-api), both on Coolify (Netcup VPS, since 2026-11-04), auto-deploy from main; the API is at api.grow-shop.com.",
     "Also the first Hermes customer profile ('grow-shop') with its own Telegram forum topic (2026-06-06 multi-tenancy).",
-    "README notes ownership by Biglobster LLC (GitHub organization BiglobsterLLC) after repo transfer (grow-shop-landing 44fd898)."
+    "README notes ownership by Biglobster LLC (GitHub organization BiglobsterLLC) after repo transfer (grow-shop-landing 44fd898).",
+    "Sales page for the domain also lives on experiencianatural.com/grow-shop/ (EN/ES)."
    ],
    "status": "live",
    "links": [
@@ -1111,7 +1140,8 @@
    "parent": "proj-grow-shop",
    "summary": "Single index.html (inline CSS/JS, no build) selling the domain with an offer form.",
    "details": [
-    "Form posts to grow-shop-api /api/submit-offer; Cloudflare Turnstile widget on the form."
+    "Form posts to grow-shop-api /api/submit-offer; Cloudflare Turnstile widget on the form.",
+    "Offer form now posts to api.grow-shop.com; opens in Spanish with ?lang=es (2026-11)."
    ],
    "status": "live",
    "links": [],
@@ -1129,7 +1159,8 @@
    "summary": "Single-file Express 4 API (Node 20): GET /health, POST /api/submit-offer sending an owner notification and a visitor auto-reply.",
    "details": [
     "Verifies the Turnstile token before sending (commit 3d904a1); email via Resend using a verified sender domain.",
-    "No tests, no build step; intentionally minimal."
+    "No build step; intentionally minimal.",
+    "2026-11: forwards the visitor's IP to Turnstile and accepts tokens only from TURNSTILE_HOSTNAMES; offer fields escaped and validated (closes a phishing relay); 5 requests/IP/15 min in memory; has api.test.js (npm test)."
    ],
    "status": "live",
    "links": [],
@@ -1253,10 +1284,11 @@
    "parent": "layer-products",
    "summary": "One static index.html: an illustrated valley with a seed-catching game, teasing 'nature-friendly apps are taking root'.",
    "details": [
-    "Zeabur static site auto-deployed from main; domain proxied by Cloudflare (orange cloud) so visitors skip Zeabur's HTTP/3 edge.",
+    "Static site deployed on Coolify (Netcup VPS, since 2026-11-04; Zeabur before), auto-deployed from main; domain proxied by Cloudflare.",
     "Deliberately names no builder or links; Google Fonts loaded from the page.",
     "Its animation-plus-game idea was reused for FlyWell and SocialAgenda public faces (2026-10-02).",
-    "The Zeabur project 'experiencianatural' was 'born migrated' to the server (workspace decision 2026-10-02)."
+    "Moved from Zeabur to Coolify on 2026-11-04; the Zeabur project 'experiencianatural' was suspended in the exit.",
+    "2026-11: added /grow-shop/ sales page for the grow-shop.com domain (bilingual EN/ES, ?lang=), plus a card on the home page."
    ],
    "status": "live",
    "links": [
@@ -1269,7 +1301,8 @@
     "/Users/brais/VSCODE/experiencianatural-home/README.md",
     "/Users/brais/VSCODE/experiencianatural-home/index.html",
     "/Users/brais/VSCODE/memories/decisions/workspace.md",
-    "/Users/brais/VSCODE/memories/decisions/socialagenda.md"
+    "/Users/brais/VSCODE/memories/decisions/socialagenda.md",
+    "/Users/brais/VSCODE/experiencianatural-home/README.md (origin/main)"
    ],
    "confidence": "verified"
   },
