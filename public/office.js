@@ -181,8 +181,8 @@ export function createOffice(container, { stack, signals = [], hold, onPick = ()
   layout.stations.forEach((s, i) => {
     const big = s.zone === "project" || s.zone === "platform";
     addObject({
-      key: `station:${s.node}`, x: s.x, z: s.z, rot: s.rot, scale: s.scale, node: s.node, color: s.zone === "platform" || s.zone === "hosting" ? "#4a8fe0" : "#2fb56a", label: s.label,
-      built: makeBuilding({ style: s.style, node: s.node, index: i }), hitSize: { w: 3.6, h: 3.6, d: 3.2 }, ringRadius: s.radius + 0.9, tier: big ? 1 : 2, stand: s.stand,
+      key: `station:${s.node}`, x: s.x, z: s.z, rot: s.rot, scale: s.scale, node: s.node, color: s.zone === "platform" || s.zone === "hosting" ? "#4a8fe0" : "#2fb56a", label: s.status === "retired" ? `${s.label} · ruins` : s.label,
+      built: makeBuilding({ style: s.style, node: s.node, index: i, ruin: s.status === "retired" }), hitSize: { w: 3.6, h: 3.6, d: 3.2 }, ringRadius: s.radius + 0.9, tier: big ? 1 : 2, stand: s.stand,
     });
   });
   for (const mesh of bake(town)) town.add(mesh);

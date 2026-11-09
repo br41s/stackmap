@@ -455,8 +455,34 @@ function home({ color, free, glass }) {
   return { group: g, top: b.top + 1 };
 }
 
-// The building for a map node: its style decides the shape, its id the colours.
-export function makeBuilding({ style, node = "", index = 0, color = "#ffb547", free = false }) {
+// What is left of a retired service: the footprint of its old style, a few broken wall stubs,
+// a fallen beam, rubble and weeds. No lit windows (the glass is a dead, unlit pane).
+function ruins({ node }) {
+  const r = rng(hash(node) + 17);
+  const g = new THREE.Group();
+  const stone = [mat("#b9b3a8", { rough: 0.95, flat: true }), mat("#a39d93", { rough: 0.95, flat: true }), mat("#8f8a82", { rough: 0.95, flat: true })];
+  g.add(rbox(3.2, 0.12, 2.6, 0.05, mat("#a89f8f", { rough: 1 }), 0, 0.06, 0));
+  for (const [x, z, w, d] of [[-1.35, 0, 0.22, 2.2], [0.2, -1.05, 2.4, 0.22], [1.35, 0.5, 0.22, 1.1]]) {
+    const h = 0.4 + r() * 1.0;
+    g.add(rbox(w, h, d, 0.04, stone[Math.floor(r() * 3)], x, 0.12 + h / 2, z));
+  }
+  const beam = rbox(0.14, 0.14, 2.2, 0.03, mat(PALETTE.woodDark, { rough: 1 }), 0.1, 0.45, 0.2);
+  beam.rotation.set(0.35, 0.5, 0.2);
+  g.add(beam);
+  for (let i = 0; i < 7; i++) {
+    const s = 0.14 + r() * 0.22;
+    const chunk = rbox(s, s * 0.7, s * 0.9, 0.03, stone[i % 3], (r() - 0.5) * 3.0, s * 0.35 + 0.1, (r() - 0.5) * 2.4);
+    chunk.rotation.y = r() * Math.PI;
+    g.add(chunk);
+  }
+  for (let i = 0; i < 4; i++) g.add(ball(0.22 + r() * 0.12, mat(i % 2 ? PALETTE.leafDark : PALETTE.leaf), (r() - 0.5) * 3.2, 0.14, (r() - 0.5) * 2.6, 1, 0.6, 1, false));
+  return { group: g, top: 1.6, glass: mat("#3b3a3a", { rough: 1, unique: true }) };
+}
+
+// The building for a map node: its style decides the shape, its id the colours; `ruin` (a retired
+// node) draws what is left of it instead.
+export function makeBuilding({ style, node = "", index = 0, color = "#ffb547", free = false, ruin = false }) {
+  if (ruin) return ruins({ node });
   const seed = hash(node);
   const wall = pick(WALLS, seed);
   const roof = pick(ROOFS, seed >> 3);
