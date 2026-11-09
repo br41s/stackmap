@@ -68,7 +68,7 @@ export function collectStations(stack, agents = OFFICE_AGENTS) {
   for (const n of stack.nodes) if (n.parent) kids.set(n.parent, [...(kids.get(n.parent) ?? []), n]);
   const size = (id) => 1 + (kids.get(id) ?? []).reduce((sum, k) => sum + size(k.id), 0);
   const out = [];
-  const add = (n, zone, parentStation, depth) => out.push({ node: n.id, label: n.label, kind: n.kind, zone, parentStation, depth, weight: size(n.id) });
+  const add = (n, zone, parentStation, depth) => out.push({ node: n.id, label: n.label, kind: n.kind, status: n.status, zone, parentStation, depth, weight: size(n.id) });
   for (const top of stack.nodes.filter((n) => n.parent === "layer-products" && n.kind === "project")) {
     add(top, "project", null, 1);
     for (const c of kids.get(top.id) ?? []) add(c, "annex", top.id, 2);
@@ -105,7 +105,7 @@ export function collectStations(stack, agents = OFFICE_AGENTS) {
     };
     for (const [id, depth] of [...mine].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))) {
       const n = byId.get(id);
-      out.push({ node: n.id, label: n.label, kind: n.kind, zone: "workshop", agent: agent.id, parentStation: nearest(id), depth, weight: size(n.id) });
+      out.push({ node: n.id, label: n.label, kind: n.kind, status: n.status, zone: "workshop", agent: agent.id, parentStation: nearest(id), depth, weight: size(n.id) });
     }
   }
   return out;

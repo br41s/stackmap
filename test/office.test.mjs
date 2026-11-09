@@ -76,6 +76,12 @@ test("every project, platform and what is inside them becomes a building; every 
   assert.deepEqual(layout.desks.map((d) => d.reserved), [false, false, false, true, true]);
 });
 
+test("a station carries its node's status, so retired services can be drawn as ruins", () => {
+  const status = new Map(stack.nodes.map((n) => [n.id, n.status]));
+  assert.ok(layout.stations.every((st) => st.status === status.get(st.node)));
+  assert.ok(layout.stations.some((st) => st.status === "retired"));
+});
+
 test("the village is deterministic; every building is on dry land, apart from the others, within reach of a street", () => {
   assert.deepEqual(layoutOffice(stack), layout);
   const things = [...layout.desks, ...layout.stations];
