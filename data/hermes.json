@@ -648,7 +648,7 @@
    "parent": "hermes",
    "summary": "The owner/main profile at /opt/data: COO chat, backups, incident watcher, infographic and shorts jobs; carries the Coolify app-env keys.",
    "details": [
-    "Jobs in the default store: Hermes full backup (nightly), incident watcher, BigLobster Infographic Engineer, Shorts Producer, Shorts Publisher, Community \u2014 BigLobster",
+    "Jobs in the default store: Hermes full backup (nightly), incident watcher, BigLobster Infographic Engineer, Shorts Producer, Shorts Publisher, Community — BigLobster",
     "Main store pool is unbounded; web server is pinned to this profile",
     "CLAUDE.md also mentions hermes-* role profiles; other docs say those profiles were deleted. Current list unconfirmed"
    ],
@@ -1152,7 +1152,7 @@
    "label": "Shorts Producer + Publisher",
    "kind": "agent",
    "parent": "hermes",
-   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~20 s vertical tip short said to camera by a fixed presenter (Luc\u00eda ES, Mart\u00edn EN), rendered in GitHub Actions; Hermes publishes YouTube (Shorts and, since 2026-10-15, the long 'Agentes BigLobster' series episodes), Facebook and Instagram are Hermes's too once META_PUBLISH_MODE=live (shadow until then, SocialBot posts them); SocialBot in Buzz keeps X and browser-only networks.",
+   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~20 s vertical tip short said to camera by a fixed presenter (Lucía ES, Martín EN), rendered in GitHub Actions; Hermes publishes YouTube (Shorts and, since 2026-10-15, the long 'Agentes BigLobster' series episodes), Facebook and Instagram are Hermes's too once META_PUBLISH_MODE=live (shadow until then, SocialBot posts them); SocialBot in Buzz keeps X and browser-only networks.",
    "details": [
     "Producer `30 8 * * *`: one short per language (EN, ES) from the newest post without one; writes a JSON package (format `tip`, version 2: 4-6 beats, 40-55 words, the opener joke plus hook must land the promise within 10 s (TIP_PROMISE_SECONDS, #475; the 8-word first-sentence rule stays for the classic format only), CTA asks to save or share) and submits it. Publisher `20 9,13 * * *`: collects finished renders and publishes",
     "Publish split (2026-10-11): Hermes publishes YouTube Shorts; once a short is live `handoff` posts files and copy to the Buzz shorts channel and @SocialBot publishes Facebook, Instagram and X. With SHORTS_BUZZ_CHANNEL set the tool drops the Meta targets so the two can never double-post; shadow mode never posts to Buzz",
@@ -1193,7 +1193,7 @@
    "summary": "plugins/shorts studio: package contract, ledger and publishers on the Hermes side; Remotion rendering runs in GitHub Actions (shorts-studio.yml) with a HeyGen Avatar IV presenter and optional paid generated scenes, both via OpenRouter.",
    "details": [
     "Render never runs in the pod (~1,800 browser frames/min would starve the fleet); workflow_dispatch carries the package inline",
-    "Presenter (presenter.py): Avatar IV lip-syncs only the opener, hook and CTA segments, in a setting an image model places from the presenter's photo; middle beats are cards. One fixed neural voice per presenter (es-ES-Elvira for Luc\u00eda, en-US Andrew for Mart\u00edn); the avatar is paid only on camera, a take must stay under $1 (estimate uses each presenter's pace; tip word limit 48 es / 55 en) and $2/day. A render without its on-camera clip fails QA",
+    "Presenter (presenter.py): Avatar IV lip-syncs only the opener, hook and CTA segments, in a setting an image model places from the presenter's photo; middle beats are cards. One fixed neural voice per presenter (es-ES-Elvira for Lucía, en-US Andrew for Martín); the avatar is paid only on camera, a take must stay under $1 (estimate uses each presenter's pace; tip word limit 48 es / 55 en) and $2/day. A render without its on-camera clip fails QA",
     "A bubble loop per presenter is recorded once and kept in the Actions cache (committed as an artifact), generated only when missing; outro is a fixed animated card pointing to biglobster.top",
     "Generated scenes (genvideo.py): up to 3 beats per short with heygen/heygen-video-1 through OpenRouter's video API, capped $0.50/short and $1/day; any refusal or timeout falls back to stock footage; such shorts upload with containsSyntheticMedia",
     "Stock footage from Pexels/Mixkit, Edge TTS WordBoundary karaoke timing, loudness/freeze/black/silence QA; music bed ducked under the presenter",
@@ -1489,7 +1489,7 @@
   },
   {
    "id": "hermes-agent-community",
-   "label": "Community \u2014 BigLobster (social_inbox)",
+   "label": "Community — BigLobster (social_inbox)",
    "kind": "agent",
    "parent": "hermes",
    "summary": "Default-profile cron job that answers Facebook and Instagram comments, posts each new Diario entry to FB/IG and posts a daily 14-day FB/IG metrics table to Buzz; it took over what SocialBot did through Zernio.",
@@ -2301,33 +2301,36 @@
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-social-agenda",
+   "target": "coolify-social-agenda",
    "kind": "reads",
    "label": "pg_dumpall of the SocialAgenda Postgres volume",
    "sources": [
     "hermes-sandbox/ops/README.md"
    ],
-   "confidence": "from-docs"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-flywell",
+   "target": "coolify-flywell",
    "kind": "reads",
    "label": "pg_dumpall of the FlyWell Postgres volume",
    "sources": [
     "hermes-sandbox/ops/README.md"
    ],
-   "confidence": "from-docs"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-biglobster",
+   "target": "coolify-biglobster",
    "kind": "reads",
    "label": "SQLite online backup of the BigLobster sentinel DB",
    "sources": [
     "hermes-sandbox/ops/README.md"
    ],
-   "confidence": "from-docs"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "hermes-cli",

@@ -419,7 +419,7 @@
    "label": "SocialAgenda scheduler service",
    "kind": "service",
    "parent": "proj-socialagenda",
-   "summary": "Zeabur 'scheduler' service: same image with RUN_SCHEDULER=1, runs the reminder and security background daemons.",
+   "summary": "Coolify 'scheduler' app (was Zeabur until 2026-11-04): same image with RUN_SCHEDULER=1, runs the reminder and security background daemons.",
    "details": [
     "Single dedicated process so alerts are not duplicated across gunicorn workers.",
     "Daemons must not be blocked by synchronous I/O."
@@ -1804,36 +1804,39 @@
   },
   {
    "source": "proj-socialagenda-web",
-   "target": "zb-social-agenda",
+   "target": "coolify-social-agenda",
    "kind": "deployed-on",
-   "label": "Zeabur service 'web'",
+   "label": "Coolify app 'web' (was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/SocialAgenda/Dockerfile",
     "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-socialagenda-scheduler",
-   "target": "zb-social-agenda",
+   "target": "coolify-social-agenda",
    "kind": "deployed-on",
-   "label": "Zeabur service 'scheduler'",
+   "label": "Coolify app 'scheduler' (was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/SocialAgenda/Dockerfile",
     "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-socialagenda-web",
-   "target": "zb-social-agenda",
+   "target": "coolify-social-agenda",
    "kind": "stores-in",
-   "label": "managed Postgres service in the project",
+   "label": "Postgres on Coolify (was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/SocialAgenda/README.md",
     "/Users/brais/VSCODE/SocialAgenda/CLAUDE.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-socialagenda-web",
@@ -1942,34 +1945,37 @@
   },
   {
    "source": "proj-flywell-web",
-   "target": "zb-flywell",
+   "target": "coolify-flywell",
    "kind": "deployed-on",
-   "label": "Zeabur service flywell-web (public)",
+   "label": "Coolify app flywell-web (public; was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/FlyWell/README.md",
     "/Users/brais/VSCODE/FlyWell/docs/architecture.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-flywell-fli",
-   "target": "zb-flywell",
+   "target": "coolify-flywell",
    "kind": "deployed-on",
-   "label": "Zeabur service flywell-fli (internal only)",
+   "label": "Coolify app flywell-fli (internal only; was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/FlyWell/docs/architecture.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-flywell-web",
-   "target": "zb-flywell",
+   "target": "coolify-flywell",
    "kind": "stores-in",
-   "label": "Postgres service in the project",
+   "label": "Postgres on Coolify (was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/FlyWell/docs/architecture.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-flywell-web",
@@ -2171,14 +2177,15 @@
   },
   {
    "source": "proj-biglobster-web",
-   "target": "zb-biglobster",
+   "target": "coolify-biglobster",
    "kind": "deployed-on",
-   "label": "Zeabur service from Dockerfile, auto-deploy on main",
+   "label": "Coolify app from Dockerfile (was Zeabur until 2026-11-05)",
    "sources": [
     "/Users/brais/VSCODE/biglobster/Dockerfile",
     "/Users/brais/VSCODE/biglobster/OPS.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-biglobster-web",
@@ -2320,15 +2327,15 @@
   },
   {
    "source": "proj-bl-site-package-blcliente",
-   "target": "zb-biglobster",
+   "target": "coolify-biglobster",
    "kind": "deployed-on",
-   "label": "Zeabur instance blcliente",
+   "label": "Coolify app blcliente (was Zeabur)",
    "sources": [
     "/Users/brais/VSCODE/memories/decisions/hermes.md",
     "/Users/brais/VSCODE/bl-site-package/fleet/manifest.json"
    ],
    "confidence": "from-docs",
-   "note": "Project membership from the 2026-07-22 clone note 'biglobster (osee + bl-site-package)'"
+   "note": "Project membership from the 2026-07-22 clone note 'biglobster (osee + bl-site-package)'; re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-bl-site-package-shoroban",
@@ -2461,26 +2468,27 @@
   },
   {
    "source": "proj-grow-shop-landing",
-   "target": "zb-grow-shop",
+   "target": "coolify-grow-shop",
    "kind": "deployed-on",
-   "label": "Zeabur static service",
+   "label": "Coolify static app (was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/grow-shop/grow-shop-landing/claude.md",
     "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "from-docs",
-   "note": "Hosting detail from claude.md ('static hosting') and the 2026-10-02 migration note (2/2 services running)"
+   "note": "Hosting detail from claude.md ('static hosting') and the 2026-10-02 migration note (2/2 services running); re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-grow-shop-api",
-   "target": "zb-grow-shop",
+   "target": "coolify-grow-shop",
    "kind": "deployed-on",
-   "label": "Zeabur service, auto-deploy from main",
+   "label": "Coolify app (was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/grow-shop/grow-shop-api/claude.md",
     "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
-   "confidence": "verified"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "proj-grow-shop-landing",
@@ -2583,15 +2591,15 @@
   },
   {
    "source": "proj-experiencianatural-home",
-   "target": "zb-experiencianatural",
+   "target": "coolify-experiencianatural",
    "kind": "deployed-on",
-   "label": "Zeabur static site",
+   "label": "Coolify static site (was Zeabur until 2026-11-04)",
    "sources": [
     "/Users/brais/VSCODE/experiencianatural-home/README.md",
     "/Users/brais/VSCODE/memories/decisions/workspace.md"
    ],
    "confidence": "from-docs",
-   "note": "Project name from workspace decision; id not in the expected zb-* list"
+   "note": "Project name from workspace decision; id not in the expected zb-* list; re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "cloudflare",
