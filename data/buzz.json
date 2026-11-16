@@ -643,10 +643,10 @@
   },
   {
    "id": "fizz-fleet",
-   "label": "Bot fleet (9 containers)",
+   "label": "Bot fleet (6 active bots)",
    "kind": "service",
    "parent": "fizz",
-   "summary": "The nine bot containers (compose project bot-<name> each) that act as the BigLobster team on Colima; every bot runs Claude Code against QwenCloud's Anthropic-compatible endpoint.",
+   "summary": "The six active bot containers (Fizz, Prospector, SocialBot, Guionista, VideoDesk, SEODesk; Coach, Retador and OpsBot retired 2026-11-15) (compose project bot-<name> each) that act as the BigLobster team on Colima; every bot runs Claude Code against QwenCloud's Anthropic-compatible endpoint.",
    "details": [
     "fleet_status 2026-11-09: all nine Up for 34 h (coach, fizz, guionista, opsbot, prospector, retador, seodesk, socialbot, videodesk), all flagged qwen",
     "Each runs buzz-acp bridging the relay to Claude Code (ACP); since 2026-10-20 BOT_PROVEEDOR=qwen per bot loads the QwenCloud endpoint and model map (./bot proveedor <bot> qwen|claude) and blanks the Claude token in those containers; rollback is the same command with claude",
@@ -654,7 +654,8 @@
     "Container names bot-<name>-agent-1, networks bot-<name>_default; shared output folder ~/fizz/salida",
     "Unverified: whether sessions really answer on the persona's model (logs never name it)",
     "Accepted risk (Brais, 2026-10-20): Token Plan terms restrict use to interactive coding tools and prohibit background automation; subscription may be suspended",
-    "Heartbeats now 3h for fizz, prospector, seodesk, socialbot and videodesk, 4h coach, 6h guionista, 12h retador, none for opsbot"
+    "Heartbeats now 3h for fizz, prospector, seodesk, socialbot and videodesk, 4h coach, 6h guionista, 12h retador, none for opsbot",
+    "2026-11-15: Coach, Retador and OpsBot retired and archived in agents/retirados (PRs #118, #119); live agents/ now holds six bots. Earlier count of nine (fleet_status 2026-11-09) is historical; fleet_status could not run at refresh (Colima down), so container state is unverified"
    ],
    "status": "live",
    "links": [],
@@ -664,7 +665,9 @@
     "docker ps",
     "~/fizz/bots.compose.yml",
     "~/fizz/memories/decisions.md",
-    "git 4eecf60"
+    "git 4eecf60",
+    "git ~/fizz bdab2b8, 98c88b1",
+    "~/fizz/agents/"
    ],
    "confidence": "verified"
   },
@@ -704,10 +707,10 @@
     "Publishes: no",
     "Container bot-fizz-agent-1, volume bot-fizz_work",
     "Morning brief to Brais in #general between 07:00 and 11:00 ICT; Monday weekly goals; night handover",
-    "Mentions Retador before new plans, spend or public/irreversible moves",
     "Since 2026-10-07 retro: does not change offer, prices, markets or approved plans without Brais (T2); assigns work only in the bot's own channel and not to a stopped bot; checks empty heartbeats of Prospector, SEODesk and SocialBot",
-    "Saturday: writes the next Diario entry (agents/diario.md) and asks Retador to check it; Monday: two Kit newsletter drafts (EN, ES) for Brais to send; the Sunday brief asks Brais to approve the entry",
-    "2026-11-02: estado.md bounded to ~6 KB with fixed sections (tasks, rituals, night handover, waiting for Brais, last heartbeat); history goes to an append-only bitacora.md that the archiver trims"
+    "Saturday: writes the next Diario entry (agents/diario.md) and checks it with the playbook list (since 2026-11-15); Monday: two Kit newsletter drafts (EN, ES) for Brais to send; the Sunday brief asks Brais to approve the entry",
+    "2026-11-02: estado.md bounded to ~6 KB with fixed sections (tasks, rituals, night handover, waiting for Brais, last heartbeat); history goes to an append-only bitacora.md that the archiver trims",
+    "2026-11-15: takes over Coach's decision queue (salida/operaciones/decisiones-brais.md, in the morning brief) and checks the Diario with the playbook list instead of Retador; no longer mentions Retador before plans; mechanical bulk work goes to a Haiku subagent instead of OpsBot"
    ],
    "status": "live",
    "links": [],
@@ -720,7 +723,9 @@
     "~/fizz/agents/fizz.latido.md",
     "~/fizz/agents/diario.md",
     "~/fizz/memories/decisions.md",
-    "git 056110b"
+    "git 056110b",
+    "git ~/fizz 98c88b1",
+    "~/fizz/agents/empresa.md"
    ],
    "confidence": "verified"
   },
@@ -729,7 +734,7 @@
    "label": "Coach",
    "kind": "bot",
    "parent": "fizz-fleet",
-   "summary": "Detects blocked work, checks each task follows the plan, and keeps Brais's decision queue.",
+   "summary": "(Retired 2026-11-15) Detects blocked work, checks each task follows the plan, and keeps Brais's decision queue.",
    "details": [
     "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
     "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
@@ -739,16 +744,19 @@
     "Publishes: no",
     "Container bot-coach-agent-1, volume bot-coach_work",
     "Queue in salida/coach/decisiones-brais.md surfaces in Fizz's brief; weekly Friday summary",
-    "Moved from listening-to-all to mentions on 2026-10-06 (132 of 163 turns were empty)"
+    "Moved from listening-to-all to mentions on 2026-10-06 (132 of 163 turns were empty)",
+    "Retired 2026-11-15 (fizz PRs #118, #119, commits 98c88b1, bdab2b8): removed from live instructions and archived in ~/fizz/agents/retirados/; salida/ folder kept as archive. Decision queue moved to Fizz (operaciones/decisiones-brais.md). CHULETA: the fleet moves to Hermes (plan tasks/buzz-to-hermes-migration.md). Container state not verified (Colima down at refresh)."
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "~/fizz/agents/coach.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
     "~/fizz/CHULETA.md",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git ~/fizz bdab2b8, 98c88b1",
+    "~/fizz/agents/retirados/"
    ],
    "confidence": "verified"
   },
@@ -757,7 +765,7 @@
    "label": "Retador",
    "kind": "bot",
    "parent": "fizz-fleet",
-   "summary": "Devil's advocate: challenges plans, spend and irreversible/public moves once per proposal with alternatives; never executes.",
+   "summary": "(Retired 2026-11-15) Devil's advocate: challenges plans, spend and irreversible/public moves once per proposal with alternatives; never executes.",
    "details": [
     "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
     "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
@@ -767,16 +775,19 @@
     "Publishes: no",
     "Container bot-retador-agent-1, volume bot-retador_work",
     "One review a day from 09:00 ICT; challenges logged in salida/retador/retos.md",
-    "Answers 'Sin reto.' when nothing is material"
+    "Answers 'Sin reto.' when nothing is material",
+    "Retired 2026-11-15 (fizz PRs #118, #119, commits 98c88b1, bdab2b8): removed from live instructions and archived in ~/fizz/agents/retirados/; salida/ folder kept as archive. Diario check now uses the playbook list in agents/diario.md; no pre-plan challenge step. CHULETA: the fleet moves to Hermes (plan tasks/buzz-to-hermes-migration.md). Container state not verified (Colima down at refresh)."
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "~/fizz/agents/retador.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
     "~/fizz/CHULETA.md",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git ~/fizz bdab2b8, 98c88b1",
+    "~/fizz/agents/retirados/"
    ],
    "confidence": "verified"
   },
@@ -819,14 +830,14 @@
    "label": "SocialBot",
    "kind": "bot",
    "parent": "fizz-fleet",
-   "summary": "Social media manager for BigLobster's official accounts; publishes via Zernio and prepares Brais's daily manual-actions list.",
+   "summary": "Social media manager for BigLobster's accounts: Reddit, GEO/community sites, Facebook groups and the Page's Messenger via browser, plus Brais's daily manual-actions list; Facebook and Instagram publishing moved to Hermes.",
    "details": [
     "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
     "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
     "Heartbeat: 3h (fleet_status 2026-11-09)",
     "Memory limit: 1.5 GB default",
     "Browser: yes (browser flag set)",
-    "Publishes: yes (only bot with publica: si)",
+    "Publishes: yes (publica: si flag; since 2026-11-14 no Facebook/Instagram posting)",
     "Container bot-socialbot-agent-1, volume bot-socialbot_work",
     "Playbooks per network (X, Reddit, Facebook, Instagram, GEO sites) in salida/socialbot/playbooks",
     "Nightly summary to Fizz around 20:00 ICT; likes/follows/group posts left to Brais in lista-hoy.md",
@@ -838,7 +849,10 @@
     "Since 2026-10-16 takes the daily GEO Scout brief from #geo as its GEO site of the day (by brief id): Reddit it posts itself (checks the thread is open first), other sites go top of Brais's lista-hoy.md, directories go to SEODesk (2026-10-18), plus a weekly community to join (2026-10-17)",
     "Also posts series episodes announced by SEODesk's social copy",
     "2026-11-01: estado.md cut to ~4 KB rewritten in place, diary to append-only bitacora.md, persona 40 KB -> 24 KB; GEO and video procedures moved to on-demand agents/socialbot-geo.md and agents/socialbot-videos.md",
-    "2026-11-01: vigilante now also restarts the bot when its heartbeat session is dead (it had run ~35 h with no heartbeat)"
+    "2026-11-01: vigilante now also restarts the bot when its heartbeat session is dead (it had run ~35 h with no heartbeat)",
+    "2026-11-13/14: Hermes publishes shorts, episodes and the Diario on Facebook and Instagram (Meta Graph API), answers FB/IG comments and posts daily FB/IG metrics; SocialBot skips networks Hermes marks 'Ya publicado' and no longer posts, schedules or replies there",
+    "2026-11-14: Zernio MCP dropped from SocialBot (~20K tokens of tool schemas, autocompact thrashing); first heartbeat without it started at 27.0K tokens; 3-day watch open as of 2026-11-15. Front 4 is now Page Messenger; X stays manual (Brais's list)",
+    "2026-11-15: shorts for groups use the Flow master; SocialBot does no own posting of shorts"
    ],
    "status": "live",
    "links": [],
@@ -853,7 +867,8 @@
     "git d52bb0b, dac75cf, cc88de2, 1705e3d, 314f7bb",
     "git abda3d2, 4eecf60",
     "~/fizz/agents/socialbot-geo.md",
-    "~/fizz/agents/socialbot-videos.md"
+    "~/fizz/agents/socialbot-videos.md",
+    "git ~/fizz 924f768, f05570e, 941755a"
    ],
    "confidence": "verified"
   },
@@ -969,7 +984,7 @@
    "label": "OpsBot",
    "kind": "bot",
    "parent": "fizz-fleet",
-   "summary": "Operator for mechanical, high-volume jobs (transcripts, text dumps, raw lists, format conversion, data cleanup) with a verification file per delivery.",
+   "summary": "(Retired 2026-11-15) Operator for mechanical, high-volume jobs (transcripts, text dumps, raw lists, format conversion, data cleanup) with a verification file per delivery.",
    "details": [
     "Model: qwen (QwenCloud Token Plan via Claude Code in the container; since 2026-10-20 no bot uses the Claude subscription; alias map opus->qwen3.8-max, sonnet->qwen3.8-flash, haiku->qwen3.6-flash)",
     "Listens: mentions (Fizz too since 2026-10-21; no bot listens to everything)",
@@ -979,16 +994,19 @@
     "Publishes: no",
     "Container bot-opsbot-agent-1, volume bot-opsbot_work",
     "Deliveries under salida/opsbot/<date>-<task>/verificacion.md",
-    "Answered the 2026-10-05 mention test in 11 s"
+    "Answered the 2026-10-05 mention test in 11 s",
+    "Retired 2026-11-15 (fizz PRs #118, #119, commits 98c88b1, bdab2b8): removed from live instructions and archived in ~/fizz/agents/retirados/; salida/ folder kept as archive. Mechanical bulk work now goes to a Haiku subagent inside the requesting bot. CHULETA: the fleet moves to Hermes (plan tasks/buzz-to-hermes-migration.md). Container state not verified (Colima down at refresh)."
    ],
-   "status": "live",
+   "status": "retired",
    "links": [],
    "sources": [
     "~/fizz/agents/opsbot.prompt.md",
     "mcp__buzz__fleet_status",
     "docker ps",
     "~/fizz/CHULETA.md",
-    "~/fizz/memories/decisions.md"
+    "~/fizz/memories/decisions.md",
+    "git ~/fizz bdab2b8, 98c88b1",
+    "~/fizz/agents/retirados/"
    ],
    "confidence": "verified"
   },
@@ -1309,17 +1327,20 @@
    "label": "Zernio (social scheduler API)",
    "kind": "external",
    "parent": "layer-external",
-   "summary": "Social publishing/scheduling API with an MCP server that SocialBot uses to post, comment, reply and read analytics on BigLobster's accounts.",
+   "summary": "Social scheduling API (with MCP server). Account kept but unused since 2026-11-14; intended for TikTok and Threads once Brais opens those accounts.",
    "details": [
     "Connected per bot with `bot mcp socialbot zernio https://mcp.zernio.com/mcp`; the key is stored only in SocialBot's env",
-    "Rule: social via a scheduler API in draft/approval mode, never passwords or browser sessions"
+    "Rule: social via a scheduler API in draft/approval mode, never passwords or browser sessions",
+    "2026-11-14: removed from SocialBot (key out of every .env; still valid at Zernio, to be revoked and re-issued when an agent needs it); Zernio alert routing and zernio-avisos.md retired",
+    "2026-11-15 (Brais): account not closed; free plan holds 2 accounts, so FB/IG come off it first because Hermes publishes there; which agent will publish through it is open"
    ],
-   "status": "live",
+   "status": "planned",
    "links": [],
    "sources": [
     "~/fizz/agents/socialbot.prompt.md",
     "~/fizz/CHULETA.md",
-    "~/fizz/LEEME.md"
+    "~/fizz/LEEME.md",
+    "~/fizz/memories/decisions.md"
    ],
    "confidence": "from-docs"
   },
@@ -2892,16 +2913,6 @@
    "label": "share link or API",
    "sources": [
     "~/fizz/herramientas/bin/seo"
-   ],
-   "confidence": "from-docs"
-  },
-  {
-   "source": "fizz-bot-socialbot",
-   "target": "ext-zernio",
-   "kind": "calls",
-   "label": "publishes, replies, DMs, analytics",
-   "sources": [
-    "~/fizz/agents/socialbot.prompt.md"
    ],
    "confidence": "from-docs"
   },

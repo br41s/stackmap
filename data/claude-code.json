@@ -179,7 +179,7 @@
    "label": "VSCODE/CLAUDE.md (workspace)",
    "kind": "config",
    "parent": "vscode-workspace",
-   "summary": "Workspace-level instructions: hard limits, session-start ritual, layout, when to act vs ask, delegation with a Haiku-by-default model choice, memory files, git conventions.",
+   "summary": "Workspace-level instructions: hard limits, session-start ritual, layout, when to act vs ask, delegation (OpenCode and Haiku as peer tools, picked per task), memory files, git conventions.",
    "details": [
     "Session start: read the project's CLAUDE.md; at workspace level read memories/decisions.md and memories/lessons.md",
     "decisions.md is an index only; full entries live in memories/decisions/<topic>.md",
@@ -187,13 +187,17 @@
     "Docs-travel-with-the-change rule: update stale CLAUDE.md/README/docs in the same PR",
     "Delegation section 'Model choice - Haiku by default': mechanical or fully specified work (search, log reads, running commands, edits given in the brief, verification) goes to Haiku 5.5; Sonnet only for judgment; Haiku runs must be named and listed in the recap (commit 70d678c, 2026-10-08)",
     "Hard limits now carve out an exception: a merged PR's head branch may be deleted, including by GitHub auto-delete, and must not be re-pushed (uncommitted edit at refresh time)",
-    "Model choice section opens with an orchestration rule: never run a whole session on the user-selected model; Opus orchestrates and architects and launches subagents to cut cost and time (uncommitted edit at refresh time)"
+    "Model choice section opens with an orchestration rule: never run a whole session on the user-selected model; Opus orchestrates and architects and launches subagents to cut cost and time (uncommitted edit at refresh time)",
+    "Delegation section rewritten 2026-11-11 to 2026-11-15 (commits 3ccd4e7, 8b3ed7c): 'Haiku by default' is superseded; OpenCode (free models first) and Haiku subagents are peers chosen per task with a comparison table; Claude is the engineer who writes specs and reviews, free models do the bulk of programming (since 2026-11-12)",
+    "Paid OpenCode Go subscription (opencode-go/*) noted as active 2026-11-15: delegate.sh has one model chain per task type, free tier first then Go; DELEGATE_TIER=max|paid or DELEGATE_MODEL forces a tier; pay-per-token Zen models need credits first",
+    "Every reply ends with a 'Modelos:' line naming the models that ran; Haiku and OpenCode runs must be disclosed"
    ],
    "status": "live",
    "links": [],
    "sources": [
     "/Users/brais/VSCODE/CLAUDE.md",
-    "git show 70d678c (workspace repo)"
+    "git show 70d678c (workspace repo)",
+    "git show --stat 3ccd4e7 8b3ed7c (workspace repo)"
    ],
    "confidence": "verified"
   },
@@ -1180,12 +1184,13 @@
    "label": "Scheduled tasks",
    "kind": "tool",
    "parent": "claude-code",
-   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 11 tasks.",
+   "summary": "Recurring and one-time Claude Code prompts stored as SKILL.md files in ~/.claude/scheduled-tasks and run by the desktop app's scheduler; 13 task folders.",
    "details": [
     "Schedules are held by the scheduler (listed via the scheduled-tasks MCP), not in the SKILL.md files",
     "Two recurring tasks (buzz-retro-diaria daily, stackmap-weekly-refresh Mondays) plus one-time reminders and recheck jobs",
     "revision-frentes-48h (one-time, 2026-10-13) added 2026-10-11; fizz-old-volume-check fires 2026-10-12 and hermes-http-cache recheck 2026-10-19",
-    "parte-lunes-19-10 (one-time, Monday 2026-10-19) added 2026-10-19; enabled state not re-checked this refresh"
+    "parte-lunes-19-10 (one-time, Monday 2026-10-19) added 2026-10-19; enabled state not re-checked this refresh",
+    "eval-modelos-gratuitos-dia3 and -dia7 added 2026-11-15 (one-time evals of the OpenCode free-model delegation; reports tasks/delegation-eval-2026-11-15.md and -2026-11-19.md); enabled state and fire times not re-checked this refresh"
    ],
    "status": "live",
    "links": [],
@@ -1193,7 +1198,8 @@
     "/Users/brais/.claude/scheduled-tasks",
     "scheduled-tasks MCP list_scheduled_tasks",
     "scheduled-tasks MCP list_scheduled_tasks (2026-10-12)",
-    "/Users/brais/.claude/scheduled-tasks/parte-lunes-19-10/SKILL.md"
+    "/Users/brais/.claude/scheduled-tasks/parte-lunes-19-10/SKILL.md",
+    "/Users/brais/.claude/scheduled-tasks/eval-modelos-gratuitos-dia3/SKILL.md"
    ],
    "confidence": "verified"
   },
@@ -1384,6 +1390,81 @@
     "/Users/brais/.claude/scheduled-tasks/parte-lunes-19-10/SKILL.md"
    ],
    "confidence": "from-docs"
+  },
+  {
+   "id": "ws-skill-opencode-delegate",
+   "label": "opencode-delegate (own skill)",
+   "kind": "skill",
+   "parent": "cc-skills",
+   "summary": "Brais's own workspace skill: hands non-brain work to OpenCode (free models first, Go subscription fallback) through delegate.sh, then Claude reviews the REPORT.",
+   "details": [
+    "Lives in VSCODE/.claude/skills/opencode-delegate/ (SKILL.md, delegate.sh, browse helper scripts); version-controlled with the workspace",
+    "Task types: search, summarize, research, review, vision, video, code, edit, test, docs, browse; one model chain per type, free tier then Go tier",
+    "Programming flow: Claude writes a spec, a free model implements, Claude reviews diff and tests and owns branches, commits and PRs",
+    "Logs each attempt to ~/.cache/opencode-delegate/runs.jsonl; cannot generate images/video/audio (use hf-hub)"
+   ],
+   "sources": [
+    "/Users/brais/VSCODE/.claude/skills/opencode-delegate/SKILL.md",
+    "git log -- .claude/skills/opencode-delegate (ae5b6d3, a164bb8, 8b3ed7c)",
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "links": [],
+   "confidence": "verified",
+   "status": "live"
+  },
+  {
+   "id": "cc-hook-nudge-delegate",
+   "label": "nudge-delegate-code hook",
+   "kind": "hook",
+   "parent": "cc-hooks",
+   "summary": "Global PreToolUse hook on Edit/Write that refuses the first sizeable source-code edit of a session once, reminding Claude to delegate code, and logs self-edits.",
+   "details": [
+    "Script ~/.claude/hooks/nudge-delegate-code.sh, registered in ~/.claude/settings.json; applies only under /Users/brais/VSCODE, ignores docs, config, memories, tasks",
+    "Fails open; NUDGE_OFF=1 disables it; logs to ~/.cache/opencode-delegate/hook-events.jsonl for the day-3 and day-7 evaluations"
+   ],
+   "sources": [
+    "/Users/brais/.claude/hooks/nudge-delegate-code.sh",
+    "/Users/brais/.claude/settings.json (hook name only)"
+   ],
+   "links": [],
+   "confidence": "verified",
+   "status": "live"
+  },
+  {
+   "id": "cc-sched-eval-dia3",
+   "label": "eval-modelos-gratuitos-dia3",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "One-time evaluation at day 3 of the OpenCode free-model delegation trial: computes metrics from the run logs and writes a report, then sends a push alert to Brais.",
+   "details": [
+    "Writes /Users/brais/VSCODE/tasks/delegation-eval-2026-11-15.md; replies in Spanish; read-only apart from the report and the notification",
+    "Reads ~/.cache/opencode-delegate/runs.jsonl and hook-events.jsonl, tasks/delegation-reviews.md, git logs and memories lessons/errors",
+    "Schedule and enabled state not checked this refresh"
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/eval-modelos-gratuitos-dia3/SKILL.md"
+   ],
+   "links": []
+  },
+  {
+   "id": "cc-sched-eval-dia7",
+   "label": "eval-modelos-gratuitos-dia7",
+   "kind": "cron-job",
+   "parent": "cc-scheduled",
+   "summary": "One-time evaluation at day 7 of the OpenCode free-model delegation trial: computes metrics from the run logs and writes a report, then sends a push alert to Brais.",
+   "details": [
+    "Writes /Users/brais/VSCODE/tasks/delegation-eval-2026-11-19.md; replies in Spanish; read-only apart from the report and the notification",
+    "Reads ~/.cache/opencode-delegate/runs.jsonl and hook-events.jsonl, tasks/delegation-reviews.md, git logs and memories lessons/errors; compares with the day-3 report",
+    "Schedule and enabled state not checked this refresh"
+   ],
+   "status": "live",
+   "confidence": "from-docs",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/eval-modelos-gratuitos-dia7/SKILL.md"
+   ],
+   "links": []
   }
  ],
  "edges": [
@@ -2346,6 +2427,46 @@
     "scheduled-tasks MCP list_scheduled_tasks"
    ],
    "confidence": "inferred"
+  },
+  {
+   "source": "cc-hook-nudge-delegate",
+   "target": "ws-skill-opencode-delegate",
+   "kind": "monitors",
+   "label": "nudges Claude to delegate code, logs self-edits",
+   "sources": [
+    "/Users/brais/.claude/hooks/nudge-delegate-code.sh"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-sched-eval-dia3",
+   "target": "ws-skill-opencode-delegate",
+   "kind": "monitors",
+   "label": "evaluates delegation results from its run logs",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/eval-modelos-gratuitos-dia3/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "cc-sched-eval-dia7",
+   "target": "ws-skill-opencode-delegate",
+   "kind": "monitors",
+   "label": "evaluates delegation results from its run logs",
+   "sources": [
+    "/Users/brais/.claude/scheduled-tasks/eval-modelos-gratuitos-dia7/SKILL.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "ws-workspace-claude-md",
+   "target": "ws-skill-opencode-delegate",
+   "kind": "configures",
+   "label": "Delegation section defines when and how to use it",
+   "sources": [
+    "/Users/brais/VSCODE/CLAUDE.md"
+   ],
+   "confidence": "from-docs"
   }
  ]
 }

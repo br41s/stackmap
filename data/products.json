@@ -49,7 +49,9 @@
     "Production LLM (2026-10-10): FINVIEW_OPENROUTER_MODEL=deepseek/deepseek-v4.1-flash set on Cloud Run (code default stays deepseek-v4-flash). Key moved to Biglobster LLC's OpenRouter account 2026-10-09; every OpenRouter call sends provider.data_collection=deny via llm_envelope.chat().",
     "Watch: first Zonas Clave scorer run on the new model (22:15 UTC Mon-Fri); Artifact Registry keeps only the newest 10 images (cleanup policies since 2026-10-08).",
     "Added 2026-10-12..19: direct IBKR Flex sync with daily cron (#347/#348), sector/region/AI exposure from annual reports (#351-#357), backend token renewal via POST /auth/refresh (#344), Cloud Run revision named per build (#352), fiscal inputs loaded once per request (#342).",
-    "Living World ('Mundo vivo', 2026-11-08): private /living-world page draws the portfolio as a 3D low-poly town (Three.js, lazy-loaded), served by read-only GET /living-world/world on the backend. Phases 0-1 merged (#362-#366): districts, connected roads/sidewalks, SkyTrain, ambient walkers. Phase 4 would swap in glTF kits."
+    "Living World ('Mundo vivo', 2026-11-08): private /living-world page draws the portfolio as a 3D low-poly town (Three.js, lazy-loaded), served by read-only GET /living-world/world on the backend. Phases 0-1 merged (#362-#366): districts, connected roads/sidewalks, SkyTrain, ambient walkers. Phase 4 would swap in glTF kits.",
+    "Living World (#379-#383, 2026-11-09..14): 30-day activity window by default; events built from stored data (52-week extremes, volume, splits, shares received, dividend changes, reports, geo and zone alerts, a price move per stored session); day events, all-day events, lit signs on the main tower, plot flash in the event colour, ruins; option contracts kept out of the town. Fix: price sessions stored once per date, isolated from the valuation.",
+    "Tests (2026-11): pytest 1810 collected (148 skip without real broker files), 400 frontend vitest."
    ],
    "status": "live",
    "links": [
@@ -70,7 +72,8 @@
     "/Users/brais/VSCODE/memories/decisions.md",
     "git log since 2026-10-12 in /Users/brais/VSCODE/FinView",
     "FinView/backend/api/living_world.py (origin/main)",
-    "git log origin/main in /Users/brais/VSCODE/FinView"
+    "git log origin/main in /Users/brais/VSCODE/FinView",
+    "git log 8dec65d (FinView, PR #383)"
    ],
    "confidence": "verified"
   },
@@ -87,7 +90,8 @@
     "Merge gate: Vercel preview check must be green before merging any PR touching frontend/**.",
     "Vercel holds only BACKEND_URL, AUTH_SECRET, public Turnstile site key and public Stripe price ids; ingestion keys live only in Cloud Run.",
     "Session handling (2026-10): ends the session when a retried request is still 401 (#343); token renewal in the NextAuth jwt callback (#344).",
-    "Added 2026-11-08: /living-world page (login required, 'Mundo vivo' in QuickNav, noindex) with a Three.js town engine under src/app/living-world/."
+    "Added 2026-11-08: /living-world page (login required, 'Mundo vivo' in QuickNav, noindex) with a Three.js town engine under src/app/living-world/.",
+    "Living World now shows a 30-day window with day/all-day events, lit signs, plot flash and ruins (PRs #379-#383); engine and model unit-tested under src/app/living-world/."
    ],
    "status": "live",
    "links": [
@@ -737,9 +741,9 @@
     "Stateless Node server (no DB, no bot, no LLM): Dockerfile builds Eleventy then ships _site + src; Coolify auto-deploys on push to main (Netcup VPS, since 2026-11-05; zbpack.json removed).",
     "Sells AI automation subscriptions and agent rentals to freelancers and SMBs; apps directory lists SocialAgenda and FlyWell.",
     "Flagship of bl-site-package: a parity rule requires porting improvements to bl-site-package in the same session.",
-    "Stripe code is kept but routes were removed (PR #508, 2026-09-13) while a merchant-of-record application is under review.",
     "Oct 2026: IndexNow ping after each deploy (static key file in web/), llms.txt lists most-viewed articles (Umami 28 d), YouTube API Services declared in privacy/terms and YouTube channel link in the footer, pricing/agents-for-rent now sell Product Guide Writer and Product Sheet Writer.",
-    "2026-11-05..07: client-IP fix behind Cloudflare; /health reports the commit from Coolify's SOURCE_COMMIT; site now says a named person runs BigLobster; SEO recovery (87 old posts googlebot-noindex, five pillars, 1 post/week cap); steady infographic and content-refresh PRs (#809-#825)."
+    "2026-11-05..07: client-IP fix behind Cloudflare; /health reports the commit from Coolify's SOURCE_COMMIT; site now says a named person runs BigLobster; SEO recovery (87 old posts googlebot-noindex, five pillars, 1 post/week cap); steady infographic and content-refresh PRs (#809-#825).",
+    "Payments back on Stripe Managed Payments (CEO, 2026-11-14, PRs #845-#849, #853): Stripe/Link is merchant of record, so POST /api/checkout and /api/stripe/webhook returned (removed in #508); card checkout from the agent rental wizard and the BIG landing; only paid sessions count as paid; customer welcome email after payment; Site Launch is sold by invoice, not online. Without STRIPE_SECRET_KEY checkout is 503 and the wizard falls back to email sign-up."
    ],
    "status": "live",
    "links": [
@@ -761,7 +765,8 @@
     "/Users/brais/VSCODE/biglobster/src/indexnow.js",
     "/Users/brais/VSCODE/biglobster/web/llms.txt",
     "/Users/brais/VSCODE/biglobster/OPS.md (origin/main)",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "git show 1611bb61 (biglobster)"
    ],
    "confidence": "verified"
   },
@@ -776,7 +781,8 @@
     "/admin and /panel 302 to HERMES_PANEL_URL (Hermes operations panel).",
     "/api/knowledge serves business info plus blog frontmatter read from source; the bl-site-package twin endpoint is for an external WhatsApp bot, biglobster's consumer was not verified.",
     "Two CSPs must be edited together (header in src/web.js and meta in base.njk).",
-    "Rate limits use CF-Connecting-IP only behind a Cloudflare peer without CF-Worker (#812, 2026-11-05)."
+    "Rate limits use CF-Connecting-IP only behind a Cloudflare peer without CF-Worker (#812, 2026-11-05).",
+    "Checkout routes returned 2026-11-14: POST /api/checkout (own rate-limit bucket, 20/h) and POST /api/stripe/webhook (signature check, emails the CEO on paid sign-up, cancellation, failed charge; emails the customer once paid). Customer email kept out of webhook logs."
    ],
    "status": "live",
    "links": [],
@@ -785,7 +791,8 @@
     "/Users/brais/VSCODE/biglobster/README.md",
     "/Users/brais/VSCODE/biglobster/Dockerfile",
     "/Users/brais/VSCODE/biglobster/OPS.md",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "git show 1611bb61 (biglobster)"
    ],
    "confidence": "verified"
   },
@@ -800,7 +807,8 @@
     "Build guards fail on SVG var() geometry, type scale below 14px and infographic rules.",
     "Legal identity (Biglobster LLC) and company data in site/_data/site.json.",
     "site/apps.html and en/apps.html still link agenda.experiencianatural.com for Social Agenda (detached 2026-10-03).",
-    "Agent pages carry a YouTube video block fed by site/_data/videosAgentes.json (PR #698); episode videos for Content Gap Hunter added; English BIG landing and video links on /big.html."
+    "Agent pages carry a YouTube video block fed by site/_data/videosAgentes.json (PR #698); episode videos for Content Gap Hunter added; English BIG landing and video links on /big.html.",
+    "Pay-by-card in the agent rental wizard and on the BIG landing; legal pages (terms, refunds, privacy) updated for Stripe/Link checkout; SEO and content-refresh PRs continue (#843-#856)."
    ],
    "status": "live",
    "links": [
@@ -897,7 +905,7 @@
    "parent": "layer-products",
    "summary": "Deployable web package sold to Spanish SMB clients: public Eleventy site, management panel, blog, inbox, optional catalogue/shop and AI marketing agent; hosting is decided per customer (Coolify, Plesk, ...).",
    "details": [
-    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version 1.27.0 (see later lines).",
+    "Express + SQLite (better-sqlite3) + Eleventy 3; setup wizard at /setup; package version in package.json (see later lines).",
     "Customer-facing Spanish docs (INSTRUCCIONES-CLIENTE, DEPLOY, RELEASE) are treated as published.",
     "Customer deploys put the customer as legal owner under Spanish law (2026-10-02); footer carries only a 'Creado por Biglobster' credit link.",
     "Turnstile is mandatory for new customer onboarding (DEPLOY.md); fleet manifest is the source of truth for deployments.",
@@ -906,7 +914,8 @@
     "Default agent model is the paid openai/gpt-oss-120b via OpenRouter (BYOK per customer), decided 2026-10-09 so it works under data_collection=deny; free models are only a fallback on 429/402. A customer's saved ai_model wins (Shoroban keeps its own). Do not change the default again without a decision.",
     "1.18.0-1.19.2: blog posts show catalogue product photos; panel moves Turnstile, site URL/GSC and WhatsApp settings to an Integraciones section; form fields kept at 16px so iOS does not zoom.",
     "1.20-1.27.0 (2026-10-15..17): Cálida site style (site_style key, default empty = Clásico; wizard writes calida), page_index_highlights, services/team cards and FAQ accordions, a 404 page built in the site style; per-turn catalogue search for the WhatsApp bot (/api/knowledge/search); web-chat widget via chat_widget_url and chat_widget_token (Chatwoot).",
-    "Package v1.29.1 (origin/main). 2026-11: reference site moved to Coolify at cliente.biglobster.top; Zeabur steps and zbpack.json removed; hosting decided per customer; checkout shipping zones and 'Comprar ahora'; servicios jump buttons and overview/partner cards; CF-Connecting-IP rate-limit fix (src/middleware/client-ip.js, TRUST_PROXY_HOPS=1 on Coolify)."
+    "Package v1.29.1 (origin/main). 2026-11: reference site moved to Coolify at cliente.biglobster.top; Zeabur steps and zbpack.json removed; hosting decided per customer; checkout shipping zones and 'Comprar ahora'; servicios jump buttons and overview/partner cards; CF-Connecting-IP rate-limit fix (src/middleware/client-ip.js, TRUST_PROXY_HOPS=1 on Coolify).",
+    "Package v1.30.1 (package.json): opt-in card payment through MONEI's hosted page (#139, 1.30.0; needs MONEI_API_KEY and an https site_url, otherwise unchanged); catalogue hero line derived from payment and shipping config (#140)."
    ],
    "status": "live",
    "links": [
@@ -926,7 +935,8 @@
     "/Users/brais/VSCODE/memories/decisions/bl-site-package.md",
     "/Users/brais/VSCODE/bl-site-package/RELEASE.md (origin/main)",
     "/Users/brais/VSCODE/bl-site-package/README.md (origin/main)",
-    "/Users/brais/VSCODE/memories/decisions/workspace.md"
+    "/Users/brais/VSCODE/memories/decisions/workspace.md",
+    "git show 95b5cca (bl-site-package)"
    ],
    "confidence": "verified"
   },
@@ -940,7 +950,8 @@
     "Every async route wrapped in asyncHandler (Node 22 exits on unhandled rejection).",
     "Panel login and contact form protected by Turnstile when configured; RENTAL_AUTOMATION_KEY lets Hermes agents bypass the captcha via X-Automation-Key.",
     "Email via SMTP settings (SMTP_HOST etc.); passenger-startup.cjs supports Passenger hosts.",
-    "Serves a 404 page built from the site template (src/not-found.js, 1.27.0). GET /api/knowledge/search?q= (Bearer KNOWLEDGE_API_TOKEN) gives the WhatsApp bot real products per turn (1.25.0-1.25.1)."
+    "Serves a 404 page built from the site template (src/not-found.js, 1.27.0). GET /api/knowledge/search?q= (Bearer KNOWLEDGE_API_TOKEN) gives the WhatsApp bot real products per turn (1.25.0-1.25.1).",
+    "POST /api/reservations accepts payment_method 'card' (redirect to MONEI); POST /api/monei/callback verifies MONEI-Signature (HMAC-SHA256 over the raw body), checks payment id, amount and currency, idempotent through paid_at; reservation emails in src/mail/reservation-mails.js."
    ],
    "status": "live",
    "links": [],
@@ -949,7 +960,8 @@
     "/Users/brais/VSCODE/bl-site-package/DEPLOY.md",
     "/Users/brais/VSCODE/bl-site-package/.env.example",
     "/Users/brais/VSCODE/bl-site-package/fleet/README.md",
-    "git show 49b4c72 and 8301f90 in /Users/brais/VSCODE/bl-site-package"
+    "git show 49b4c72 and 8301f90 in /Users/brais/VSCODE/bl-site-package",
+    "git show 95b5cca (bl-site-package)"
    ],
    "confidence": "verified"
   },
@@ -1530,6 +1542,23 @@
     "/Users/brais/VSCODE/memories/decisions/finview.md",
     "/Users/brais/VSCODE/FinView/backend/api/portfolio.py",
     "git show 93b303c, 43ecd78, 6e8e2aa, 7795535 in /Users/brais/VSCODE/FinView"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "ext-monei",
+   "label": "MONEI",
+   "kind": "external",
+   "parent": "layer-products",
+   "summary": "Payment provider whose hosted page takes card payments for bl-site-package shops that opt in.",
+   "details": [
+    "Opt-in per deploy; no card data reaches the site server. Callback signed with MONEI-Signature.",
+    "Verified by the commit author against MONEI's test environment; whether any customer deploy has it live was not checked."
+   ],
+   "status": "live",
+   "links": [],
+   "sources": [
+    "git show 95b5cca (bl-site-package)"
    ],
    "confidence": "from-docs"
   }
@@ -2672,6 +2701,27 @@
    "label": "Yahoo Finance sector for the listing fallback",
    "sources": [
     "/Users/brais/VSCODE/memories/decisions/finview.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-bl-site-package-server",
+   "target": "ext-monei",
+   "kind": "calls",
+   "label": "creates card payments, receives signed callback",
+   "sources": [
+    "git show 95b5cca (bl-site-package)"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "proj-biglobster-web",
+   "target": "ext-stripe",
+   "kind": "calls",
+   "label": "Checkout Sessions and webhook (Stripe Managed Payments)",
+   "sources": [
+    "/Users/brais/VSCODE/biglobster/CLAUDE.md",
+    "git show 1611bb61 (biglobster)"
    ],
    "confidence": "from-docs"
   }

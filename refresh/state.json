@@ -1,5 +1,5 @@
 {
-  "refreshedAt": "2026-11-09T02:13:47.185Z",
+  "refreshedAt": "2026-11-16T02:33:09.291Z",
   "dirs": {
     "~/.claude/agents": [],
     "~/.claude/skills": [
@@ -67,6 +67,8 @@
       "biglobster-v41-pilot-review",
       "buzz-retro-diaria",
       "deploy-automation-plan-reminder",
+      "eval-modelos-gratuitos-dia3",
+      "eval-modelos-gratuitos-dia7",
       "finview-learning-loops-check",
       "fizz-old-volume-check",
       "hermes-http-cache-semantics-recheck",
@@ -82,7 +84,8 @@
       "reviewer.md"
     ],
     ".claude/skills": [
-      "codebase-topology"
+      "codebase-topology",
+      "opencode-delegate"
     ],
     ".claude/rules": [
       "gstack.md"
@@ -103,9 +106,6 @@
       "utils.py"
     ],
     "~/fizz/agents": [
-      "coach.agent.json",
-      "coach.latido.md",
-      "coach.prompt.md",
       "diario.md",
       "empresa.md",
       "fizz.agent.json",
@@ -114,14 +114,9 @@
       "guionista.agent.json",
       "guionista.latido.md",
       "guionista.prompt.md",
-      "opsbot.agent.json",
-      "opsbot.prompt.md",
       "prospector.agent.json",
       "prospector.latido.md",
       "prospector.prompt.md",
-      "retador.agent.json",
-      "retador.latido.md",
-      "retador.prompt.md",
       "retirados",
       "seodesk.agent.json",
       "seodesk.latido.md",
