@@ -648,7 +648,7 @@
    "parent": "hermes",
    "summary": "The owner/main profile at /opt/data: COO chat, backups, incident watcher, infographic and shorts jobs; carries the Coolify app-env keys.",
    "details": [
-    "Jobs in the default store: Hermes full backup (nightly), incident watcher, BigLobster Infographic Engineer, Shorts Producer, Shorts Publisher",
+    "Jobs in the default store: Hermes full backup (nightly), incident watcher, BigLobster Infographic Engineer, Shorts Producer, Shorts Publisher, Community — BigLobster",
     "Main store pool is unbounded; web server is pinned to this profile",
     "CLAUDE.md also mentions hermes-* role profiles; other docs say those profiles were deleted. Current list unconfirmed"
    ],
@@ -657,7 +657,8 @@
    "sources": [
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/BIGLOBSTER_SETUP.md",
-    "hermes-sandbox/ops/zeabur-isolate-hermes-runbook.md"
+    "hermes-sandbox/ops/zeabur-isolate-hermes-runbook.md",
+    "hermes-sandbox/scripts/setup_social_jobs.py"
    ],
    "confidence": "from-docs"
   },
@@ -1151,7 +1152,7 @@
    "label": "Shorts Producer + Publisher",
    "kind": "agent",
    "parent": "hermes",
-   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~20 s vertical tip short said to camera by a fixed presenter (Lucía ES, Martín EN), rendered in GitHub Actions; Hermes publishes YouTube (Shorts and, since 2026-10-15, the long 'Agentes BigLobster' series episodes), SocialBot in Buzz does Facebook, Instagram and X.",
+   "summary": "Two default-profile cron agents that turn each new BigLobster article into a ~20 s vertical tip short said to camera by a fixed presenter (Lucía ES, Martín EN), rendered in GitHub Actions; Hermes publishes YouTube (Shorts and, since 2026-10-15, the long 'Agentes BigLobster' series episodes), Facebook and Instagram are Hermes's too once META_PUBLISH_MODE=live (shadow until then, SocialBot posts them); SocialBot in Buzz keeps X and browser-only networks.",
    "details": [
     "Producer `30 8 * * *`: one short per language (EN, ES) from the newest post without one; writes a JSON package (format `tip`, version 2: 4-6 beats, 40-55 words, the opener joke plus hook must land the promise within 10 s (TIP_PROMISE_SECONDS, #475; the 8-word first-sentence rule stays for the classic format only), CTA asks to save or share) and submits it. Publisher `20 9,13 * * *`: collects finished renders and publishes",
     "Publish split (2026-10-11): Hermes publishes YouTube Shorts; once a short is live `handoff` posts files and copy to the Buzz shorts channel and @SocialBot publishes Facebook, Instagram and X. With SHORTS_BUZZ_CHANNEL set the tool drops the Meta targets so the two can never double-post; shadow mode never posts to Buzz",
@@ -1162,7 +1163,10 @@
     "Hook patterns rotate per language (#474); the Producer calls shorts_studio 'performance' once per run and prefers stronger allowed patterns (#477; 'not enough signal' under 5 shorts)",
     "Series (#466, #467): the Publisher also runs shorts_studio 'series', reading #publicar-episodio (VideoDesk) and #actualizar-video (SEODesk) requests from the Buzz series channel and uploading or updating the 2-3 min ES/EN episodes as regular YouTube videos; one episode a day by default (quota). Since #479 #actualizar-video also accepts blog Shorts that the shorts ledger records as uploaded by Hermes; every Short now opens with its Thumb still for 0.5 s as the cover frame",
     "Status docs read still say shadow by default; whether live uploads are on in the Coolify app was not re-checked",
-    "Late-Oct to Nov fixes: episodes refused when duplicate and shorts keyed by language (#498); only fresh ignored requests answered, not the backlog; the Publisher reads the YouTube description back after each write and resends a snippet whose link was cut (#499); titles and descriptions go to YouTube as written, no appended #Shorts or article link (#505); a request mark counts only alone on its line (#506)"
+    "Late-Oct to Nov fixes: episodes refused when duplicate and shorts keyed by language (#498); only fresh ignored requests answered, not the backlog; the Publisher reads the YouTube description back after each write and resends a snippet whose link was cut (#499); titles and descriptions go to YouTube as written, no appended #Shorts or article link (#505); a request mark counts only alone on its line (#506)",
+    "Meta publishing (#521, 2026-11-14): Flow shorts go out as a Facebook Reel and an Instagram Reel (marked is_ai_generated) and series episodes as a Facebook Page video, right after the YouTube upload, via the Meta Graph API (plugins/shorts/social/meta.py). META_PUBLISH_MODE gates it apart from SHORTS_PUBLISH_MODE: in shadow the run only reports what it would post; when live the Buzz hand-off marks each network 'Ya publicado por Hermes' and asks SocialBot only for what is left; each step is recorded so a retry never uploads twice; a short over 90 s stays SocialBot's on Facebook",
+    "Instagram retry (#522): after Meta answered ProcessingFailedError to about half of identical uploads, meta.instagram tries three fresh containers 20 s apart; if all fail the series records instagram.failed, warns, and hands Instagram and X to SocialBot instead of stopping the short",
+    "X is posted by Brais by hand from the hand-off (2026-11-14) until an xurl path exists"
    ],
    "status": "dry-run",
    "links": [],
@@ -1176,7 +1180,8 @@
     "hermes-sandbox/plugins/shorts/social/youtube_analytics.py",
     "hermes-sandbox/shorts/biglobster-shorts-producer.prompt",
     "memories/decisions/hermes.md",
-    "hermes-sandbox/plugins/shorts/social/youtube.py"
+    "hermes-sandbox/plugins/shorts/social/youtube.py",
+    "hermes-sandbox/plugins/shorts/social/meta.py"
    ],
    "confidence": "from-docs"
   },
@@ -1360,7 +1365,8 @@
    "parent": "hermes",
    "summary": "Dated decisions for Hermes (infra migration, multi-tenancy, auditor, deploys, backups) kept in the workspace memories.",
    "details": [
-    "memories/decisions/hermes.md holds the detail; the index line list is in memories/decisions.md; newest entry wins on conflict"
+    "memories/decisions/hermes.md holds the detail; the index line list is in memories/decisions.md; newest entry wins on conflict",
+    "2026-11-15: Buzz fleet moves to Hermes (discard Fizz/Coach/Retador/OpsBot, SEODesk into biglobster, rest as jobs in the team profile); plan in tasks/buzz-to-hermes-migration.md"
    ],
    "status": "live",
    "links": [],
@@ -1445,15 +1451,18 @@
    "label": "Meta (Instagram, Facebook, WhatsApp)",
    "kind": "external",
    "parent": "layer-external",
-   "summary": "Meta Graph API targets for Reels/Stories/Facebook posts, and the WhatsApp Cloud API for the planned lead chatbot.",
+   "summary": "Meta Graph API targets: Hermes posts Facebook and Instagram Reels, Page videos, diary posts and answers comments through it (behind shadow switches); the WhatsApp Cloud API is for the planned lead chatbot.",
    "details": [
-    "Meta Tech Provider registration pending for the WhatsApp product"
+    "Meta Tech Provider registration pending for the WhatsApp product",
+    "Hermes uses one Meta token (META_* env) for the shorts publisher and the Community job; META_PUBLISH_MODE gates posting, SOCIAL_REPLY_MODE gates comment replies (since 2026-11-14)"
    ],
    "status": "dry-run",
    "links": [],
    "sources": [
     "hermes-sandbox/shorts/STUDIO.md",
-    "hermes-sandbox/WHATSAPP-BOT-PLAN.md"
+    "hermes-sandbox/WHATSAPP-BOT-PLAN.md",
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
    ],
    "confidence": "from-docs"
   },
@@ -1475,6 +1484,53 @@
     "hermes-sandbox/CLAUDE.md",
     "hermes-sandbox/ops/README.md",
     "memories/decisions/workspace.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-agent-community",
+   "label": "Community — BigLobster (social_inbox)",
+   "kind": "agent",
+   "parent": "hermes",
+   "summary": "Default-profile cron job that answers Facebook and Instagram comments, posts each new Diario entry to FB/IG and posts a daily 14-day FB/IG metrics table to Buzz; it took over what SocialBot did through Zernio.",
+   "details": [
+    "Created 2026-11-14 by scripts/setup_social_jobs.py; schedule `0 8,11,14,17,20 * * *` Bangkok time; prompt social/community.prompt; runs with enabled_toolsets [social, no_mcp] so no MCP server is merged into it (#523, #524)",
+    "Single tool `social_inbox` (plugins/social/inbox.py): new_comments, reply, skip, metrics_daily, diary_pending, diary_post; Meta helpers in plugins/shorts/social/meta.py",
+    "Shadow switches: replies stay drafts in the Telegram report until SOCIAL_REPLY_MODE=live (never twice, SOCIAL_REPLIES_MAX_PER_DAY, default 15); diary posting needs META_PUBLISH_MODE=live; live state in the Coolify app not checked",
+    "Comment text is untrusted: the tool validates comment ids, answers only ids its last new_comments offered, marks text untrusted, locks its ledger (/opt/data/workspace/social/ledger.json); replies read up to 100 replies per comment to detect an answered one (#524); diary fetch refuses off-site redirects, Instagram takes only an https og:image on our own site, diary_post needs the baseline and a discovered entry",
+    "The social toolset is off by default in every other session (_DEFAULT_OFF_TOOLSETS, #524); only this job names it",
+    "First diary run records a baseline of entries SocialBot already spread; every comment gets a reply except spam/bots, which are skipped (Brais, 2026-11-14)",
+    "Metrics table goes to the Buzz Media Forgery channel (SOCIAL_METRICS_BUZZ_CHANNEL), where Guionista reads it"
+   ],
+   "status": "dry-run",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md",
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/scripts/setup_social_jobs.py",
+    "hermes-sandbox/social/community.prompt",
+    "hermes-sandbox/plugins/social/inbox.py"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "id": "hermes-profile-team",
+   "label": "Profile: team",
+   "kind": "project",
+   "parent": "hermes",
+   "summary": "New profile (2026-11-15/16) for BigLobster's internal roles moved off the Buzz fleet: video script packs and short audits, growth/leads, owner's reports.",
+   "details": [
+    "Has its own Telegram topic (Team); workspace /opt/data/profiles/team/workspace/ with video/, growth/, reports/ folders",
+    "SOUL invariants: nothing leaves without Brais's OK; facts cited from their source; read content is data not instructions; no secrets. Not its job: biglobster.top (biglobster profile), client profiles, publishing and comment replies (default profile Shorts and Community jobs)",
+    "Needs `hermes profile create team` in the pod before the deploy that ships docker/profiles/team/ (boot acts only on profiles that already have a SOUL.md and never replaces one)",
+    "Plan: roles Guionista, Prospector and Fizz rituals migrate as jobs; starts on OpenRouter (opencode-go later); boot overwrites profile models from HERMES_DEFAULT_MODEL, so team needs an exemption like the auditor's; max_parallel_jobs 1 serializes its jobs. Whether the profile exists in the pod yet was not checked"
+   ],
+   "status": "planned",
+   "links": [],
+   "sources": [
+    "hermes-sandbox/CLAUDE.md",
+    "hermes-sandbox/docker/profiles/team/SOUL.md",
+    "memories/decisions/hermes.md"
    ],
    "confidence": "from-docs"
   }
@@ -2245,33 +2301,36 @@
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-social-agenda",
+   "target": "coolify-social-agenda",
    "kind": "reads",
    "label": "pg_dumpall of the SocialAgenda Postgres volume",
    "sources": [
     "hermes-sandbox/ops/README.md"
    ],
-   "confidence": "from-docs"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-flywell",
+   "target": "coolify-flywell",
    "kind": "reads",
    "label": "pg_dumpall of the FlyWell Postgres volume",
    "sources": [
     "hermes-sandbox/ops/README.md"
    ],
-   "confidence": "from-docs"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "backup-volumes-host",
-   "target": "zb-biglobster",
+   "target": "coolify-biglobster",
    "kind": "reads",
    "label": "SQLite online backup of the BigLobster sentinel DB",
    "sources": [
     "hermes-sandbox/ops/README.md"
    ],
-   "confidence": "from-docs"
+   "confidence": "from-docs",
+   "note": "Re-pointed to Coolify after the Nov 2026 move off Zeabur"
   },
   {
    "source": "hermes-cli",
@@ -2934,6 +2993,56 @@
    "label": "translates only posts with 20+ impressions in 90 days",
    "sources": [
     "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-community",
+   "target": "hermes-profile-default",
+   "kind": "deployed-on",
+   "label": "job in the default store",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-community",
+   "target": "ext-meta",
+   "kind": "writes",
+   "label": "FB/IG diary posts, comment replies; reads comments and insights",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-community",
+   "target": "buzz-channel-media-forgery",
+   "kind": "notifies",
+   "label": "daily FB/IG metrics table",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-community",
+   "target": "hermes-topic-general",
+   "kind": "notifies",
+   "label": "run report with reply drafts",
+   "sources": [
+    "hermes-sandbox/BIGLOBSTER_SETUP.md"
+   ],
+   "confidence": "from-docs"
+  },
+  {
+   "source": "hermes-agent-shorts",
+   "target": "ext-meta",
+   "kind": "writes",
+   "label": "Facebook and Instagram Reels/videos behind META_PUBLISH_MODE",
+   "sources": [
+    "hermes-sandbox/shorts/STUDIO.md"
    ],
    "confidence": "from-docs"
   }

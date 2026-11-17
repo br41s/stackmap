@@ -5,7 +5,7 @@
    "label": "Hosting & infra",
    "kind": "layer",
    "parent": null,
-   "summary": "Where things run: Zeabur, Vercel, Google Cloud, Neon, Cloudflare, GitHub, Plesk, and the domains on top.",
+   "summary": "Where things run: Netcup (Coolify), Vercel, Google Cloud, Neon, Cloudflare, GitHub, Plesk, and the domains on top. Zeabur is retired.",
    "status": "live",
    "confidence": "from-docs",
    "sources": [
